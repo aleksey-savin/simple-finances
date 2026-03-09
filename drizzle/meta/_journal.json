@@ -1,0 +1,104 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1772766459210,
+      "tag": "0000_dazzling_oracle",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1772859394923,
+      "tag": "0001_overconfident_alice",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772862090034,
+      "tag": "0002_elite_lionheart",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1772863544292,
+      "tag": "0003_secret_firedrake",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1772877012186,
+      "tag": "0004_good_tenebrous",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1772880686858,
+      "tag": "0005_yummy_edwin_jarvis",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1772880830402,
+      "tag": "0006_simple_siren",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1772976048415,
+      "tag": "0007_dizzy_klaw",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1773048702499,
+      "tag": "0008_sparkling_daimon_hellstrom",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1773048934855,
+      "tag": "0009_bitter_overlord",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1773060902005,
+      "tag": "0010_true_romulus",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1773061293124,
+      "tag": "0011_simple_champions",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1773061350603,
+      "tag": "0012_known_mojo",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1773066540893,
+      "tag": "0013_stale_morph",
+      "breakpoints": true
+    }
+  ]
+}
