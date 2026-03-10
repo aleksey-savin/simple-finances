@@ -786,9 +786,7 @@ function PayablesPage() {
         <div>
           <div className="flex items-center gap-2">
             <TrendingDown className="size-5 text-red-500" />
-            <h1 className="text-2xl font-semibold">
-              Кредиторская задолженность
-            </h1>
+            <h1 className="text-2xl font-semibold">Платежи и обязательства</h1>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
             Расходы текущего месяца и неоплаченные за прошлые периоды

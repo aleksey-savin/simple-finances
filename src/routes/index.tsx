@@ -1,7 +1,7 @@
 import Accounts from '#/components/accounts'
 import Categories from '#/components/categories/sheet'
 import { ExpenseForm } from '#/components/expenses'
-import { IncomeForm } from '#/components/incomes'
+import { IncomeForm } from '#/components/income'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import {

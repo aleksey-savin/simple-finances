@@ -20,25 +20,34 @@ const navMain = [
     title: 'Обзор',
     items: [
       {
-        title: 'Лента',
+        title: 'Движение средств',
         url: '/',
       },
       {
-        title: 'Расписание',
+        title: 'Запланированные платежи',
         url: '/recurring',
       },
     ],
   },
   {
-    title: 'Задолженности',
+    title: 'Отчёты',
     items: [
       {
-        title: 'Дебиторка',
+        title: 'Дебиторская задолженность',
         url: '/receivables',
       },
       {
-        title: 'Кредиторка',
+        title: 'Платежи и обязательства',
         url: '/payables',
+      },
+    ],
+  },
+  {
+    title: 'Администрирование',
+    items: [
+      {
+        title: 'Пользователи',
+        url: '/users',
       },
     ],
   },
