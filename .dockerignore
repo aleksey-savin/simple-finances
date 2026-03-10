@@ -1,0 +1,17 @@
+node_modules
+.output
+.nitro
+.tanstack
+.vinxi
+dist
+.env
+.env.local
+*.local
+.DS_Store
+.git
+.gitignore
+README.md
+drizzle
+compose*.yml
+Dockerfile*
+.dockerignore
