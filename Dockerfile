@@ -1,4 +1,4 @@
-FROM node:24-alpine AS builder
+FROM node:24-alpine
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
@@ -10,12 +10,6 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm build
 
-FROM node:22-alpine
-
-WORKDIR /app
-
-COPY --from=builder /app/.output ./.output
-
 EXPOSE 3000
 
-CMD ["node", ".output/server/index.mjs"]
+CMD ["sh", "-c", "pnpm db:migrate && node .output/server/index.mjs"]
