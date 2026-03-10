@@ -11,7 +11,7 @@ dist
 .git
 .gitignore
 README.md
-drizzle
+
 compose*.yml
 Dockerfile*
 .dockerignore
