@@ -3,7 +3,12 @@ import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
 import { auth } from 'utils/auth'
 import { db } from '#/db'
-import { income, currentAccountUser, currentAccount } from '#/db/schema'
+import {
+  income,
+  currentAccountUser,
+  currentAccount,
+  incomeTag,
+} from '#/db/schema'
 import { eq, inArray, isNull } from 'drizzle-orm'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
@@ -47,10 +52,20 @@ import {
   AlertTriangle,
   X,
 } from 'lucide-react'
+import {
+  fetchTags,
+  fetchTagTotals,
+  createTag,
+  addIncomeTag,
+  removeIncomeTag,
+} from '#/routes/api/-tags'
+import { TagPicker, TagChips, type TagItem } from '#/components/ui/tag-picker'
+import { TagSummaryPanel } from '#/components/ui/tag-summary-panel'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type IncomeRow = Awaited<ReturnType<typeof fetchReceivables>>['rows'][number]
+type TagsMap = Record<string, TagItem[]>
 
 // ─── Server functions ─────────────────────────────────────────────────────────
 
@@ -95,7 +110,74 @@ const fetchReceivables = createServerFn().handler(async () => {
     name,
   }))
 
-  return { rows, accounts, categories }
+  // Fetch tags for all income rows
+  const incomeIds = rows.map((r) => r.id)
+  const incomeTagRows =
+    incomeIds.length > 0
+      ? await db.query.incomeTag.findMany({
+          where: inArray(incomeTag.incomeId, incomeIds),
+          with: { tag: true },
+        })
+      : []
+
+  const tagsMap: TagsMap = {}
+  for (const it of incomeTagRows) {
+    if (!tagsMap[it.incomeId]) tagsMap[it.incomeId] = []
+    tagsMap[it.incomeId].push({
+      id: it.tag.id,
+      name: it.tag.name,
+      color: it.tag.color,
+    })
+  }
+
+  const allTags = await db.query.tag.findMany({
+    orderBy: (t, { asc }) => asc(t.name),
+  })
+
+  // Tag totals: income only (expenses handled on payables page)
+  const accountIdSet = new Set(accountIds)
+  const allExpenseTags = await db.query.expenseTag.findMany({
+    with: {
+      expense: {
+        columns: { amount: true, currentAccountId: true, paidAt: true },
+      },
+      tag: { columns: { id: true } },
+    },
+  })
+  const tagTotals = allTags
+    .map((t) => {
+      const incomeTotal = incomeTagRows
+        .filter((it) => it.tag.id === t.id)
+        .reduce(
+          (s, it) =>
+            s + Number(rows.find((r) => r.id === it.incomeId)?.amount ?? 0),
+          0,
+        )
+      const expenseTotal = allExpenseTags
+        .filter(
+          (et) =>
+            et.tag.id === t.id &&
+            accountIdSet.has(et.expense.currentAccountId) &&
+            !et.expense.paidAt,
+        )
+        .reduce((s, et) => s + Number(et.expense.amount), 0)
+      return {
+        tag: { id: t.id, name: t.name, color: t.color },
+        expenseTotal,
+        incomeTotal,
+        net: incomeTotal - expenseTotal,
+      }
+    })
+    .filter((t) => t.expenseTotal > 0 || t.incomeTotal > 0)
+
+  return {
+    rows,
+    accounts,
+    categories,
+    tagsMap,
+    allTags: allTags.map((t) => ({ id: t.id, name: t.name, color: t.color })),
+    tagTotals,
+  }
 })
 
 const markPaidSchema = z.object({ id: z.string(), paid: z.boolean() })
@@ -179,13 +261,94 @@ const overdueFilterFn: FilterFn<IncomeRow> = (
 }
 overdueFilterFn.autoRemove = (val) => !val
 
+type IncomeStatus = 'overdue' | 'soon' | 'ontime' | 'nodate'
+
+function getIncomeStatus(row: IncomeRow): IncomeStatus {
+  if (!row.dueDate) return 'nodate'
+  const { isOverdue, daysLeft } = getDueMeta(row.dueDate)
+  if (isOverdue) return 'overdue'
+  if (daysLeft !== null && daysLeft <= 7) return 'soon'
+  return 'ontime'
+}
+
+const statusFilterFn: FilterFn<IncomeRow> = (row, _id, value: IncomeStatus) => {
+  if (!value) return true
+  return getIncomeStatus(row.original) === value
+}
+statusFilterFn.autoRemove = (v) => !v
+
 // ─── Page component ───────────────────────────────────────────────────────────
 
 function ReceivablesPage() {
   const router = useRouter()
-  const { rows, accounts, categories } = Route.useLoaderData()
+  const {
+    rows,
+    accounts,
+    categories,
+    tagsMap: initialTagsMap,
+    allTags: initialAllTags,
+    tagTotals: initialTagTotals,
+  } = Route.useLoaderData()
+
+  const [tagsMap, setTagsMap] = useState<TagsMap>(initialTagsMap ?? {})
+  const [allTags, setAllTags] = useState<TagItem[]>(initialAllTags ?? [])
+  const [tagTotals, setTagTotals] = useState<
+    {
+      tag: { id: string; name: string; color: string }
+      expenseTotal: number
+      incomeTotal: number
+      net: number
+    }[]
+  >(initialTagTotals ?? [])
 
   const [deleteTarget, setDeleteTarget] = useState<IncomeRow | null>(null)
+
+  const refreshTotals = async () => {
+    try {
+      const [totals, tags] = await Promise.all([fetchTagTotals(), fetchTags()])
+      setTagTotals(totals)
+      setAllTags(tags.map((t) => ({ id: t.id, name: t.name, color: t.color })))
+    } catch {
+      // ignore
+    }
+  }
+
+  const handleTagAdd = async (incomeId: string, tag: TagItem) => {
+    setTagsMap((prev) => ({
+      ...prev,
+      [incomeId]: [
+        ...(prev[incomeId] ?? []).filter((t) => t.id !== tag.id),
+        tag,
+      ],
+    }))
+    await addIncomeTag({ data: { incomeId, tagId: tag.id } })
+    await refreshTotals()
+  }
+
+  const handleTagRemove = async (incomeId: string, tag: TagItem) => {
+    setTagsMap((prev) => ({
+      ...prev,
+      [incomeId]: (prev[incomeId] ?? []).filter((t) => t.id !== tag.id),
+    }))
+    await removeIncomeTag({ data: { incomeId, tagId: tag.id } })
+    await refreshTotals()
+  }
+
+  const handleTagCreate = async (
+    name: string,
+    color: string,
+  ): Promise<TagItem> => {
+    const created = await createTag({ data: { name, color } })
+    const newTag: TagItem = {
+      id: created.id,
+      name: created.name,
+      color: created.color,
+    }
+    setAllTags((prev) =>
+      [...prev, newTag].sort((a, b) => a.name.localeCompare(b.name)),
+    )
+    return newTag
+  }
 
   const handleTogglePaid = async (row: IncomeRow) => {
     try {
@@ -220,9 +383,15 @@ function ReceivablesPage() {
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title="Описание" />
         ),
-        cell: ({ row }) => (
-          <span className="font-medium">{row.original.description}</span>
-        ),
+        cell: ({ row }) => {
+          const tags = tagsMap[row.original.id] ?? []
+          return (
+            <div className="flex flex-col gap-0.5">
+              <span className="font-medium">{row.original.description}</span>
+              <TagChips tags={tags} />
+            </div>
+          )
+        },
         minSize: 160,
       },
       {
@@ -318,6 +487,8 @@ function ReceivablesPage() {
         id: 'status',
         header: 'Статус',
         enableSorting: false,
+        filterFn: statusFilterFn,
+        accessorFn: (row) => getIncomeStatus(row),
         cell: ({ row }) => {
           const { dueDate } = row.original
           if (!dueDate)
@@ -350,6 +521,24 @@ function ReceivablesPage() {
             >
               В срок
             </Badge>
+          )
+        },
+      },
+      {
+        id: 'tags',
+        enableSorting: false,
+        size: 40,
+        header: '',
+        cell: ({ row }) => {
+          const tags = tagsMap[row.original.id] ?? []
+          return (
+            <TagPicker
+              assignedTags={tags}
+              allTags={allTags}
+              onAdd={(tag) => handleTagAdd(row.original.id, tag)}
+              onRemove={(tag) => handleTagRemove(row.original.id, tag)}
+              onCreate={handleTagCreate}
+            />
           )
         },
       },
@@ -396,7 +585,7 @@ function ReceivablesPage() {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [router],
+    [router, tagsMap, allTags],
   )
 
   // ── Stats from all rows (before table filtering) ───────────────────────────
@@ -468,6 +657,9 @@ function ReceivablesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Tag summary panel */}
+      <TagSummaryPanel totals={tagTotals ?? []} />
     </>
   )
 }
@@ -490,9 +682,15 @@ function Toolbar({
     (table.getColumn('category')?.getFilterValue() as string) ?? ''
   const overdueOnly =
     (table.getColumn('dueDate')?.getFilterValue() as boolean) ?? false
+  const statusFilter =
+    (table.getColumn('status')?.getFilterValue() as IncomeStatus) ?? ''
 
   const hasFilters =
-    globalFilter || accountFilter || categoryFilter || overdueOnly
+    globalFilter ||
+    accountFilter ||
+    categoryFilter ||
+    overdueOnly ||
+    statusFilter
 
   const filteredRows = table.getFilteredRowModel().rows
   const filteredTotal = filteredRows.reduce(
@@ -559,6 +757,27 @@ function Toolbar({
                 {c.name}
               </SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+
+        {/* Status */}
+        <Select
+          value={statusFilter || '_all'}
+          onValueChange={(v) =>
+            table
+              .getColumn('status')
+              ?.setFilterValue(v === '_all' ? undefined : v)
+          }
+        >
+          <SelectTrigger className="h-8 w-40 text-sm">
+            <SelectValue placeholder="Все статусы" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="_all">Все статусы</SelectItem>
+            <SelectItem value="overdue">Просрочен</SelectItem>
+            <SelectItem value="soon">Скоро</SelectItem>
+            <SelectItem value="ontime">В срок</SelectItem>
+            <SelectItem value="nodate">Без срока</SelectItem>
           </SelectContent>
         </Select>
 

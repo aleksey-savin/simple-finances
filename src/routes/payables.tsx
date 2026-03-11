@@ -5,6 +5,7 @@ import { auth } from 'utils/auth'
 import { db } from '#/db'
 import {
   expense,
+  expenseTag,
   recurringRule,
   currentAccountUser,
   currentAccount,
@@ -55,6 +56,15 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
+import {
+  fetchTags,
+  createTag,
+  addExpenseTag,
+  removeExpenseTag,
+  fetchTagTotals,
+} from '#/routes/api/-tags'
+import { TagPicker, TagChips, type TagItem } from '#/components/ui/tag-picker'
+import { TagSummaryPanel } from '#/components/ui/tag-summary-panel'
 
 // ─── Normalised row shared by both tables ─────────────────────────────────────
 
@@ -75,6 +85,8 @@ export type ExpenseRow = {
   /** true  → virtual row generated from a recurring rule (not yet in DB) */
   isProjected: boolean
 }
+
+type TagsMap = Record<string, TagItem[]>
 
 // ─── Server functions ─────────────────────────────────────────────────────────
 
@@ -244,7 +256,100 @@ const fetchPayables = createServerFn().handler(async () => {
     catMap.set(r.category.id, r.category.name)
   const categories = [...catMap.entries()].map(([id, name]) => ({ id, name }))
 
-  return { currentMonth, previousUnpaid, accounts, categories, monthLabel }
+  // Fetch tags for all real expense ids
+  const realIds = [
+    ...realCurrentMonth.map((r) => r.id),
+    ...previousUnpaidRaw.map((r) => r.id),
+  ]
+
+  const expenseTagRows =
+    realIds.length > 0
+      ? await db.query.expenseTag.findMany({
+          where: inArray(expenseTag.expenseId, realIds),
+          with: { tag: true },
+        })
+      : []
+
+  const tagsMap: TagsMap = {}
+  for (const et of expenseTagRows) {
+    if (!tagsMap[et.expenseId]) tagsMap[et.expenseId] = []
+    tagsMap[et.expenseId].push({
+      id: et.tag.id,
+      name: et.tag.name,
+      color: et.tag.color,
+    })
+  }
+
+  const allTags = await db.query.tag.findMany({
+    orderBy: (t, { asc }) => asc(t.name),
+  })
+
+  const accountIdSet = new Set(accountIds)
+
+  // Build a lookup from expenseId -> expense record for amount lookups
+  const expenseById = new Map(
+    [...realCurrentMonth, ...previousUnpaidRaw].map((r) => [r.id, r]),
+  )
+
+  const allIncomeTags = await db.query.incomeTag.findMany({
+    with: {
+      income: {
+        columns: { amount: true, currentAccountId: true, paidAt: true },
+      },
+      tag: { columns: { id: true } },
+    },
+  })
+
+  const tagTotalsRaw = allTags.map((t) => {
+    const expenseTotal = expenseTagRows
+      .filter((et) => {
+        const exp = expenseById.get(et.expenseId)
+        return (
+          et.tag.id === t.id &&
+          exp !== undefined &&
+          accountIdSet.has(exp.currentAccountId)
+        )
+      })
+      .reduce((s, et) => {
+        const exp = expenseById.get(et.expenseId)
+        return s + Number(exp?.amount ?? 0)
+      }, 0)
+
+    const incomeTotal = allIncomeTags
+      .filter(
+        (it) =>
+          it.tag.id === t.id &&
+          accountIdSet.has(it.income.currentAccountId) &&
+          !it.income.paidAt,
+      )
+      .reduce((s, it) => s + Number(it.income.amount), 0)
+
+    return {
+      tag: { id: t.id, name: t.name, color: t.color },
+      expenseTotal,
+      incomeTotal,
+      net: incomeTotal - expenseTotal,
+    }
+  })
+
+  const tagTotals = tagTotalsRaw.filter(
+    (t) => t.expenseTotal > 0 || t.incomeTotal > 0,
+  )
+
+  return {
+    currentMonth,
+    previousUnpaid,
+    accounts,
+    categories,
+    monthLabel,
+    tagsMap,
+    allTags: allTags.map((t) => ({
+      id: t.id,
+      name: t.name,
+      color: t.color,
+    })),
+    tagTotals,
+  }
 })
 
 // ── Mark paid ──────────────────────────────────────────────────────────────────
@@ -324,6 +429,34 @@ const overdueFilterFn: FilterFn<ExpenseRow> = (row, _id, value: boolean) => {
   return getDueMeta(row.original.dueDate).isOverdue
 }
 overdueFilterFn.autoRemove = (v) => !v
+
+type ExpenseStatus =
+  | 'paid'
+  | 'projected'
+  | 'overdue'
+  | 'soon'
+  | 'ontime'
+  | 'nodate'
+
+function getExpenseStatus(row: ExpenseRow): ExpenseStatus {
+  if (row.isProjected) return 'projected'
+  if (row.paidAt) return 'paid'
+  if (!row.dueDate) return 'nodate'
+  const { isOverdue, daysLeft } = getDueMeta(row.dueDate)
+  if (isOverdue) return 'overdue'
+  if (daysLeft !== null && daysLeft <= 7) return 'soon'
+  return 'ontime'
+}
+
+const statusFilterFn: FilterFn<ExpenseRow> = (
+  row,
+  _id,
+  value: ExpenseStatus,
+) => {
+  if (!value) return true
+  return getExpenseStatus(row.original) === value
+}
+statusFilterFn.autoRemove = (v) => !v
 
 // ─── Status badge (shared by both tables) ────────────────────────────────────
 
@@ -466,6 +599,11 @@ function ActionButtons({
 function buildColumns(
   onMarkPaid: (row: ExpenseRow) => void,
   onDelete: (row: ExpenseRow) => void,
+  tagsMap: TagsMap,
+  allTags: TagItem[],
+  onTagAdd: (expenseId: string, tag: TagItem) => Promise<void>,
+  onTagRemove: (expenseId: string, tag: TagItem) => Promise<void>,
+  onTagCreate: (name: string, color: string) => Promise<TagItem>,
 ): ColumnDef<ExpenseRow, unknown>[] {
   return [
     {
@@ -474,20 +612,26 @@ function buildColumns(
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Описание" />
       ),
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2">
-          <span
-            className={`font-medium ${
-              row.original.isProjected ? 'text-muted-foreground' : ''
-            }`}
-          >
-            {row.original.description}
-          </span>
-          {row.original.isProjected && (
-            <Clock className="size-3.5 shrink-0 text-muted-foreground" />
-          )}
-        </div>
-      ),
+      cell: ({ row }) => {
+        const tags = tagsMap[row.original.id] ?? []
+        return (
+          <div className="flex flex-col gap-0.5">
+            <div className="flex items-center gap-2">
+              <span
+                className={`font-medium ${
+                  row.original.isProjected ? 'text-muted-foreground' : ''
+                }`}
+              >
+                {row.original.description}
+              </span>
+              {row.original.isProjected && (
+                <Clock className="size-3.5 shrink-0 text-muted-foreground" />
+              )}
+            </div>
+            <TagChips tags={tags} />
+          </div>
+        )
+      },
       minSize: 160,
     },
     {
@@ -566,8 +710,29 @@ function buildColumns(
     {
       id: 'status',
       enableSorting: false,
+      filterFn: statusFilterFn,
+      accessorFn: (row) => getExpenseStatus(row),
       header: 'Статус',
       cell: ({ row }) => <StatusBadge row={row.original} />,
+    },
+    {
+      id: 'tags',
+      enableSorting: false,
+      size: 40,
+      header: '',
+      cell: ({ row }) => {
+        if (row.original.isProjected) return null
+        const tags = tagsMap[row.original.id] ?? []
+        return (
+          <TagPicker
+            assignedTags={tags}
+            allTags={allTags}
+            onAdd={(tag) => onTagAdd(row.original.id, tag)}
+            onRemove={(tag) => onTagRemove(row.original.id, tag)}
+            onCreate={onTagCreate}
+          />
+        )
+      },
     },
     {
       id: 'actions',
@@ -606,9 +771,15 @@ function Toolbar({
     (table.getColumn('category')?.getFilterValue() as string) ?? ''
   const overdueOnly =
     (table.getColumn('dueDate')?.getFilterValue() as boolean) ?? false
+  const statusFilter =
+    (table.getColumn('status')?.getFilterValue() as ExpenseStatus) ?? ''
 
   const hasFilters =
-    globalFilter || accountFilter || categoryFilter || overdueOnly
+    globalFilter ||
+    accountFilter ||
+    categoryFilter ||
+    overdueOnly ||
+    statusFilter
 
   const filteredRows = table.getFilteredRowModel().rows
   const filteredTotal = filteredRows.reduce(
@@ -674,6 +845,28 @@ function Toolbar({
           </SelectContent>
         </Select>
 
+        <Select
+          value={statusFilter || '_all'}
+          onValueChange={(v) =>
+            table
+              .getColumn('status')
+              ?.setFilterValue(v === '_all' ? undefined : v)
+          }
+        >
+          <SelectTrigger className="h-8 w-40 text-sm">
+            <SelectValue placeholder="Все статусы" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="_all">Все статусы</SelectItem>
+            <SelectItem value="overdue">Просрочен</SelectItem>
+            <SelectItem value="soon">Скоро</SelectItem>
+            <SelectItem value="ontime">В срок</SelectItem>
+            <SelectItem value="nodate">Без срока</SelectItem>
+            <SelectItem value="paid">Оплачено</SelectItem>
+            <SelectItem value="projected">Запланировано</SelectItem>
+          </SelectContent>
+        </Select>
+
         <Button
           variant={overdueOnly ? 'destructive' : 'outline'}
           size="sm"
@@ -726,10 +919,79 @@ function Toolbar({
 
 function PayablesPage() {
   const router = useRouter()
-  const { currentMonth, previousUnpaid, accounts, categories, monthLabel } =
-    Route.useLoaderData()
+  const {
+    currentMonth,
+    previousUnpaid,
+    accounts,
+    categories,
+    monthLabel,
+    tagsMap: initialTagsMap,
+    allTags: initialAllTags,
+    tagTotals: initialTagTotals,
+  } = Route.useLoaderData()
+
+  // Local tag state (optimistic updates without full page reload)
+  const [tagsMap, setTagsMap] = useState<TagsMap>(initialTagsMap ?? {})
+  const [allTags, setAllTags] = useState<TagItem[]>(initialAllTags ?? [])
+  const [tagTotals, setTagTotals] = useState<
+    {
+      tag: { id: string; name: string; color: string }
+      expenseTotal: number
+      incomeTotal: number
+      net: number
+    }[]
+  >(initialTagTotals ?? [])
 
   const [deleteTarget, setDeleteTarget] = useState<ExpenseRow | null>(null)
+
+  // Refresh tag totals from server (called after any tag mutation)
+  const refreshTotals = async () => {
+    try {
+      const [totals, tags] = await Promise.all([fetchTagTotals(), fetchTags()])
+      setTagTotals(totals)
+      setAllTags(tags.map((t) => ({ id: t.id, name: t.name, color: t.color })))
+    } catch {
+      // ignore
+    }
+  }
+
+  const handleTagAdd = async (expenseId: string, tag: TagItem) => {
+    // Optimistic update
+    setTagsMap((prev) => ({
+      ...prev,
+      [expenseId]: [
+        ...(prev[expenseId] ?? []).filter((t) => t.id !== tag.id),
+        tag,
+      ],
+    }))
+    await addExpenseTag({ data: { expenseId, tagId: tag.id } })
+    await refreshTotals()
+  }
+
+  const handleTagRemove = async (expenseId: string, tag: TagItem) => {
+    setTagsMap((prev) => ({
+      ...prev,
+      [expenseId]: (prev[expenseId] ?? []).filter((t) => t.id !== tag.id),
+    }))
+    await removeExpenseTag({ data: { expenseId, tagId: tag.id } })
+    await refreshTotals()
+  }
+
+  const handleTagCreate = async (
+    name: string,
+    color: string,
+  ): Promise<TagItem> => {
+    const created = await createTag({ data: { name, color } })
+    const newTag: TagItem = {
+      id: created.id,
+      name: created.name,
+      color: created.color,
+    }
+    setAllTags((prev) =>
+      [...prev, newTag].sort((a, b) => a.name.localeCompare(b.name)),
+    )
+    return newTag
+  }
 
   const handleMarkPaid = async (row: ExpenseRow) => {
     try {
@@ -755,9 +1017,18 @@ function PayablesPage() {
   }
 
   const columns = useMemo(
-    () => buildColumns(handleMarkPaid, setDeleteTarget),
+    () =>
+      buildColumns(
+        handleMarkPaid,
+        setDeleteTarget,
+        tagsMap,
+        allTags,
+        handleTagAdd,
+        handleTagRemove,
+        handleTagCreate,
+      ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [router],
+    [router, tagsMap, allTags],
   )
 
   // ── Summary stats ──────────────────────────────────────────────────────────
@@ -916,6 +1187,8 @@ function PayablesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* ── Tag summary panel ─────────────────────────────────────────── */}
+      <TagSummaryPanel totals={tagTotals ?? []} />
     </>
   )
 }

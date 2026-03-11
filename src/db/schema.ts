@@ -10,6 +10,58 @@ import {
   unique,
 } from 'drizzle-orm/pg-core'
 
+export const tag = pgTable('tag', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  name: text('name').notNull().unique(),
+  color: text('color').notNull().default('#6366f1'),
+  createdBy: text('created_by')
+    .notNull()
+    .references(() => user.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+export const expenseTag = pgTable(
+  'expense_tag',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    expenseId: text('expense_id')
+      .notNull()
+      .references(() => expense.id, { onDelete: 'cascade' }),
+    tagId: text('tag_id')
+      .notNull()
+      .references(() => tag.id, { onDelete: 'cascade' }),
+  },
+  (table) => [
+    unique('expense_tag_unique').on(table.expenseId, table.tagId),
+    index('expense_tag_expense_idx').on(table.expenseId),
+    index('expense_tag_tag_idx').on(table.tagId),
+  ],
+)
+
+export const incomeTag = pgTable(
+  'income_tag',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    incomeId: text('income_id')
+      .notNull()
+      .references(() => income.id, { onDelete: 'cascade' }),
+    tagId: text('tag_id')
+      .notNull()
+      .references(() => tag.id, { onDelete: 'cascade' }),
+  },
+  (table) => [
+    unique('income_tag_unique').on(table.incomeId, table.tagId),
+    index('income_tag_income_idx').on(table.incomeId),
+    index('income_tag_tag_idx').on(table.tagId),
+  ],
+)
+
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
@@ -247,6 +299,33 @@ export const recurringRule = pgTable('recurring_rule', {
 
 // ─── Relations ────────────────────────────────────────────────────────────────
 
+export const tagRelations = relations(tag, ({ many }) => ({
+  expenseTags: many(expenseTag),
+  incomeTags: many(incomeTag),
+}))
+
+export const expenseTagRelations = relations(expenseTag, ({ one }) => ({
+  expense: one(expense, {
+    fields: [expenseTag.expenseId],
+    references: [expense.id],
+  }),
+  tag: one(tag, {
+    fields: [expenseTag.tagId],
+    references: [tag.id],
+  }),
+}))
+
+export const incomeTagRelations = relations(incomeTag, ({ one }) => ({
+  income: one(income, {
+    fields: [incomeTag.incomeId],
+    references: [income.id],
+  }),
+  tag: one(tag, {
+    fields: [incomeTag.tagId],
+    references: [tag.id],
+  }),
+}))
+
 export const userRelations = relations(user, ({ many }) => ({
   currentAccountUsers: many(currentAccountUser),
 }))
@@ -279,7 +358,8 @@ export const currentAccountUserRelations = relations(
   }),
 )
 
-export const expenseRelations = relations(expense, ({ one }) => ({
+export const expenseRelations = relations(expense, ({ one, many }) => ({
+  tags: many(expenseTag),
   category: one(category, {
     fields: [expense.categoryId],
     references: [category.id],
@@ -294,7 +374,8 @@ export const expenseRelations = relations(expense, ({ one }) => ({
   }),
 }))
 
-export const incomeRelations = relations(income, ({ one }) => ({
+export const incomeRelations = relations(income, ({ one, many }) => ({
+  tags: many(incomeTag),
   category: one(category, {
     fields: [income.categoryId],
     references: [category.id],
