@@ -44,7 +44,7 @@ export function LoginForm({
         {
           email: value.email,
           password: value.password,
-          callbackURL: '/',
+          callbackURL: '/movements',
         },
         {
           onSuccess: () => {

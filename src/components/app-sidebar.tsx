@@ -21,7 +21,7 @@ const navMain = [
     items: [
       {
         title: 'Движение средств',
-        url: '/',
+        url: '/movements',
       },
       {
         title: 'Запланированные платежи',

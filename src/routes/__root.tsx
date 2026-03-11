@@ -7,8 +7,6 @@ import {
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 
-import StoreDevtools from '../lib/demo-store-devtools'
-
 import TanStackQueryProvider from '../integrations/tanstack-query/root-provider'
 
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
@@ -18,8 +16,17 @@ import appCss from '../styles.css?url'
 import type { QueryClient } from '@tanstack/react-query'
 import { TooltipProvider } from '#/components/ui/tooltip'
 import { AppSidebar } from '#/components/app-sidebar'
-import { SidebarProvider } from '#/components/ui/sidebar'
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from '#/components/ui/sidebar'
 import { authMiddleware } from 'utils/middleware'
+import { authClient } from 'utils/auth-client'
+import { Separator } from '#/components/ui/separator'
+import { AppBreadcrumb } from '#/components/app-breadcrumb'
+import { ModeToggle } from '#/components/mode-toggle'
+import { ThemeProvider } from '#/components/theme-provider'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -71,6 +78,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const { data: session, isPending } = authClient.useSession()
   return (
     <html lang="ru" suppressHydrationWarning>
       <head>
@@ -79,14 +87,37 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <TanStackQueryProvider>
-          <TooltipProvider>
-            <SidebarProvider>
-              <AppSidebar />
-              <main className="container flex flex-col gap-4 px-4 pb-8 pt-14">
-                {children}
-              </main>
-            </SidebarProvider>
-          </TooltipProvider>
+          <ThemeProvider>
+            <TooltipProvider>
+              {isPending ? null : session?.user ? (
+                <SidebarProvider>
+                  <AppSidebar />
+                  <SidebarInset>
+                    <header
+                      className={`flex h-16 shrink-0 items-center gap-2 border-b px-4 justify-between`}
+                    >
+                      <div className="flex gap-4 items-center">
+                        <SidebarTrigger className="-ml-1" />
+                        <Separator
+                          orientation="vertical"
+                          className="mr-2 data-[orientation=vertical]:h-4"
+                        />
+                        <AppBreadcrumb />
+                      </div>
+                      <ModeToggle />
+                    </header>
+                    <div className="flex flex-col gap-4 p-8">{children}</div>
+                  </SidebarInset>
+
+                  {/* <main className="container flex flex-col gap-4 px-4 pb-8 pt-14">
+                  {children}
+                </main> */}
+                </SidebarProvider>
+              ) : (
+                <>{children}</>
+              )}
+            </TooltipProvider>
+          </ThemeProvider>
 
           <TanStackDevtools
             config={{
@@ -97,7 +128,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                 name: 'Tanstack Router',
                 render: <TanStackRouterDevtoolsPanel />,
               },
-              StoreDevtools,
               TanStackQueryDevtools,
             ]}
           />

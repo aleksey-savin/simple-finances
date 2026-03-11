@@ -4,6 +4,27 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* --------------------------------------------------------------------------
+   Department accent tint — applied to the sidebar when a dept is selected.
+   Uses background-image layered over the existing background-color so the
+   sidebar colour is preserved and only a subtle tint is added on top.
+   --dept-accent is set as an inline CSS variable by AppSidebar.
+   -------------------------------------------------------------------------- */
+.sidebar-dept-accent {
+  background-image: linear-gradient(
+    color-mix(in srgb, var(--dept-accent) 13%, transparent),
+    color-mix(in srgb, var(--dept-accent) 13%, transparent)
+  );
+  transition: background-image 0.3s ease;
+}
+
+.dark .sidebar-dept-accent {
+  background-image: linear-gradient(
+    color-mix(in srgb, var(--dept-accent) 9%, transparent),
+    color-mix(in srgb, var(--dept-accent) 9%, transparent)
+  );
+}
+
 /* Header accent tint — applied to the top bar when a dept is selected */
 .header-dept-accent {
   background-image: linear-gradient(
