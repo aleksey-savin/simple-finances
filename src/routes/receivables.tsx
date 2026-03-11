@@ -595,18 +595,7 @@ function ReceivablesPage() {
   return (
     <>
       {/* Page header */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <TrendingUp className="size-5 text-green-600" />
-            <h1 className="text-2xl font-semibold">
-              Дебиторская задолженность
-            </h1>
-          </div>
-          <p className="text-sm text-muted-foreground mt-1">
-            Неполученные доходы — должны нам
-          </p>
-        </div>
+      <div className="flex flex-wrap items-start justify-end gap-4">
         <div className="flex gap-3">
           <div className="rounded-lg border px-4 py-2 text-sm">
             <p className="text-muted-foreground">Всего к получению</p>

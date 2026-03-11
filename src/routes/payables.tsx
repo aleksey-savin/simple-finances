@@ -1053,17 +1053,7 @@ function PayablesPage() {
   return (
     <>
       {/* ── Page header ──────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <TrendingDown className="size-5 text-red-500" />
-            <h1 className="text-2xl font-semibold">Платежи и обязательства</h1>
-          </div>
-          <p className="text-sm text-muted-foreground mt-1">
-            Расходы текущего месяца и неоплаченные за прошлые периоды
-          </p>
-        </div>
-
+      <div className="flex flex-wrap items-start justify-end gap-4">
         {/* Stat cards */}
         <div className="flex flex-wrap gap-3">
           <div className="rounded-lg border px-4 py-2 text-sm min-w-35">
@@ -1105,15 +1095,6 @@ function PayablesPage() {
       {/* ── Current month ─────────────────────────────────────────────────── */}
       <section className="flex flex-col gap-4">
         <div className="flex items-center gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <Calendar className="size-4 text-muted-foreground" />
-              <h2 className="text-lg font-semibold capitalize">{monthLabel}</h2>
-            </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Все расходы месяца + запланированные по расписанию
-            </p>
-          </div>
           {projectedCount > 0 && (
             <Badge variant="outline" className="text-xs gap-1 h-6">
               <Clock className="size-3" />

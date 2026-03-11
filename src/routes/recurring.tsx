@@ -235,13 +235,7 @@ function RecurringPage() {
   return (
     <>
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Запланированные платежи</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Автоматическое создание доходов и расходов по расписанию
-          </p>
-        </div>
+      <div className="flex items-center justify-end">
         <Button onClick={() => setDialogTarget('new')}>
           <PlusCircle className="size-4" />
           Добавить правило
