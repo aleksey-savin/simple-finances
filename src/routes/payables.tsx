@@ -12,6 +12,7 @@ import {
 } from '#/db/schema'
 import { and, eq, gte, inArray, isNull, lt, lte } from 'drizzle-orm'
 import { useMemo, useState } from 'react'
+import { useSyncAppData } from '@/hooks/use-sync-app-data'
 import { toast } from 'sonner'
 import z from 'zod'
 import { Cron } from 'croner'
@@ -46,16 +47,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '#/components/ui/tooltip'
-import {
-  AlertTriangle,
-  Calendar,
-  Circle,
-  Clock,
-  Search,
-  TrendingDown,
-  Trash2,
-  X,
-} from 'lucide-react'
+import { AlertTriangle, Circle, Clock, Search, Trash2, X } from 'lucide-react'
 import {
   fetchTags,
   createTag,
@@ -924,11 +916,11 @@ function PayablesPage() {
     previousUnpaid,
     accounts,
     categories,
-    monthLabel,
     tagsMap: initialTagsMap,
     allTags: initialAllTags,
     tagTotals: initialTagTotals,
   } = Route.useLoaderData()
+  useSyncAppData({ accounts, categories })
 
   // Local tag state (optimistic updates without full page reload)
   const [tagsMap, setTagsMap] = useState<TagsMap>(initialTagsMap ?? {})

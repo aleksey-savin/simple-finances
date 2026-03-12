@@ -11,6 +11,7 @@ import {
 } from '#/db/schema'
 import { eq, inArray, isNull } from 'drizzle-orm'
 import { useMemo, useState } from 'react'
+import { useSyncAppData } from '@/hooks/use-sync-app-data'
 import { toast } from 'sonner'
 import z from 'zod'
 import {
@@ -44,14 +45,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '#/components/ui/tooltip'
-import {
-  Circle,
-  Search,
-  Trash2,
-  TrendingUp,
-  AlertTriangle,
-  X,
-} from 'lucide-react'
+import { Circle, Search, Trash2, AlertTriangle, X } from 'lucide-react'
 import {
   fetchTags,
   fetchTagTotals,
@@ -289,6 +283,7 @@ function ReceivablesPage() {
     allTags: initialAllTags,
     tagTotals: initialTagTotals,
   } = Route.useLoaderData()
+  useSyncAppData({ accounts, categories })
 
   const [tagsMap, setTagsMap] = useState<TagsMap>(initialTagsMap ?? {})
   const [allTags, setAllTags] = useState<TagItem[]>(initialAllTags ?? [])

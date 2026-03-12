@@ -15,18 +15,12 @@ import appCss from '../styles.css?url'
 
 import type { QueryClient } from '@tanstack/react-query'
 import { TooltipProvider } from '#/components/ui/tooltip'
-import { AppSidebar } from '#/components/app-sidebar'
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from '#/components/ui/sidebar'
+import { AppSidebar } from '#/components/layout/app-sidebar'
+import { SidebarInset, SidebarProvider } from '#/components/ui/sidebar'
 import { authMiddleware } from 'utils/middleware'
 import { authClient } from 'utils/auth-client'
-import { Separator } from '#/components/ui/separator'
-import { AppBreadcrumb } from '#/components/app-breadcrumb'
-import { ModeToggle } from '#/components/mode-toggle'
 import { ThemeProvider } from '#/components/theme-provider'
+import { AppHeader } from '#/components/layout/app-header'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -93,19 +87,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                 <SidebarProvider>
                   <AppSidebar />
                   <SidebarInset>
-                    <header
-                      className={`flex h-16 shrink-0 items-center gap-2 border-b px-4 justify-between`}
-                    >
-                      <div className="flex gap-4 items-center">
-                        <SidebarTrigger className="-ml-1" />
-                        <Separator
-                          orientation="vertical"
-                          className="mr-2 data-[orientation=vertical]:h-4"
-                        />
-                        <AppBreadcrumb />
-                      </div>
-                      <ModeToggle />
-                    </header>
+                    <AppHeader />
                     <div className="flex flex-col gap-4 p-8">{children}</div>
                   </SidebarInset>
 

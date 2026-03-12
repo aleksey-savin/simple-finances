@@ -19,20 +19,39 @@ const ROUTE_LABELS: Record<string, { label: string; showAddButton: boolean }> =
     users: { label: 'Пользователи', showAddButton: true },
   }
 
-export function AppBreadcrumb() {
+// Context-aware labels for known child segments.
+// Keyed by parent segment → child segment → label string.
+const CHILD_LABELS: Record<string, Record<string, string>> = {
+  recurring: {
+    new: 'Новое правило',
+    edit: 'Редактировать правило',
+  },
+  users: {
+    new: 'Новый пользователь',
+  },
+}
+
+export function AppBreadCrumbs() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const matches = useMatches()
 
   const allSegments = pathname.split('/').filter(Boolean)
 
-  // Only include segments that have a known label — stop at the first dynamic
-  // param (UUID, numeric ID) or action word (new, update, delete, …).
-  // This prevents dialog/modal routes from appearing in the breadcrumb while
-  // staying flexible: just add an entry to ROUTE_LABELS for any new real page.
+  // Walk path segments and collect those we can label.
+  // Stop at the first segment that is neither a known top-level route nor a
+  // known child of the previous segment (e.g. a raw UUID param).
   const segments: string[] = []
   for (const seg of allSegments) {
-    if (!(seg in ROUTE_LABELS)) break
-    segments.push(seg)
+    if (seg in ROUTE_LABELS) {
+      segments.push(seg)
+    } else {
+      const parent = segments[segments.length - 1]
+      if (parent && CHILD_LABELS[parent]?.[seg] !== undefined) {
+        segments.push(seg)
+        break // nothing navigable can come after a terminal child segment
+      }
+      break
+    }
   }
 
   if (segments.length === 0) return null
@@ -48,17 +67,32 @@ export function AppBreadcrumb() {
   // Get entity name for view pages
   let entityName = ''
   if (isViewPage && loaderData) {
-    // Special case for clients - use company.name
     if (lastSegment === 'clients' || lastSegment === 'wishlist') {
       entityName = loaderData.company?.name || ''
     } else {
-      // For all other entities - use entity.name
       entityName = loaderData.name || ''
     }
   }
 
-  // Check if the last segment should show an add button
-  const showAddButton = ROUTE_LABELS[lastSegment]?.showAddButton ?? false
+  // Resolve a display label for any segment, using parent context when needed.
+  const getLabel = (segment: string, index: number): string => {
+    if (segment in ROUTE_LABELS) {
+      return ROUTE_LABELS[segment].label
+    }
+    const parent = segments[index - 1]
+    if (parent) {
+      return CHILD_LABELS[parent]?.[segment] ?? segment
+    }
+    return segment
+  }
+
+  // The + button is only shown on a root entity page (last segment is a top-level
+  // route) that has showAddButton enabled.
+  const showAddButton =
+    !isViewPage &&
+    segments.length > 0 &&
+    lastSegment in ROUTE_LABELS &&
+    (ROUTE_LABELS[lastSegment]?.showAddButton ?? false)
 
   return (
     <div className="flex items-center">
@@ -66,7 +100,7 @@ export function AppBreadcrumb() {
         <BreadcrumbList>
           {segments.map((segment, index) => {
             const href = '/' + segments.slice(0, index + 1).join('/')
-            const label = ROUTE_LABELS[segment]?.label ?? segment
+            const label = getLabel(segment, index)
             const isLast = index === segments.length - 1
 
             return (
@@ -93,8 +127,8 @@ export function AppBreadcrumb() {
             )
           })}
 
-          {/* Show Add button on root entity pages like /clients or /users */}
-          {!isViewPage && segments.length > 0 && showAddButton && (
+          {/* Show Add button on root entity pages like /recurring or /users */}
+          {showAddButton && (
             <BreadcrumbItem>
               <Button asChild size="sm" className="gap-2 ml-2">
                 <Link to={`/${lastSegment}/new` as any}>

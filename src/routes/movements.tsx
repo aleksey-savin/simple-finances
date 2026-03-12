@@ -1,5 +1,3 @@
-import Accounts from '#/components/accounts'
-import Categories from '#/components/categories/sheet'
 import { ExpenseForm } from '#/components/expenses'
 import { IncomeForm } from '#/components/income'
 import { Badge } from '#/components/ui/badge'
@@ -47,6 +45,7 @@ import {
   X,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { useSyncAppData } from '@/hooks/use-sync-app-data'
 import { toast } from 'sonner'
 import z from 'zod'
 
@@ -152,6 +151,7 @@ export const Route = createFileRoute('/movements')({
 function App() {
   const router = useRouter()
   const { expenses, incomes, categories, accounts } = Route.useLoaderData()
+  useSyncAppData({ accounts, categories })
 
   const feed = [
     ...expenses.map((e) => ({ ...e, type: 'expense' as const })),
@@ -270,10 +270,7 @@ function App() {
             <PlusCircle /> Расход
           </Button>
         </div>
-        <div className="flex gap-4">
-          <Accounts accounts={accounts} />
-          <Categories categories={categories} />
-        </div>
+        <div className="flex gap-4"></div>
       </div>
       {/* ── Filter bar ─────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-2">

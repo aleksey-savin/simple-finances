@@ -18,10 +18,12 @@ import { Route as MovementsRouteImport } from './routes/movements'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UsersNewRouteImport } from './routes/users.new'
+import { Route as RecurringNewRouteImport } from './routes/recurring.new'
 import { Route as UsersIdUpdateRouteImport } from './routes/users.$id.update'
 import { Route as UsersIdUnbanRouteImport } from './routes/users.$id.unban'
 import { Route as UsersIdDeleteRouteImport } from './routes/users.$id.delete'
 import { Route as UsersIdBanRouteImport } from './routes/users.$id.ban'
+import { Route as RecurringIdEditRouteImport } from './routes/recurring.$id.edit'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const UsersRoute = UsersRouteImport.update({
@@ -69,6 +71,11 @@ const UsersNewRoute = UsersNewRouteImport.update({
   path: '/new',
   getParentRoute: () => UsersRoute,
 } as any)
+const RecurringNewRoute = RecurringNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => RecurringRoute,
+} as any)
 const UsersIdUpdateRoute = UsersIdUpdateRouteImport.update({
   id: '/$id/update',
   path: '/$id/update',
@@ -89,6 +96,11 @@ const UsersIdBanRoute = UsersIdBanRouteImport.update({
   path: '/$id/ban',
   getParentRoute: () => UsersRoute,
 } as any)
+const RecurringIdEditRoute = RecurringIdEditRouteImport.update({
+  id: '/$id/edit',
+  path: '/$id/edit',
+  getParentRoute: () => RecurringRoute,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -101,11 +113,13 @@ export interface FileRoutesByFullPath {
   '/movements': typeof MovementsRoute
   '/payables': typeof PayablesRoute
   '/receivables': typeof ReceivablesRoute
-  '/recurring': typeof RecurringRoute
+  '/recurring': typeof RecurringRouteWithChildren
   '/signup': typeof SignupRoute
   '/users': typeof UsersRouteWithChildren
+  '/recurring/new': typeof RecurringNewRoute
   '/users/new': typeof UsersNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/recurring/$id/edit': typeof RecurringIdEditRoute
   '/users/$id/ban': typeof UsersIdBanRoute
   '/users/$id/delete': typeof UsersIdDeleteRoute
   '/users/$id/unban': typeof UsersIdUnbanRoute
@@ -117,11 +131,13 @@ export interface FileRoutesByTo {
   '/movements': typeof MovementsRoute
   '/payables': typeof PayablesRoute
   '/receivables': typeof ReceivablesRoute
-  '/recurring': typeof RecurringRoute
+  '/recurring': typeof RecurringRouteWithChildren
   '/signup': typeof SignupRoute
   '/users': typeof UsersRouteWithChildren
+  '/recurring/new': typeof RecurringNewRoute
   '/users/new': typeof UsersNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/recurring/$id/edit': typeof RecurringIdEditRoute
   '/users/$id/ban': typeof UsersIdBanRoute
   '/users/$id/delete': typeof UsersIdDeleteRoute
   '/users/$id/unban': typeof UsersIdUnbanRoute
@@ -134,11 +150,13 @@ export interface FileRoutesById {
   '/movements': typeof MovementsRoute
   '/payables': typeof PayablesRoute
   '/receivables': typeof ReceivablesRoute
-  '/recurring': typeof RecurringRoute
+  '/recurring': typeof RecurringRouteWithChildren
   '/signup': typeof SignupRoute
   '/users': typeof UsersRouteWithChildren
+  '/recurring/new': typeof RecurringNewRoute
   '/users/new': typeof UsersNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/recurring/$id/edit': typeof RecurringIdEditRoute
   '/users/$id/ban': typeof UsersIdBanRoute
   '/users/$id/delete': typeof UsersIdDeleteRoute
   '/users/$id/unban': typeof UsersIdUnbanRoute
@@ -155,8 +173,10 @@ export interface FileRouteTypes {
     | '/recurring'
     | '/signup'
     | '/users'
+    | '/recurring/new'
     | '/users/new'
     | '/api/auth/$'
+    | '/recurring/$id/edit'
     | '/users/$id/ban'
     | '/users/$id/delete'
     | '/users/$id/unban'
@@ -171,8 +191,10 @@ export interface FileRouteTypes {
     | '/recurring'
     | '/signup'
     | '/users'
+    | '/recurring/new'
     | '/users/new'
     | '/api/auth/$'
+    | '/recurring/$id/edit'
     | '/users/$id/ban'
     | '/users/$id/delete'
     | '/users/$id/unban'
@@ -187,8 +209,10 @@ export interface FileRouteTypes {
     | '/recurring'
     | '/signup'
     | '/users'
+    | '/recurring/new'
     | '/users/new'
     | '/api/auth/$'
+    | '/recurring/$id/edit'
     | '/users/$id/ban'
     | '/users/$id/delete'
     | '/users/$id/unban'
@@ -201,7 +225,7 @@ export interface RootRouteChildren {
   MovementsRoute: typeof MovementsRoute
   PayablesRoute: typeof PayablesRoute
   ReceivablesRoute: typeof ReceivablesRoute
-  RecurringRoute: typeof RecurringRoute
+  RecurringRoute: typeof RecurringRouteWithChildren
   SignupRoute: typeof SignupRoute
   UsersRoute: typeof UsersRouteWithChildren
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
@@ -272,6 +296,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UsersNewRouteImport
       parentRoute: typeof UsersRoute
     }
+    '/recurring/new': {
+      id: '/recurring/new'
+      path: '/new'
+      fullPath: '/recurring/new'
+      preLoaderRoute: typeof RecurringNewRouteImport
+      parentRoute: typeof RecurringRoute
+    }
     '/users/$id/update': {
       id: '/users/$id/update'
       path: '/$id/update'
@@ -300,6 +331,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UsersIdBanRouteImport
       parentRoute: typeof UsersRoute
     }
+    '/recurring/$id/edit': {
+      id: '/recurring/$id/edit'
+      path: '/$id/edit'
+      fullPath: '/recurring/$id/edit'
+      preLoaderRoute: typeof RecurringIdEditRouteImport
+      parentRoute: typeof RecurringRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -309,6 +347,20 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface RecurringRouteChildren {
+  RecurringNewRoute: typeof RecurringNewRoute
+  RecurringIdEditRoute: typeof RecurringIdEditRoute
+}
+
+const RecurringRouteChildren: RecurringRouteChildren = {
+  RecurringNewRoute: RecurringNewRoute,
+  RecurringIdEditRoute: RecurringIdEditRoute,
+}
+
+const RecurringRouteWithChildren = RecurringRoute._addFileChildren(
+  RecurringRouteChildren,
+)
 
 interface UsersRouteChildren {
   UsersNewRoute: typeof UsersNewRoute
@@ -334,7 +386,7 @@ const rootRouteChildren: RootRouteChildren = {
   MovementsRoute: MovementsRoute,
   PayablesRoute: PayablesRoute,
   ReceivablesRoute: ReceivablesRoute,
-  RecurringRoute: RecurringRoute,
+  RecurringRoute: RecurringRouteWithChildren,
   SignupRoute: SignupRoute,
   UsersRoute: UsersRouteWithChildren,
   ApiAuthSplatRoute: ApiAuthSplatRoute,

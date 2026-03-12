@@ -1,10 +1,11 @@
-import type { RuleWithRelations } from '#/routes/recurring'
+import type { RuleWithRelations } from './types'
+import { DeleteRule } from './delete'
 import { CRON_PRESETS } from '#/components/reccuring/constants'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Switch } from '#/components/ui/switch'
 import { Item, ItemContent, ItemFooter, ItemHeader } from '#/components/ui/item'
-import { Calendar, Clock, PenLine, Trash2 } from 'lucide-react'
+import { Calendar, Clock, PenLine } from 'lucide-react'
 import { Separator } from '../ui/separator'
 
 function getCronLabel(expr: string): string {
@@ -37,12 +38,10 @@ function pluralDays(n: number): string {
 export const RuleCard = ({
   rule,
   onEdit,
-  onDelete,
   onToggle,
 }: {
   rule: RuleWithRelations
   onEdit: () => void
-  onDelete: () => void
   onToggle: (v: boolean) => void
 }) => {
   const isExpense = rule.type === 'expense'
@@ -69,7 +68,7 @@ export const RuleCard = ({
       <ItemContent className="flex flex-row items-center justify-between">
         <div className="flex flex-col gap-2">
           {/* Category & account */}
-          <div className="flex flex-wrap text-xs">
+          <div className="flex flex-wrap gap-1 text-xs">
             <span className="rounded bg-muted px-1.5 py-0.5">
               {rule.category.name}
             </span>
@@ -89,7 +88,7 @@ export const RuleCard = ({
             <div className="flex items-center text-sm gap-1.5">
               <Calendar className="size-3.5 shrink-0" />
               <span>
-                Срок оплаты: {rule.dueDaysFromCreation}
+                Срок оплаты: {rule.dueDaysFromCreation}{' '}
                 {pluralDays(rule.dueDaysFromCreation)} от создания
               </span>
             </div>
@@ -108,15 +107,13 @@ export const RuleCard = ({
           </div>
         </div>
 
-        <div>
-          {/* Amount */}
-          <div className="text-xl font-semibold tabular-nums">
-            {Number(rule.amount).toLocaleString('ru-RU', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}{' '}
-            ₽
-          </div>
+        {/* Amount */}
+        <div className="text-xl font-semibold tabular-nums shrink-0">
+          {Number(rule.amount).toLocaleString('ru-RU', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}{' '}
+          ₽
         </div>
       </ItemContent>
 
@@ -132,15 +129,7 @@ export const RuleCard = ({
           <PenLine className="size-3.5" />
           Изменить
         </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="gap-1.5 text-destructive hover:text-destructive"
-          onClick={onDelete}
-        >
-          <Trash2 className="size-3.5" />
-          Удалить
-        </Button>
+        <DeleteRule rule={rule} />
       </ItemFooter>
     </Item>
   )
