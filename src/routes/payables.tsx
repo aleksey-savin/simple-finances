@@ -711,6 +711,11 @@ function buildColumns(
       id: 'tags',
       enableSorting: false,
       size: 40,
+      accessorFn: (row) => (tagsMap[row.id] ?? []).map((t) => t.id).join(','),
+      filterFn: (row, _id, value: string) => {
+        if (!value) return true
+        return (tagsMap[row.original.id] ?? []).some((t) => t.id === value)
+      },
       header: '',
       cell: ({ row }) => {
         if (row.original.isProjected) return null
@@ -749,11 +754,13 @@ function Toolbar({
   table,
   accounts,
   categories,
+  allTags,
   accentColor = 'red',
 }: {
   table: Table<ExpenseRow>
   accounts: { id: string; name: string }[]
   categories: { id: string; name: string }[]
+  allTags: TagItem[]
   accentColor?: 'red' | 'orange'
 }) {
   const globalFilter = (table.getState().globalFilter as string) ?? ''
@@ -765,13 +772,15 @@ function Toolbar({
     (table.getColumn('dueDate')?.getFilterValue() as boolean) ?? false
   const statusFilter =
     (table.getColumn('status')?.getFilterValue() as ExpenseStatus) ?? ''
+  const tagFilter = (table.getColumn('tags')?.getFilterValue() as string) ?? ''
 
   const hasFilters =
     globalFilter ||
     accountFilter ||
     categoryFilter ||
     overdueOnly ||
-    statusFilter
+    statusFilter ||
+    tagFilter
 
   const filteredRows = table.getFilteredRowModel().rows
   const filteredTotal = filteredRows.reduce(
@@ -858,6 +867,35 @@ function Toolbar({
             <SelectItem value="projected">Запланировано</SelectItem>
           </SelectContent>
         </Select>
+
+        {allTags.length > 0 && (
+          <Select
+            value={tagFilter || '_all'}
+            onValueChange={(v) =>
+              table
+                .getColumn('tags')
+                ?.setFilterValue(v === '_all' ? undefined : v)
+            }
+          >
+            <SelectTrigger className="h-8 w-44 text-sm">
+              <SelectValue placeholder="Все теги" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_all">Все теги</SelectItem>
+              {allTags.map((t) => (
+                <SelectItem key={t.id} value={t.id}>
+                  <span className="flex items-center gap-1.5">
+                    <span
+                      className="inline-block size-2 rounded-full shrink-0"
+                      style={{ backgroundColor: t.color }}
+                    />
+                    {t.name}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
 
         <Button
           variant={overdueOnly ? 'destructive' : 'outline'}
@@ -1104,6 +1142,7 @@ function PayablesPage() {
               table={table}
               accounts={accounts}
               categories={categories}
+              allTags={allTags}
               accentColor="red"
             />
           )}
@@ -1131,6 +1170,7 @@ function PayablesPage() {
                 table={table}
                 accounts={accounts}
                 categories={categories}
+                allTags={allTags}
                 accentColor="orange"
               />
             )}
