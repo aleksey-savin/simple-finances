@@ -5,3 +5,20 @@ Use the latest version of Shadcn to install new components, like this command to
 ```bash
 pnpm dlx shadcn@latest add button
 ```
+
+# drizzle entities and types
+
+When creating new entities always add raw DB types (Select / Insert / Update) in `db/types.ts`.
+
+# domain / view types
+
+Composed types that extend or pick from DB types (e.g. with extra fields like `role`, nested relations, or picked subsets) belong in `src/types.ts`. Do NOT put them in the store or in component files.
+
+# server functions
+
+- **Components** – all `createServerFn` calls live in `actions.server.ts` inside the component's feature folder (e.g. `src/components/accounts/actions.server.ts`). Plain async helper functions called only from within server handlers (e.g. `requireOwner`) also live there — no need to wrap them in `createServerFn`.
+- **Routes** – all `createServerFn` calls live in a sibling `*.server.ts` file next to the route (e.g. `src/routes/movements.server.ts`). If multiple child routes share a loader (e.g. `users.$id.ban.tsx`, `users.$id.delete.tsx`), extract it to a shared `users.$id.server.ts`.
+
+# standard components rules
+
+1. If adding Delete component, use `entityId` prop instead of `entity` prop, do not pass the whole entity object.

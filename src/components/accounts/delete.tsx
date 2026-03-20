@@ -1,34 +1,18 @@
-import { eq } from 'drizzle-orm'
 import { Trash2 } from 'lucide-react'
 
 import { useRouter } from '@tanstack/react-router'
-import { createServerFn } from '@tanstack/react-start'
-import { toast } from 'sonner'
-import z from 'zod'
 
-import { db } from '#/db'
-import { currentAccount } from '#/db/schema'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 
-type Account = {
-  id: string
-  name: string
-}
+import { deleteAccount } from './actions'
 
-const deleteAccountSchema = z.object({ id: z.string() })
-
-const deleteAccount = createServerFn({ method: 'POST' })
-  .inputValidator(deleteAccountSchema)
-  .handler(async ({ data }) => {
-    await db.delete(currentAccount).where(eq(currentAccount.id, data.id))
-  })
-
-export const DeleteAccount = ({ account }: { account: Account }) => {
+export const DeleteAccount = ({ accountId }: { accountId: string }) => {
   const router = useRouter()
   const handleDelete = async () => {
     try {
-      await deleteAccount({ data: { id: account.id } })
+      await deleteAccount({ data: { id: accountId } })
       await router.invalidate()
       toast.success('Счёт удалён')
     } catch (e) {

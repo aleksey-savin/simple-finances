@@ -1,17 +1,17 @@
 import z from 'zod'
 import type { ReactFormExtendedApi } from '@tanstack/react-form'
-import { CRON_PRESETS } from '#/components/reccuring/constants'
-import { Button } from '#/components/ui/button'
-import { DialogFooter } from '#/components/ui/dialog'
-import { Field, FieldError, FieldLabel } from '#/components/ui/field'
-import { Input } from '#/components/ui/input'
+import { CRON_PRESETS } from '@/components/reccuring/constants'
+import { Button } from '@/components/ui/button'
+import { DialogFooter } from '@/components/ui/dialog'
+import { Field, FieldError, FieldLabel } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '#/components/ui/select'
+} from '@/components/ui/select'
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -20,6 +20,7 @@ export const ruleFormSchema = z.object({
   amount: z.string().refine((v) => !isNaN(+v) && +v >= 0.01, 'Минимум 0.01'),
   description: z.string().min(2, 'Минимум 2 символа'),
   categoryId: z.string().min(1, 'Выберите категорию'),
+  counterpartyId: z.string(),
   currentAccountId: z.string().min(1, 'Выберите счёт'),
   cronPreset: z.string(),
   cronCustom: z.string(),
@@ -53,6 +54,7 @@ export const RecurringForm = ({
   form,
   categories,
   accounts,
+  counterparties,
   isEdit,
   onClose,
 }: {
@@ -64,6 +66,7 @@ export const RecurringForm = ({
     useForIncome: boolean
   }[]
   accounts: { id: string; name: string }[]
+  counterparties: { id: string; name: string }[]
   isEdit: boolean
   onClose: () => void
 }) => {
@@ -193,6 +196,38 @@ export const RecurringForm = ({
         )}
       </form.Subscribe>
 
+      <form.Subscribe selector={(s) => s.values.type}>
+        {(type) =>
+          type === 'expense' ? (
+            <form.Field name="counterpartyId">
+              {(field) => (
+                <Field>
+                  <FieldLabel>Контрагент</FieldLabel>
+                  <Select
+                    value={field.state.value || '__none__'}
+                    onValueChange={(v) =>
+                      field.handleChange(v === '__none__' ? '' : v)
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Выберите получателя (необязательно)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">Не указан</SelectItem>
+                      {counterparties.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
+            </form.Field>
+          ) : null
+        }
+      </form.Subscribe>
+
       {/* Account */}
       <form.Field name="currentAccountId">
         {(field) => {
@@ -263,7 +298,7 @@ export const RecurringForm = ({
                     <FieldLabel htmlFor={field.name}>
                       Cron-выражение{' '}
                       <span className="text-xs text-muted-foreground font-normal">
-                        (5 полей: мин час день мес день_недели)
+                        (мин час день мес день_недели)
                       </span>
                     </FieldLabel>
                     <Input
@@ -277,6 +312,12 @@ export const RecurringForm = ({
                       autoComplete="off"
                       className="font-mono"
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Шаг: <code className="font-mono">*/3</code> или диапазон{' '}
+                      <code className="font-mono">6-12/3</code>; список:{' '}
+                      <code className="font-mono">6,9,12</code>. Синтаксис{' '}
+                      <code className="font-mono">6/3</code> не поддерживается.
+                    </p>
                     {isInvalid && (
                       <FieldError errors={field.state.meta.errors} />
                     )}

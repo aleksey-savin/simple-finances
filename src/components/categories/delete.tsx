@@ -1,36 +1,17 @@
-import { eq } from 'drizzle-orm'
 import { Trash2 } from 'lucide-react'
 
 import { useRouter } from '@tanstack/react-router'
-import { createServerFn } from '@tanstack/react-start'
-import { toast } from 'sonner'
-import z from 'zod'
 
-import { db } from '#/db'
-import { category } from '#/db/schema'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
+import { deleteCategory } from './actions'
 
-type Category = {
-  id: string
-  name: string
-  useForExpenses: boolean
-  useForIncome: boolean
-}
-
-const deleteCategorySchema = z.object({ id: z.string() })
-
-const deleteCategory = createServerFn({ method: 'POST' })
-  .inputValidator(deleteCategorySchema)
-  .handler(async ({ data }) => {
-    await db.delete(category).where(eq(category.id, data.id))
-  })
-
-export const DeleteCategory = ({ category }: { category: Category }) => {
+export const DeleteCategory = ({ categoryId }: { categoryId: string }) => {
   const router = useRouter()
   const handleDelete = async () => {
     try {
-      await deleteCategory({ data: { id: category.id } })
+      await deleteCategory({ data: { id: categoryId } })
       await router.invalidate()
       toast.success('Категория удалена')
     } catch (e) {

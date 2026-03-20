@@ -12,7 +12,7 @@ import {
 } from '#/db/schema'
 import { and, eq, gte, inArray, isNull, lt, lte } from 'drizzle-orm'
 import { useMemo, useState } from 'react'
-import { useSyncAppData } from '@/hooks/use-sync-app-data'
+
 import { toast } from 'sonner'
 import z from 'zod'
 import { Cron } from 'croner'
@@ -74,6 +74,8 @@ export type ExpenseRow = {
   paidAt: string | null
   category: { id: string; name: string }
   currentAccount: { id: string; name: string }
+  counterpartyId: string | null
+  counterparty: { id: string; name: string } | null
   /** true  → virtual row generated from a recurring rule (not yet in DB) */
   isProjected: boolean
 }
@@ -100,6 +102,7 @@ const fetchPayables = createServerFn().handler(async () => {
       previousUnpaid: [] as ExpenseRow[],
       accounts: [] as { id: string; name: string }[],
       categories: [] as { id: string; name: string }[],
+      counterparties: [] as { id: string; name: string }[],
       monthLabel: '',
     }
   }
@@ -123,47 +126,54 @@ const fetchPayables = createServerFn().handler(async () => {
   const withRelations = {
     category: { columns: { id: true as const, name: true as const } },
     currentAccount: { columns: { id: true as const, name: true as const } },
+    counterparty: { columns: { id: true as const, name: true as const } },
   }
 
-  const [realCurrentMonth, previousUnpaidRaw, activeRules, accounts] =
-    await Promise.all([
-      // All expenses this month (paid + unpaid)
-      db.query.expense.findMany({
-        where: and(
-          inArray(expense.currentAccountId, accountIds),
-          gte(expense.createdAt, monthStart),
-          lte(expense.createdAt, monthEnd),
-        ),
-        with: withRelations,
-        orderBy: (t, { asc }) => asc(t.createdAt),
-      }),
+  const [
+    realCurrentMonth,
+    previousUnpaidRaw,
+    activeRules,
+    accounts,
+    counterparties,
+  ] = await Promise.all([
+    // All expenses this month (paid + unpaid)
+    db.query.expense.findMany({
+      where: and(
+        inArray(expense.currentAccountId, accountIds),
+        gte(expense.createdAt, monthStart),
+        lte(expense.createdAt, monthEnd),
+      ),
+      with: withRelations,
+      orderBy: (t, { asc }) => asc(t.createdAt),
+    }),
 
-      // Unpaid expenses from months before the current one
-      db.query.expense.findMany({
-        where: and(
-          inArray(expense.currentAccountId, accountIds),
-          lt(expense.createdAt, monthStart),
-          isNull(expense.paidAt),
-        ),
-        with: withRelations,
-        orderBy: (t, { asc }) => asc(t.createdAt),
-      }),
+    // Unpaid expenses from months before the current one
+    db.query.expense.findMany({
+      where: and(
+        inArray(expense.currentAccountId, accountIds),
+        lt(expense.createdAt, monthStart),
+        isNull(expense.paidAt),
+      ),
+      with: withRelations,
+      orderBy: (t, { asc }) => asc(t.createdAt),
+    }),
 
-      // Active expense recurring rules
-      db.query.recurringRule.findMany({
-        where: and(
-          inArray(recurringRule.currentAccountId, accountIds),
-          eq(recurringRule.type, 'expense'),
-          eq(recurringRule.isActive, true),
-        ),
-        with: withRelations,
-      }),
+    // Active expense recurring rules
+    db.query.recurringRule.findMany({
+      where: and(
+        inArray(recurringRule.currentAccountId, accountIds),
+        eq(recurringRule.type, 'expense'),
+        eq(recurringRule.isActive, true),
+      ),
+      with: withRelations,
+    }),
 
-      db.query.currentAccount.findMany({
-        where: inArray(currentAccount.id, accountIds),
-        columns: { id: true, name: true },
-      }),
-    ])
+    db.query.currentAccount.findMany({
+      where: inArray(currentAccount.id, accountIds),
+      columns: { id: true, name: true },
+    }),
+    db.query.counterparty.findMany({ columns: { id: true, name: true } }),
+  ])
 
   // ── Project recurring rules onto the remaining days of the month ───────────
 
@@ -198,6 +208,8 @@ const fetchPayables = createServerFn().handler(async () => {
           paidAt: null,
           category: rule.category,
           currentAccount: rule.currentAccount,
+          counterpartyId: rule.counterpartyId ?? null,
+          counterparty: rule.counterparty ?? null,
           isProjected: true,
         })
 
@@ -225,6 +237,8 @@ const fetchPayables = createServerFn().handler(async () => {
     paidAt: paid,
     category: r.category,
     currentAccount: r.currentAccount,
+    counterpartyId: r.counterpartyId ?? null,
+    counterparty: r.counterparty ?? null,
     isProjected: false,
   })
 
@@ -333,6 +347,7 @@ const fetchPayables = createServerFn().handler(async () => {
     previousUnpaid,
     accounts,
     categories,
+    counterparties,
     monthLabel,
     tagsMap,
     allTags: allTags.map((t) => ({
@@ -412,6 +427,8 @@ const idFilterFn: FilterFn<ExpenseRow> = (row, columnId, value: string) => {
   if (!value) return true
   if (columnId === 'account') return row.original.currentAccount.id === value
   if (columnId === 'category') return row.original.category.id === value
+  if (columnId === 'counterparty')
+    return row.original.counterparty?.id === value
   return true
 }
 idFilterFn.autoRemove = (v) => !v
@@ -653,6 +670,15 @@ function buildColumns(
       ),
     },
     {
+      id: 'counterparty',
+      accessorFn: (row) => row.counterparty?.name ?? '',
+      filterFn: idFilterFn,
+      enableSorting: false,
+      header: () => null,
+      cell: () => null,
+      size: 0,
+    },
+    {
       id: 'amount',
       accessorFn: (row) => Number(row.amount),
       header: ({ column }) => (
@@ -754,12 +780,14 @@ function Toolbar({
   table,
   accounts,
   categories,
+  counterparties,
   allTags,
   accentColor = 'red',
 }: {
   table: Table<ExpenseRow>
   accounts: { id: string; name: string }[]
   categories: { id: string; name: string }[]
+  counterparties: { id: string; name: string }[]
   allTags: TagItem[]
   accentColor?: 'red' | 'orange'
 }) {
@@ -768,6 +796,8 @@ function Toolbar({
     (table.getColumn('account')?.getFilterValue() as string) ?? ''
   const categoryFilter =
     (table.getColumn('category')?.getFilterValue() as string) ?? ''
+  const counterpartyFilter =
+    (table.getColumn('counterparty')?.getFilterValue() as string) ?? ''
   const overdueOnly =
     (table.getColumn('dueDate')?.getFilterValue() as boolean) ?? false
   const statusFilter =
@@ -778,6 +808,7 @@ function Toolbar({
     globalFilter ||
     accountFilter ||
     categoryFilter ||
+    counterpartyFilter ||
     overdueOnly ||
     statusFilter ||
     tagFilter
@@ -845,6 +876,29 @@ function Toolbar({
             ))}
           </SelectContent>
         </Select>
+
+        {counterparties.length > 0 && (
+          <Select
+            value={counterpartyFilter || '_all'}
+            onValueChange={(v) =>
+              table
+                .getColumn('counterparty')
+                ?.setFilterValue(v === '_all' ? undefined : v)
+            }
+          >
+            <SelectTrigger className="h-8 w-44 text-sm">
+              <SelectValue placeholder="Все контрагенты" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_all">Все контрагенты</SelectItem>
+              {counterparties.map((cp) => (
+                <SelectItem key={cp.id} value={cp.id}>
+                  {cp.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
 
         <Select
           value={statusFilter || '_all'}
@@ -954,11 +1008,11 @@ function PayablesPage() {
     previousUnpaid,
     accounts,
     categories,
+    counterparties,
     tagsMap: initialTagsMap,
     allTags: initialAllTags,
     tagTotals: initialTagTotals,
   } = Route.useLoaderData()
-  useSyncAppData({ accounts, categories })
 
   // Local tag state (optimistic updates without full page reload)
   const [tagsMap, setTagsMap] = useState<TagsMap>(initialTagsMap ?? {})
@@ -1142,6 +1196,7 @@ function PayablesPage() {
               table={table}
               accounts={accounts}
               categories={categories}
+              counterparties={counterparties}
               allTags={allTags}
               accentColor="red"
             />
@@ -1170,6 +1225,7 @@ function PayablesPage() {
                 table={table}
                 accounts={accounts}
                 categories={categories}
+                counterparties={counterparties}
                 allTags={allTags}
                 accentColor="orange"
               />

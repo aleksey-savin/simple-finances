@@ -15,12 +15,7 @@ import {
 import { EditCategoryForm } from '.'
 import { DeleteCategory } from '.'
 
-type Category = {
-  id: string
-  name: string
-  useForExpenses: boolean
-  useForIncome: boolean
-}
+import type { Category } from '#/types'
 
 function CategoryRow({
   category,
@@ -79,7 +74,7 @@ function CategoryRow({
           >
             <Pencil className="size-3.5" />
           </Button>
-          <DeleteCategory category={category} />
+          <DeleteCategory categoryId={category.id} />
         </ItemActions>
       </Item>
 

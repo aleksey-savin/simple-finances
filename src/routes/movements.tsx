@@ -45,7 +45,7 @@ import {
   X,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { useSyncAppData } from '@/hooks/use-sync-app-data'
+
 import { toast } from 'sonner'
 import z from 'zod'
 
@@ -77,42 +77,46 @@ const fetchData = createServerFn().handler(async () => {
     return { expenses: [], incomes: [], categories, accounts: [] }
   }
 
-  const [expenses, incomes, categories, accountsData] = await Promise.all([
-    db.query.expense.findMany({
-      where: inArray(expense.currentAccountId, accountIds),
-      with: {
-        category: { columns: { id: true, name: true } },
-        currentAccount: { columns: { id: true, name: true } },
-        createdByUser: { columns: { id: true, name: true } },
-      },
-    }),
-    db.query.income.findMany({
-      where: inArray(income.currentAccountId, accountIds),
-      with: {
-        category: { columns: { id: true, name: true } },
-        currentAccount: { columns: { id: true, name: true } },
-        createdByUser: { columns: { id: true, name: true } },
-      },
-    }),
-    db.query.category.findMany({}),
-    db.query.currentAccount.findMany({
-      where: inArray(currentAccount.id, accountIds),
-      with: {
-        members: {
-          with: {
-            user: { columns: { id: true, name: true, email: true } },
+  const [expenses, incomes, categories, counterparties, accountsData] =
+    await Promise.all([
+      db.query.expense.findMany({
+        where: inArray(expense.currentAccountId, accountIds),
+        with: {
+          category: { columns: { id: true, name: true } },
+          counterparty: { columns: { id: true, name: true } },
+          currentAccount: { columns: { id: true, name: true } },
+          createdByUser: { columns: { id: true, name: true } },
+        },
+      }),
+      db.query.income.findMany({
+        where: inArray(income.currentAccountId, accountIds),
+        with: {
+          category: { columns: { id: true, name: true } },
+          counterparty: { columns: { id: true, name: true } },
+          currentAccount: { columns: { id: true, name: true } },
+          createdByUser: { columns: { id: true, name: true } },
+        },
+      }),
+      db.query.category.findMany({}),
+      db.query.counterparty.findMany({}),
+      db.query.currentAccount.findMany({
+        where: inArray(currentAccount.id, accountIds),
+        with: {
+          members: {
+            with: {
+              user: { columns: { id: true, name: true, email: true } },
+            },
           },
         },
-      },
-    }),
-  ])
+      }),
+    ])
 
   const accounts = accountsData.map((a) => ({
     ...a,
     role: roleByAccountId.get(a.id) ?? 'viewer',
   }))
 
-  return { expenses, incomes, categories, accounts }
+  return { expenses, incomes, categories, counterparties, accounts }
 })
 
 const togglePaidSchema = z.object({
@@ -150,8 +154,8 @@ export const Route = createFileRoute('/movements')({
 
 function App() {
   const router = useRouter()
-  const { expenses, incomes, categories, accounts } = Route.useLoaderData()
-  useSyncAppData({ accounts, categories })
+  const { expenses, incomes, categories, counterparties, accounts } =
+    Route.useLoaderData()
 
   const feed = [
     ...expenses.map((e) => ({ ...e, type: 'expense' as const })),
@@ -373,16 +377,18 @@ function App() {
       <div>
         {addExpenseIsOpen && (
           <ExpenseForm
-            setAddExpenseIsOpen={setAddExpenseIsOpen}
+            onDone={() => setAddExpenseIsOpen(false)}
             categories={categories}
             accounts={accounts}
+            counterparties={counterparties}
           />
         )}
         {addIncomeIsOpen && (
           <IncomeForm
-            setAddIncomeIsOpen={setAddIncomeIsOpen}
+            onDone={() => setAddIncomeIsOpen(false)}
             categories={categories}
             accounts={accounts}
+            counterparties={counterparties}
           />
         )}
 

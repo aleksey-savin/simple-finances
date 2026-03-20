@@ -1,10 +1,5 @@
-import z from 'zod'
 import { useForm } from '@tanstack/react-form'
-import { createServerFn } from '@tanstack/react-start'
-import { getRequest } from '@tanstack/react-start/server'
-import { db } from '#/db'
-import { category } from '#/db/schema'
-import { auth } from 'utils/auth'
+
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -12,41 +7,13 @@ import { Input } from '@/components/ui/input'
 import { Field, FieldError, FieldLabel } from '../ui/field'
 import { Switch } from '../ui/switch'
 import { useRouter } from '@tanstack/react-router'
-
-const formSchema = z.object({
-  name: z.string().min(2, 'Минимум 2 символа'),
-  useForIncome: z.boolean(),
-  useForExpenses: z.boolean(),
-})
-
-const addCategory = createServerFn({ method: 'POST' })
-  .inputValidator(formSchema)
-  .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-
-    if (!session?.user?.id) {
-      throw new Error('Не авторизован')
-    }
-
-    const [inserted] = await db
-      .insert(category)
-      .values({
-        name: data.name,
-        useForIncome: data.useForIncome,
-        useForExpenses: data.useForExpenses,
-        createdBy: session.user.id,
-        updatedBy: session.user.id,
-      })
-      .returning({ id: category.id })
-    return inserted.id
-  })
+import { addCategory, updateCategorySchema } from './actions'
 
 export const AddCategoryForm = () => {
   const router = useRouter()
   const form = useForm({
     defaultValues: { name: '', useForIncome: false, useForExpenses: false },
-    validators: { onSubmit: formSchema },
+    validators: { onSubmit: updateCategorySchema },
     onSubmit: async ({ value }) => {
       try {
         await addCategory({

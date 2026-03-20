@@ -20,12 +20,7 @@ import { Separator } from '../ui/separator'
 
 import { CategoriesList } from '.'
 
-type Category = {
-  id: string
-  name: string
-  useForExpenses: boolean
-  useForIncome: boolean
-}
+import type { Category } from '#/types'
 
 const Categories = ({ categories }: { categories: Category[] }) => {
   const [open, setOpen] = useState(false)

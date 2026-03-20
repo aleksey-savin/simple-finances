@@ -1,12 +1,12 @@
-import type { RuleWithRelations } from './types'
+import type { RuleWithRelations } from '@/types'
 import { DeleteRule } from './delete'
-import { CRON_PRESETS } from '#/components/reccuring/constants'
-import { Badge } from '#/components/ui/badge'
-import { Button } from '#/components/ui/button'
-import { Switch } from '#/components/ui/switch'
-import { Item, ItemContent, ItemFooter, ItemHeader } from '#/components/ui/item'
+import { CRON_PRESETS } from '@/components/reccuring/constants'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
+import { Item, ItemContent, ItemFooter, ItemHeader } from '@/components/ui/item'
 import { Calendar, Clock, PenLine } from 'lucide-react'
-import { Separator } from '../ui/separator'
+import { Separator } from '@/components/ui/separator'
 
 function getCronLabel(expr: string): string {
   const found = CRON_PRESETS.find(
@@ -129,7 +129,7 @@ export const RuleCard = ({
           <PenLine className="size-3.5" />
           Изменить
         </Button>
-        <DeleteRule rule={rule} />
+        <DeleteRule ruleId={rule.id} description={rule.description} />
       </ItemFooter>
     </Item>
   )

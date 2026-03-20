@@ -3,8 +3,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
 import { auth } from 'utils/auth'
 import { db } from '#/db'
-import { recurringRule, currentAccountUser, currentAccount } from '#/db/schema'
-import { eq, inArray } from 'drizzle-orm'
+import { recurringRule } from '#/db/schema'
 import { Cron } from 'croner'
 import z from 'zod'
 import { toast } from 'sonner'
@@ -12,32 +11,12 @@ import { useForm } from '@tanstack/react-form'
 
 import { ResponsiveDialog } from '#/components/ui/responsive-dialog'
 import { RecurringForm, ruleFormSchema } from '#/components/reccuring/form'
-
-// ─── Loader ───────────────────────────────────────────────────────────────────
-
-const fetchNewFormData = createServerFn().handler(async () => {
-  const request = getRequest()
-  const session = await auth.api.getSession({ headers: request.headers })
-  if (!session?.user?.id) throw new Error('Не авторизован')
-
-  const memberships = await db
-    .select({ currentAccountId: currentAccountUser.currentAccountId })
-    .from(currentAccountUser)
-    .where(eq(currentAccountUser.userId, session.user.id))
-
-  const accountIds = memberships.map((m) => m.currentAccountId)
-
-  const [categories, accounts] = await Promise.all([
-    db.query.category.findMany({}),
-    accountIds.length > 0
-      ? db.query.currentAccount.findMany({
-          where: inArray(currentAccount.id, accountIds),
-        })
-      : Promise.resolve([]),
-  ])
-
-  return { categories, accounts }
-})
+import {
+  useAppStore,
+  selectCategories,
+  selectAccounts,
+  selectCounterparties,
+} from '@/store/app-store'
 
 // ─── Server function ──────────────────────────────────────────────────────────
 
@@ -79,14 +58,15 @@ const createRecurringRule = createServerFn({ method: 'POST' })
 
 export const Route = createFileRoute('/recurring/new')({
   component: NewRulePage,
-  loader: () => fetchNewFormData(),
 })
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 function NewRulePage() {
   const router = useRouter()
-  const { categories, accounts } = Route.useLoaderData()
+  const categories = useAppStore(selectCategories)
+  const accounts = useAppStore(selectAccounts)
+  const counterparties = useAppStore(selectCounterparties)
 
   const handleClose = () => router.navigate({ to: '/recurring' })
 
@@ -96,6 +76,7 @@ function NewRulePage() {
       amount: '',
       description: '',
       categoryId: '',
+      counterpartyId: '',
       currentAccountId: '',
       cronPreset: '0 9 1 * *',
       cronCustom: '',
@@ -150,6 +131,7 @@ function NewRulePage() {
         form={form}
         categories={categories}
         accounts={accounts}
+        counterparties={counterparties}
         isEdit={false}
         onClose={handleClose}
       />

@@ -20,14 +20,7 @@ import { Separator } from '../ui/separator'
 
 import { AccountsList } from '.'
 
-import type { Member } from './share'
-
-type Account = {
-  id: string
-  name: string
-  role: string
-  members: Member[]
-}
+import type { Account } from '#/types'
 
 const Accounts = ({ accounts }: { accounts: Account[] }) => {
   const [open, setOpen] = useState(false)

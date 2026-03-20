@@ -11,7 +11,7 @@ import {
 } from '#/db/schema'
 import { eq, inArray, isNull } from 'drizzle-orm'
 import { useMemo, useState } from 'react'
-import { useSyncAppData } from '@/hooks/use-sync-app-data'
+
 import { toast } from 'sonner'
 import z from 'zod'
 import {
@@ -76,10 +76,10 @@ const fetchReceivables = createServerFn().handler(async () => {
   const accountIds = memberships.map((m) => m.currentAccountId)
 
   if (accountIds.length === 0) {
-    return { rows: [], accounts: [], categories: [] }
+    return { rows: [], accounts: [], categories: [], counterparties: [] }
   }
 
-  const [rows, accounts] = await Promise.all([
+  const [rows, accounts, counterparties] = await Promise.all([
     db.query.income.findMany({
       where: (t, { and }) =>
         and(inArray(t.currentAccountId, accountIds), isNull(t.paidAt)),
@@ -87,6 +87,7 @@ const fetchReceivables = createServerFn().handler(async () => {
         category: { columns: { id: true, name: true } },
         currentAccount: { columns: { id: true, name: true } },
         createdByUser: { columns: { id: true, name: true } },
+        counterparty: { columns: { id: true, name: true } },
       },
       orderBy: (t, { asc }) => asc(t.createdAt),
     }),
@@ -94,6 +95,7 @@ const fetchReceivables = createServerFn().handler(async () => {
       where: inArray(currentAccount.id, accountIds),
       columns: { id: true, name: true },
     }),
+    db.query.counterparty.findMany({ columns: { id: true, name: true } }),
   ])
 
   // Unique categories from the returned rows
@@ -168,6 +170,7 @@ const fetchReceivables = createServerFn().handler(async () => {
     rows,
     accounts,
     categories,
+    counterparties,
     tagsMap,
     allTags: allTags.map((t) => ({ id: t.id, name: t.name, color: t.color })),
     tagTotals,
@@ -240,6 +243,8 @@ const idFilterFn: FilterFn<IncomeRow> = (row, columnId, value: string) => {
   if (!value) return true
   if (columnId === 'account') return row.original.currentAccount.id === value
   if (columnId === 'category') return row.original.category.id === value
+  if (columnId === 'counterparty')
+    return (row.original.counterparty as { id: string } | null)?.id === value
   return true
 }
 idFilterFn.autoRemove = (val) => !val
@@ -279,11 +284,11 @@ function ReceivablesPage() {
     rows,
     accounts,
     categories,
+    counterparties,
     tagsMap: initialTagsMap,
     allTags: initialAllTags,
     tagTotals: initialTagTotals,
   } = Route.useLoaderData()
-  useSyncAppData({ accounts, categories })
 
   const [tagsMap, setTagsMap] = useState<TagsMap>(initialTagsMap ?? {})
   const [allTags, setAllTags] = useState<TagItem[]>(initialAllTags ?? [])
@@ -414,6 +419,16 @@ function ReceivablesPage() {
             {row.original.currentAccount.name}
           </span>
         ),
+      },
+      {
+        id: 'counterparty',
+        accessorFn: (row) =>
+          (row.counterparty as { name: string } | null)?.name ?? '',
+        filterFn: idFilterFn,
+        enableSorting: false,
+        header: () => null,
+        cell: () => null,
+        size: 0,
       },
       {
         id: 'amount',
@@ -615,7 +630,12 @@ function ReceivablesPage() {
         data={rows}
         initialSorting={[{ id: 'dueDate', desc: false }]}
         toolbar={(table) => (
-          <Toolbar table={table} accounts={accounts} categories={categories} />
+          <Toolbar
+            table={table}
+            accounts={accounts}
+            categories={categories}
+            counterparties={counterparties}
+          />
         )}
       />
 
@@ -654,16 +674,20 @@ function Toolbar({
   table,
   accounts,
   categories,
+  counterparties,
 }: {
   table: Table<IncomeRow>
   accounts: { id: string; name: string }[]
   categories: { id: string; name: string }[]
+  counterparties: { id: string; name: string }[]
 }) {
   const globalFilter = (table.getState().globalFilter as string) ?? ''
   const accountFilter =
     (table.getColumn('account')?.getFilterValue() as string) ?? ''
   const categoryFilter =
     (table.getColumn('category')?.getFilterValue() as string) ?? ''
+  const counterpartyFilter =
+    (table.getColumn('counterparty')?.getFilterValue() as string) ?? ''
   const overdueOnly =
     (table.getColumn('dueDate')?.getFilterValue() as boolean) ?? false
   const statusFilter =
@@ -673,6 +697,7 @@ function Toolbar({
     globalFilter ||
     accountFilter ||
     categoryFilter ||
+    counterpartyFilter ||
     overdueOnly ||
     statusFilter
 
@@ -743,6 +768,29 @@ function Toolbar({
             ))}
           </SelectContent>
         </Select>
+
+        {counterparties.length > 0 && (
+          <Select
+            value={counterpartyFilter || '_all'}
+            onValueChange={(v) =>
+              table
+                .getColumn('counterparty')
+                ?.setFilterValue(v === '_all' ? undefined : v)
+            }
+          >
+            <SelectTrigger className="h-8 w-44 text-sm">
+              <SelectValue placeholder="Все контрагенты" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_all">Все контрагенты</SelectItem>
+              {counterparties.map((cp) => (
+                <SelectItem key={cp.id} value={cp.id}>
+                  {cp.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
 
         {/* Status */}
         <Select

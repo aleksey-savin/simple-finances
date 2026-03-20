@@ -1,15 +1,9 @@
 import { useState } from 'react'
 import { useRouter } from '@tanstack/react-router'
-import { createServerFn } from '@tanstack/react-start'
-import { getRequest } from '@tanstack/react-start/server'
-import { and, eq } from 'drizzle-orm'
 import { Share2, Trash2, UserPlus } from 'lucide-react'
 import { toast } from 'sonner'
-import z from 'zod'
 
-import { db } from '#/db'
-import { currentAccountUser, user } from '#/db/schema'
-import { auth } from 'utils/auth'
+import { addMember, removeMember } from './actions'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -29,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
+import type { Member } from '#/types'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -36,85 +31,6 @@ const roleLabel: Record<string, string> = {
   owner: 'Владелец',
   editor: 'Редактор',
   viewer: 'Читатель',
-}
-
-async function requireOwner(accountId: string) {
-  const request = getRequest()
-  const session = await auth.api.getSession({ headers: request.headers })
-  if (!session?.user?.id) throw new Error('Не авторизован')
-
-  const ownership = await db.query.currentAccountUser.findFirst({
-    where: and(
-      eq(currentAccountUser.currentAccountId, accountId),
-      eq(currentAccountUser.userId, session.user.id),
-      eq(currentAccountUser.role, 'owner'),
-    ),
-  })
-  if (!ownership) throw new Error('Только владелец может управлять доступом')
-
-  return session.user.id
-}
-
-// ── Server functions ──────────────────────────────────────────────────────────
-
-const addMemberSchema = z.object({
-  accountId: z.string(),
-  email: z.string().email('Введите корректный email'),
-  role: z.enum(['editor', 'viewer']),
-})
-
-const addMember = createServerFn({ method: 'POST' })
-  .inputValidator(addMemberSchema)
-  .handler(async ({ data }) => {
-    const invitedBy = await requireOwner(data.accountId)
-
-    const targetUser = await db.query.user.findFirst({
-      where: eq(user.email, data.email),
-    })
-    if (!targetUser) throw new Error('Пользователь не найден')
-
-    const existing = await db.query.currentAccountUser.findFirst({
-      where: and(
-        eq(currentAccountUser.currentAccountId, data.accountId),
-        eq(currentAccountUser.userId, targetUser.id),
-      ),
-    })
-    if (existing) throw new Error('Пользователь уже является участником')
-
-    await db.insert(currentAccountUser).values({
-      currentAccountId: data.accountId,
-      userId: targetUser.id,
-      role: data.role,
-      invitedBy,
-    })
-  })
-
-const removeMemberSchema = z.object({
-  memberId: z.string(),
-  accountId: z.string(),
-})
-
-const removeMember = createServerFn({ method: 'POST' })
-  .inputValidator(removeMemberSchema)
-  .handler(async ({ data }) => {
-    await requireOwner(data.accountId)
-
-    const member = await db.query.currentAccountUser.findFirst({
-      where: eq(currentAccountUser.id, data.memberId),
-    })
-    if (member?.role === 'owner') throw new Error('Нельзя удалить владельца')
-
-    await db
-      .delete(currentAccountUser)
-      .where(eq(currentAccountUser.id, data.memberId))
-  })
-
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-export type Member = {
-  id: string
-  role: string
-  user: { id: string; name: string; email: string }
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────

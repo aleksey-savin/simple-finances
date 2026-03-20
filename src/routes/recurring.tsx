@@ -15,9 +15,8 @@ import z from 'zod'
 import { toast } from 'sonner'
 
 import { RefreshCw } from 'lucide-react'
-import { useSyncAppData } from '@/hooks/use-sync-app-data'
 import { RuleCard } from '#/components/reccuring/card'
-import type { RuleWithRelations } from '#/components/reccuring/types'
+import type { RuleWithRelations } from '@/types'
 
 // ─── Server functions ──────────────────────────────────────────────────────────
 
@@ -101,16 +100,15 @@ export const Route = createFileRoute('/recurring')({
 })
 
 // Re-export for any consumers that previously imported this type from the route.
-// Canonical definition lives in #/components/reccuring/types.
-export type { RuleWithRelations } from '#/components/reccuring/types'
+// Canonical definition lives in src/types.ts.
+export type { RuleWithRelations } from '@/types'
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 function RecurringPage() {
   const router = useRouter()
   const navigate = useNavigate()
-  const { rules, categories, accounts } = Route.useLoaderData()
-  useSyncAppData({ accounts, categories })
+  const { rules } = Route.useLoaderData()
 
   const handleToggle = async (rule: RuleWithRelations, isActive: boolean) => {
     try {

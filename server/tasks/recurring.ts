@@ -30,8 +30,7 @@ export default defineTask({
         const dueDate =
           rule.dueDaysFromCreation && rule.dueDaysFromCreation > 0
             ? new Date(
-                now.getTime() +
-                  rule.dueDaysFromCreation * 24 * 60 * 60 * 1000,
+                now.getTime() + rule.dueDaysFromCreation * 24 * 60 * 60 * 1000,
               )
             : undefined
 
@@ -42,6 +41,7 @@ export default defineTask({
           description: rule.description,
           categoryId: rule.categoryId,
           currentAccountId: rule.currentAccountId,
+          counterpartyId: rule.counterpartyId ?? undefined,
           dueDate,
           createdBy: rule.createdBy,
           updatedBy: rule.createdBy,
@@ -65,7 +65,9 @@ export default defineTask({
       }
     }
 
-    console.log(`[recurring task] Processed ${processed} / ${dueRules.length} rules.`)
+    console.log(
+      `[recurring task] Processed ${processed} / ${dueRules.length} rules.`,
+    )
 
     return { result: { processed, total: dueRules.length } }
   },

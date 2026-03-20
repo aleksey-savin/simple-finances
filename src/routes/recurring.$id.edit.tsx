@@ -3,8 +3,8 @@ import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
 import { auth } from 'utils/auth'
 import { db } from '#/db'
-import { recurringRule, currentAccountUser, currentAccount } from '#/db/schema'
-import { eq, inArray } from 'drizzle-orm'
+import { recurringRule } from '#/db/schema'
+import { eq } from 'drizzle-orm'
 import { Cron } from 'croner'
 import z from 'zod'
 import { toast } from 'sonner'
@@ -13,6 +13,12 @@ import { useForm } from '@tanstack/react-form'
 import { ResponsiveDialog } from '#/components/ui/responsive-dialog'
 import { RecurringForm, ruleFormSchema } from '#/components/reccuring/form'
 import { CRON_PRESETS } from '#/components/reccuring/constants'
+import {
+  useAppStore,
+  selectCategories,
+  selectAccounts,
+  selectCounterparties,
+} from '@/store/app-store'
 
 // ─── Loader ───────────────────────────────────────────────────────────────────
 
@@ -23,32 +29,17 @@ const fetchEditFormData = createServerFn()
     const session = await auth.api.getSession({ headers: request.headers })
     if (!session?.user?.id) throw new Error('Не авторизован')
 
-    const memberships = await db
-      .select({ currentAccountId: currentAccountUser.currentAccountId })
-      .from(currentAccountUser)
-      .where(eq(currentAccountUser.userId, session.user.id))
-
-    const accountIds = memberships.map((m) => m.currentAccountId)
-
-    const [rule, categories, accounts] = await Promise.all([
-      db.query.recurringRule.findFirst({
-        where: eq(recurringRule.id, id),
-        with: {
-          category: { columns: { id: true, name: true } },
-          currentAccount: { columns: { id: true, name: true } },
-        },
-      }),
-      db.query.category.findMany({}),
-      accountIds.length > 0
-        ? db.query.currentAccount.findMany({
-            where: inArray(currentAccount.id, accountIds),
-          })
-        : Promise.resolve([]),
-    ])
+    const rule = await db.query.recurringRule.findFirst({
+      where: eq(recurringRule.id, id),
+      with: {
+        category: { columns: { id: true, name: true } },
+        currentAccount: { columns: { id: true, name: true } },
+      },
+    })
 
     if (!rule) throw new Error('Правило не найдено')
 
-    return { rule, categories, accounts }
+    return { rule }
   })
 
 // ─── Server function ──────────────────────────────────────────────────────────
@@ -101,8 +92,11 @@ export const Route = createFileRoute('/recurring/$id/edit')({
 
 function EditRulePage() {
   const router = useRouter()
-  const { rule, categories, accounts } = Route.useLoaderData()
+  const { rule } = Route.useLoaderData()
   const { id } = Route.useParams()
+  const categories = useAppStore(selectCategories)
+  const accounts = useAppStore(selectAccounts)
+  const counterparties = useAppStore(selectCounterparties)
 
   const handleClose = () => router.navigate({ to: '/recurring' })
 
@@ -118,6 +112,7 @@ function EditRulePage() {
       amount: Number(rule.amount).toString(),
       description: rule.description,
       categoryId: rule.categoryId,
+      counterpartyId: rule.counterpartyId ?? '',
       currentAccountId: rule.currentAccountId,
       cronPreset: initialPreset,
       cronCustom: rule.cronExpression,
@@ -175,6 +170,7 @@ function EditRulePage() {
         form={form}
         categories={categories}
         accounts={accounts}
+        counterparties={counterparties}
         isEdit={true}
         onClose={handleClose}
       />

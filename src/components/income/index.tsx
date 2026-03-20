@@ -1,2 +1,2 @@
 export { DeleteIncome } from './delete'
-export { IncomeForm } from './form'
+export { IncomeForm, AddIncomeForm, EditIncomeForm } from './form'

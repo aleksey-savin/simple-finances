@@ -9,6 +9,7 @@ import {
   selectAccounts,
   selectCategories,
 } from '@/store/app-store'
+import Counterparties from '../counterparties'
 
 export const AppHeader = () => {
   const accounts = useAppStore(selectAccounts)
@@ -28,6 +29,7 @@ export const AppHeader = () => {
       </div>
       <div className="flex gap-2 items-center">
         <Accounts accounts={accounts} />
+        <Counterparties />
         <Categories categories={categories} />
         <ModeToggle />
       </div>

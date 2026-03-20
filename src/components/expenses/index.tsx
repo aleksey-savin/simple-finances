@@ -1,2 +1,2 @@
 export { DeleteExpense } from './delete'
-export { ExpenseForm } from './form'
+export { ExpenseForm, AddExpenseForm, EditExpenseForm } from './form'

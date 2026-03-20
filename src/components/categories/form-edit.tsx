@@ -1,14 +1,6 @@
-import { eq } from 'drizzle-orm'
-
 import { useRouter } from '@tanstack/react-router'
-import { createServerFn } from '@tanstack/react-start'
 import { useForm } from '@tanstack/react-form'
 import { toast } from 'sonner'
-import z from 'zod'
-
-import { db } from '#/db'
-import { category } from '#/db/schema'
-
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -16,38 +8,8 @@ import { Field, FieldError, FieldLabel } from '../ui/field'
 
 import { Switch } from '../ui/switch'
 
-type Category = {
-  id: string
-  name: string
-  useForExpenses: boolean
-  useForIncome: boolean
-}
-
-const updateCategorySchema = z.object({
-  id: z.string(),
-  name: z.string().min(2, 'Минимум 2 символа'),
-  useForExpenses: z.boolean(),
-  useForIncome: z.boolean(),
-})
-
-const updateCategory = createServerFn({ method: 'POST' })
-  .inputValidator(updateCategorySchema)
-  .handler(async ({ data }) => {
-    await db
-      .update(category)
-      .set({
-        name: data.name,
-        useForExpenses: data.useForExpenses,
-        useForIncome: data.useForIncome,
-      })
-      .where(eq(category.id, data.id))
-  })
-
-const editFormSchema = z.object({
-  name: z.string().min(2, 'Минимум 2 символа'),
-  useForExpenses: z.boolean(),
-  useForIncome: z.boolean(),
-})
+import type { Category } from '#/types'
+import { updateCategory, updateCategorySchema } from './actions'
 
 export const EditCategoryForm = ({
   category,
@@ -64,7 +26,7 @@ export const EditCategoryForm = ({
       useForExpenses: category.useForExpenses,
       useForIncome: category.useForIncome,
     },
-    validators: { onSubmit: editFormSchema },
+    validators: { onSubmit: updateCategorySchema },
     onSubmit: async ({ value }) => {
       try {
         await updateCategory({

@@ -4,11 +4,20 @@ import {
   index,
   integer,
   numeric,
+  pgEnum,
   pgTable,
   text,
   timestamp,
   unique,
 } from 'drizzle-orm/pg-core'
+
+export const counterpartyTypeEnum = pgEnum('counterparty_type', [
+  'Юридическое лицо',
+  'Физическое лицо',
+  'Индивидуальный предприниматель',
+  'Обособленное подразделение',
+  'Государственный орган',
+])
 
 export const tag = pgTable('tag', {
   id: text('id')
@@ -211,6 +220,24 @@ export const category = pgTable('category', {
     .references(() => user.id),
 })
 
+export const counterparty = pgTable('counterparty', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  name: text().notNull().unique(),
+  fullName: text().unique(),
+  tin: text().unique(),
+  type: counterpartyTypeEnum('type'),
+  createdBy: text('created_by')
+    .notNull()
+    .references(() => user.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at')
+    .defaultNow()
+    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .notNull(),
+})
+
 export const expense = pgTable('expense', {
   id: text('id')
     .primaryKey()
@@ -220,6 +247,7 @@ export const expense = pgTable('expense', {
   categoryId: text('category_id')
     .notNull()
     .references(() => category.id),
+  counterpartyId: text('counterparty_id').references(() => counterparty.id),
   currentAccountId: text('current_account_id')
     .notNull()
     .references(() => currentAccount.id),
@@ -243,7 +271,7 @@ export const income = pgTable('income', {
   categoryId: text('category_id')
     .notNull()
     .references(() => category.id),
-  // Fixed: was incorrectly referencing account.id instead of currentAccount.id
+  counterpartyId: text('counterparty_id').references(() => counterparty.id),
   currentAccountId: text('current_account_id')
     .notNull()
     .references(() => currentAccount.id),
@@ -269,6 +297,7 @@ export const recurringRule = pgTable('recurring_rule', {
   categoryId: text('category_id')
     .notNull()
     .references(() => category.id),
+  counterpartyId: text('counterparty_id').references(() => counterparty.id),
   currentAccountId: text('current_account_id')
     .notNull()
     .references(() => currentAccount.id),
@@ -364,6 +393,10 @@ export const expenseRelations = relations(expense, ({ one, many }) => ({
     fields: [expense.categoryId],
     references: [category.id],
   }),
+  counterparty: one(counterparty, {
+    fields: [expense.counterpartyId],
+    references: [counterparty.id],
+  }),
   currentAccount: one(currentAccount, {
     fields: [expense.currentAccountId],
     references: [currentAccount.id],
@@ -380,6 +413,10 @@ export const incomeRelations = relations(income, ({ one, many }) => ({
     fields: [income.categoryId],
     references: [category.id],
   }),
+  counterparty: one(counterparty, {
+    fields: [income.counterpartyId],
+    references: [counterparty.id],
+  }),
   currentAccount: one(currentAccount, {
     fields: [income.currentAccountId],
     references: [currentAccount.id],
@@ -388,6 +425,12 @@ export const incomeRelations = relations(income, ({ one, many }) => ({
     fields: [income.createdBy],
     references: [user.id],
   }),
+}))
+
+export const counterpartyRelations = relations(counterparty, ({ many }) => ({
+  expenses: many(expense),
+  incomes: many(income),
+  recurringRules: many(recurringRule),
 }))
 
 export const categoryRelations = relations(category, ({ many }) => ({
@@ -400,6 +443,10 @@ export const recurringRuleRelations = relations(recurringRule, ({ one }) => ({
   category: one(category, {
     fields: [recurringRule.categoryId],
     references: [category.id],
+  }),
+  counterparty: one(counterparty, {
+    fields: [recurringRule.counterpartyId],
+    references: [counterparty.id],
   }),
   currentAccount: one(currentAccount, {
     fields: [recurringRule.currentAccountId],

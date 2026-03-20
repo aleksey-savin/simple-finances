@@ -1,49 +1,21 @@
-import { eq } from 'drizzle-orm'
-
 import { useRouter } from '@tanstack/react-router'
-import { createServerFn } from '@tanstack/react-start'
+
 import { useForm } from '@tanstack/react-form'
 import { toast } from 'sonner'
-import z from 'zod'
-
-import { db } from '#/db'
-import { currentAccount } from '#/db/schema'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
 import { Field, FieldError, FieldLabel } from '../ui/field'
 
-type Account = {
-  id: string
-  name: string
-}
-
-const updateAccountSchema = z.object({
-  id: z.string(),
-  name: z.string().min(2, 'Минимум 2 символа'),
-})
-
-const updateAccount = createServerFn({ method: 'POST' })
-  .inputValidator(updateAccountSchema)
-  .handler(async ({ data }) => {
-    await db
-      .update(currentAccount)
-      .set({
-        name: data.name,
-      })
-      .where(eq(currentAccount.id, data.id))
-  })
-
-const editFormSchema = z.object({
-  name: z.string().min(2, 'Минимум 2 символа'),
-})
+import type { CurrentAccountUpdate } from '#/db/types'
+import { updateAccount, updateAccountSchema } from './actions'
 
 export const EditAccountForm = ({
   account,
   onDone,
 }: {
-  account: Account
+  account: CurrentAccountUpdate
   onDone: () => void
 }) => {
   const router = useRouter()
@@ -52,11 +24,11 @@ export const EditAccountForm = ({
     defaultValues: {
       name: account.name,
     },
-    validators: { onSubmit: editFormSchema },
+    validators: { onSubmit: updateAccountSchema },
     onSubmit: async ({ value }) => {
       try {
         await updateAccount({
-          data: { id: account.id, ...value },
+          data: { id: account.id, name: value.name || '' },
         })
         await router.invalidate()
         toast.success('Счёт обновлен')
