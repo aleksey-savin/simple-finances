@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import { useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
@@ -17,8 +18,23 @@ import {
 
 import { deleteExpense } from './actions'
 
-export const DeleteExpense = ({ expenseId }: { expenseId: string }) => {
+type DeleteExpenseProps = {
+  expenseId: string
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}
+
+export const DeleteExpense = ({
+  expenseId,
+  open: controlledOpen,
+  onOpenChange,
+}: DeleteExpenseProps) => {
   const router = useRouter()
+  const [internalOpen, setInternalOpen] = useState(false)
+
+  const isControlled = controlledOpen !== undefined
+  const open = isControlled ? controlledOpen : internalOpen
+  const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setInternalOpen
 
   const handleDelete = async () => {
     try {
@@ -31,17 +47,19 @@ export const DeleteExpense = ({ expenseId }: { expenseId: string }) => {
   }
 
   return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-7 text-destructive hover:text-destructive"
-          title="Удалить"
-        >
-          <Trash2 className="size-3.5" />
-        </Button>
-      </AlertDialogTrigger>
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      {!isControlled && (
+        <AlertDialogTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8 text-destructive hover:text-destructive"
+            title="Удалить"
+          >
+            <Trash2 className="size-3.5" />
+          </Button>
+        </AlertDialogTrigger>
+      )}
       <AlertDialogContent size="sm">
         <AlertDialogHeader>
           <AlertDialogTitle>Удалить расход?</AlertDialogTitle>

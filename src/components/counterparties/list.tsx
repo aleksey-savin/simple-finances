@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Pencil, User } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -13,7 +14,7 @@ import {
 import { EditCounterpartyForm } from './form'
 import { DeleteCounterparty } from './delete'
 
-import { selectCounterparties, useAppStore } from '#/store/app-store'
+import { fetchCounterparties, counterpartiesQueryKey } from './actions'
 import type { Counterparty } from '#/types'
 
 function CounterpartyRow({
@@ -65,7 +66,10 @@ function CounterpartyRow({
 }
 
 export const CounterpartiesList = () => {
-  const counterparties = useAppStore(selectCounterparties)
+  const { data: counterparties = [] } = useQuery({
+    queryKey: counterpartiesQueryKey,
+    queryFn: () => fetchCounterparties(),
+  })
   const [editingId, setEditingId] = useState<string | null>(null)
 
   return (

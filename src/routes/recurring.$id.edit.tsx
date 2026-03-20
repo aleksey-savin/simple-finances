@@ -1,90 +1,21 @@
-import { createFileRoute, useRouter } from '@tanstack/react-router'
-import { createServerFn } from '@tanstack/react-start'
-import { getRequest } from '@tanstack/react-start/server'
-import { auth } from 'utils/auth'
-import { db } from '#/db'
-import { recurringRule } from '#/db/schema'
-import { eq } from 'drizzle-orm'
+import { createFileRoute, getRouteApi, useRouter } from '@tanstack/react-router'
 import { Cron } from 'croner'
-import z from 'zod'
 import { toast } from 'sonner'
-import { useForm } from '@tanstack/react-form'
-
 import { ResponsiveDialog } from '#/components/ui/responsive-dialog'
-import { RecurringForm, ruleFormSchema } from '#/components/reccuring/form'
+import { RecurringForm } from '#/components/reccuring/form'
+import type { RuleFormValues } from '#/components/reccuring/form'
 import { CRON_PRESETS } from '#/components/reccuring/constants'
 import {
-  useAppStore,
-  selectCategories,
-  selectAccounts,
-  selectCounterparties,
-} from '@/store/app-store'
+  fetchRuleById,
+  updateRecurringRule,
+} from '#/components/reccuring/actions'
 
-// ─── Loader ───────────────────────────────────────────────────────────────────
-
-const fetchEditFormData = createServerFn()
-  .inputValidator((id: string) => id)
-  .handler(async ({ data: id }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
-
-    const rule = await db.query.recurringRule.findFirst({
-      where: eq(recurringRule.id, id),
-      with: {
-        category: { columns: { id: true, name: true } },
-        currentAccount: { columns: { id: true, name: true } },
-      },
-    })
-
-    if (!rule) throw new Error('Правило не найдено')
-
-    return { rule }
-  })
-
-// ─── Server function ──────────────────────────────────────────────────────────
-
-const updateRuleSchema = z.object({
-  id: z.string(),
-  type: z.enum(['expense', 'income']),
-  amount: z.number().min(0.01, 'Минимум 0.01'),
-  description: z.string().min(2, 'Минимум 2 символа'),
-  categoryId: z.string().min(1, 'Выберите категорию'),
-  currentAccountId: z.string().min(1, 'Выберите счёт'),
-  cronExpression: z.string().min(1, 'Введите расписание'),
-  dueDaysFromCreation: z.number().nullable(),
-})
-
-const updateRecurringRule = createServerFn({ method: 'POST' })
-  .inputValidator(updateRuleSchema)
-  .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
-
-    const job = new Cron(data.cronExpression, { paused: true })
-    const nextRunAt = job.nextRun()
-
-    await db
-      .update(recurringRule)
-      .set({
-        type: data.type,
-        amount: data.amount.toString(),
-        description: data.description,
-        categoryId: data.categoryId,
-        currentAccountId: data.currentAccountId,
-        cronExpression: data.cronExpression,
-        dueDaysFromCreation: data.dueDaysFromCreation,
-        nextRunAt,
-        updatedBy: session.user.id,
-      })
-      .where(eq(recurringRule.id, data.id))
-  })
+const recurringRoute = getRouteApi('/recurring')
 
 // ─── Route ────────────────────────────────────────────────────────────────────
 
 export const Route = createFileRoute('/recurring/$id/edit')({
-  loader: ({ params }) => fetchEditFormData({ data: params.id }),
+  loader: ({ params }) => fetchRuleById({ data: params.id }),
   component: EditRulePage,
 })
 
@@ -94,9 +25,8 @@ function EditRulePage() {
   const router = useRouter()
   const { rule } = Route.useLoaderData()
   const { id } = Route.useParams()
-  const categories = useAppStore(selectCategories)
-  const accounts = useAppStore(selectAccounts)
-  const counterparties = useAppStore(selectCounterparties)
+  const { categories, accounts, counterparties } =
+    recurringRoute.useLoaderData()
 
   const handleClose = () => router.navigate({ to: '/recurring' })
 
@@ -106,58 +36,48 @@ function EditRulePage() {
     ? rule.cronExpression
     : 'custom'
 
-  const form = useForm({
-    defaultValues: {
-      type: rule.type as 'expense' | 'income',
-      amount: Number(rule.amount).toString(),
-      description: rule.description,
-      categoryId: rule.categoryId,
-      counterpartyId: rule.counterpartyId ?? '',
-      currentAccountId: rule.currentAccountId,
-      cronPreset: initialPreset,
-      cronCustom: rule.cronExpression,
-      dueDaysFromCreation: rule.dueDaysFromCreation
-        ? String(rule.dueDaysFromCreation)
-        : '',
-    },
-    validators: { onSubmit: ruleFormSchema },
-    onSubmit: async ({ value }) => {
-      const cronExpression =
-        value.cronPreset === 'custom' ? value.cronCustom : value.cronPreset
+  const defaultValues: RuleFormValues = {
+    type: rule.type as 'expense' | 'income',
+    amount: Number(rule.amount).toString(),
+    description: rule.description,
+    categoryId: rule.categoryId,
+    counterpartyId: rule.counterpartyId ?? '',
+    currentAccountId: rule.currentAccountId,
+    cronPreset: initialPreset,
+    cronCustom: rule.cronExpression,
+    dueDaysFromCreation: rule.dueDaysFromCreation
+      ? String(rule.dueDaysFromCreation)
+      : '',
+  }
 
-      try {
-        new Cron(cronExpression, { paused: true })
-      } catch {
-        toast.error('Некорректное cron-выражение')
-        return
-      }
+  const handleSubmit = async (value: RuleFormValues) => {
+    const cronExpression =
+      value.cronPreset === 'custom' ? value.cronCustom : value.cronPreset
 
-      try {
-        await updateRecurringRule({
-          data: {
-            id,
-            type: value.type,
-            amount: +value.amount,
-            description: value.description,
-            categoryId: value.categoryId,
-            currentAccountId: value.currentAccountId,
-            cronExpression,
-            dueDaysFromCreation:
-              value.dueDaysFromCreation.trim() !== '' &&
-              !isNaN(+value.dueDaysFromCreation) &&
-              +value.dueDaysFromCreation > 0
-                ? +value.dueDaysFromCreation
-                : null,
-          },
-        })
-        toast.success('Правило обновлено')
-        await router.invalidate()
-        handleClose()
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : 'Произошла ошибка')
-      }
-    },
-  })
+    new Cron(cronExpression, { paused: true })
+
+    await updateRecurringRule({
+      data: {
+        id,
+        type: value.type,
+        amount: +value.amount,
+        description: value.description,
+        categoryId: value.categoryId,
+        counterpartyId: value.counterpartyId ?? '',
+        currentAccountId: value.currentAccountId,
+        cronExpression,
+        dueDaysFromCreation:
+          value.dueDaysFromCreation.trim() !== '' &&
+          !isNaN(+value.dueDaysFromCreation) &&
+          +value.dueDaysFromCreation > 0
+            ? +value.dueDaysFromCreation
+            : null,
+      },
+    })
+    toast.success('Правило обновлено')
+    await router.invalidate()
+    handleClose()
+  }
 
   return (
     <ResponsiveDialog
@@ -167,7 +87,8 @@ function EditRulePage() {
       description="Запись будет создаваться автоматически по расписанию. Срок оплаты рассчитывается от даты создания."
     >
       <RecurringForm
-        form={form}
+        defaultValues={defaultValues}
+        onSubmit={handleSubmit}
         categories={categories}
         accounts={accounts}
         counterparties={counterparties}

@@ -6,6 +6,22 @@ import { counterparty, counterpartyTypeEnum } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { auth } from 'utils/auth'
 
+// ─── Query key ────────────────────────────────────────────────────────────────
+
+export const counterpartiesQueryKey = ['counterparties'] as const
+
+// ─── Fetch ────────────────────────────────────────────────────────────────────
+
+export const fetchCounterparties = createServerFn().handler(async () => {
+  const request = getRequest()
+  const session = await auth.api.getSession({ headers: request.headers })
+  if (!session?.user?.id) throw new Error('Не авторизован')
+
+  return db.query.counterparty.findMany({
+    columns: { id: true, name: true, fullName: true, type: true, tin: true },
+  })
+})
+
 // ─── Delete ───────────────────────────────────────────────────────────────────
 
 const deleteCounterpartySchema = z.object({ id: z.string() })

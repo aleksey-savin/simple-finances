@@ -1,5 +1,7 @@
 import type {
   Category as DBCategory,
+  Expense as DBExpense,
+  Income as DBIncome,
   Counterparty as DBCounterparty,
   CurrentAccount,
   CurrentAccountUser,
@@ -8,6 +10,28 @@ import type {
 } from '@/db/types'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
+
+export type Expense = Pick<
+  DBExpense,
+  'id' | 'description' | 'amount' | 'dueDate' | 'paidAt' | 'createdAt'
+> & {
+  category: Pick<DBCategory, 'id' | 'name'>
+  currentAccount: Pick<CurrentAccount, 'id' | 'name'>
+  counterparty: Pick<DBCounterparty, 'id' | 'name'> | null
+  createdByUser: { id: string; name: string }
+  type: string
+}
+
+export type Income = Pick<
+  DBIncome,
+  'id' | 'description' | 'amount' | 'dueDate' | 'paidAt' | 'createdAt'
+> & {
+  category: Pick<DBCategory, 'id' | 'name'>
+  currentAccount: Pick<CurrentAccount, 'id' | 'name'>
+  counterparty: Pick<DBCounterparty, 'id' | 'name'> | null
+  createdByUser: { id: string; name: string }
+  type: string
+}
 
 export type Member = Pick<CurrentAccountUser, 'id' | 'role'> & {
   user: Pick<User, 'id' | 'name' | 'email'>
@@ -37,6 +61,7 @@ export type RuleWithRelations = Pick<
   | 'amount'
   | 'description'
   | 'categoryId'
+  | 'counterpartyId'
   | 'currentAccountId'
   | 'cronExpression'
   | 'dueDaysFromCreation'
@@ -50,4 +75,5 @@ export type RuleWithRelations = Pick<
 > & {
   category: { id: string; name: string }
   currentAccount: { id: string; name: string }
+  counterparty: { id: string; name: string } | null
 }

@@ -1,5 +1,6 @@
 import z from 'zod'
-import type { ReactFormExtendedApi } from '@tanstack/react-form'
+import { useForm } from '@tanstack/react-form'
+import { toast } from 'sonner'
 import { CRON_PRESETS } from '@/components/reccuring/constants'
 import { Button } from '@/components/ui/button'
 import { DialogFooter } from '@/components/ui/dialog'
@@ -12,6 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import type { Category } from '@/types'
+import type { CurrentAccount } from '#/db/types'
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -29,47 +32,37 @@ export const ruleFormSchema = z.object({
 
 export type RuleFormValues = z.infer<typeof ruleFormSchema>
 
-// Convenience alias for the fully-typed form instance returned by useForm(...)
-// with RuleFormValues as the data shape. Validator generics are relaxed to any
-// to match whatever useForm infers at the call site.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type RuleForm = ReactFormExtendedApi<
-  RuleFormValues,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any
->
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export const RecurringForm = ({
-  form,
+  defaultValues,
+  onSubmit,
   categories,
   accounts,
   counterparties,
   isEdit,
   onClose,
 }: {
-  form: RuleForm
-  categories: {
-    id: string
-    name: string
-    useForExpenses: boolean
-    useForIncome: boolean
-  }[]
-  accounts: { id: string; name: string }[]
+  defaultValues: RuleFormValues
+  onSubmit: (value: RuleFormValues) => Promise<void>
+  categories: Category[]
+  accounts: CurrentAccount[]
   counterparties: { id: string; name: string }[]
   isEdit: boolean
   onClose: () => void
 }) => {
+  const form = useForm({
+    defaultValues,
+    validators: { onSubmit: ruleFormSchema },
+    onSubmit: async ({ value }) => {
+      try {
+        await onSubmit(value)
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Произошла ошибка')
+      }
+    },
+  })
+
   return (
     <form
       className="flex flex-col gap-4 mt-2"
@@ -90,7 +83,6 @@ export const RecurringForm = ({
                   type="button"
                   onClick={() => {
                     field.handleChange(t)
-                    // Reset category when type changes
                     form.setFieldValue('categoryId', '')
                   }}
                   className={`flex-1 px-4 py-2 transition-colors ${
@@ -196,37 +188,32 @@ export const RecurringForm = ({
         )}
       </form.Subscribe>
 
-      <form.Subscribe selector={(s) => s.values.type}>
-        {(type) =>
-          type === 'expense' ? (
-            <form.Field name="counterpartyId">
-              {(field) => (
-                <Field>
-                  <FieldLabel>Контрагент</FieldLabel>
-                  <Select
-                    value={field.state.value || '__none__'}
-                    onValueChange={(v) =>
-                      field.handleChange(v === '__none__' ? '' : v)
-                    }
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Выберите получателя (необязательно)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">Не указан</SelectItem>
-                      {counterparties.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-              )}
-            </form.Field>
-          ) : null
-        }
-      </form.Subscribe>
+      {/* Counterparty */}
+      <form.Field name="counterpartyId">
+        {(field) => (
+          <Field>
+            <FieldLabel>Контрагент</FieldLabel>
+            <Select
+              value={field.state.value || '__none__'}
+              onValueChange={(v) =>
+                field.handleChange(v === '__none__' ? '' : v)
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Выберите контрагента (необязательно)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">Не указан</SelectItem>
+                {counterparties.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+        )}
+      </form.Field>
 
       {/* Account */}
       <form.Field name="currentAccountId">

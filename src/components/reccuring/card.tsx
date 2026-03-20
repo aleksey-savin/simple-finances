@@ -69,12 +69,9 @@ export const RuleCard = ({
         <div className="flex flex-col gap-2">
           {/* Category & account */}
           <div className="flex flex-wrap gap-1 text-xs">
-            <span className="rounded bg-muted px-1.5 py-0.5">
-              {rule.category.name}
-            </span>
-            <span className="rounded bg-muted px-1.5 py-0.5">
-              {rule.currentAccount.name}
-            </span>
+            <Badge>{rule.category.name}</Badge>
+            <Badge>{rule.currentAccount.name}</Badge>
+            <Badge>{rule.counterparty?.name}</Badge>
           </div>
 
           {/* Schedule */}

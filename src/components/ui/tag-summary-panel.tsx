@@ -58,7 +58,7 @@ export function TagSummaryPanel({ totals, className }: TagSummaryPanelProps) {
     <div
       className={cn(
         'fixed bottom-6 right-6 z-50',
-        'w-72 rounded-xl shadow-xl border',
+        'w-72 shadow-xl border',
         'bg-background/95 backdrop-blur-sm',
         'overflow-hidden',
         className,

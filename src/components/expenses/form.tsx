@@ -8,6 +8,7 @@ import type { Expense } from '@/db/types'
 import { addExpense, updateExpense } from './actions'
 
 import { Button } from '@/components/ui/button'
+import { DialogFooter } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import {
@@ -40,6 +41,7 @@ type ExpenseFormProps = {
   categories: { id: string; name: string; useForExpenses: boolean }[]
   accounts: { id: string; name: string }[]
   counterparties?: { id: string; name: string }[]
+  asDialog?: boolean
 }
 
 // ─── Unified form component ───────────────────────────────────────────────────
@@ -50,6 +52,7 @@ export const ExpenseForm = ({
   categories,
   accounts,
   counterparties = [],
+  asDialog = false,
 }: ExpenseFormProps) => {
   const router = useRouter()
   const isEdit = exp !== undefined
@@ -285,6 +288,13 @@ export const ExpenseForm = ({
             Отмена
           </Button>
         </div>
+      ) : asDialog ? (
+        <DialogFooter className="mt-2">
+          <Button type="button" variant="outline" onClick={onDone}>
+            Отмена
+          </Button>
+          <Button type="submit">Добавить</Button>
+        </DialogFooter>
       ) : (
         <div className="flex gap-2 justify-end items-center">
           <Button type="submit">Добавить</Button>
@@ -298,6 +308,10 @@ export const ExpenseForm = ({
 
   if (isEdit) {
     return <div className="flex flex-col gap-3 pt-2">{fields}</div>
+  }
+
+  if (asDialog) {
+    return <div className="flex flex-col gap-4 overflow-y-auto">{fields}</div>
   }
 
   return (

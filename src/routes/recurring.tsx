@@ -4,93 +4,16 @@ import {
   useNavigate,
   useRouter,
 } from '@tanstack/react-router'
-import { createServerFn } from '@tanstack/react-start'
-import { getRequest } from '@tanstack/react-start/server'
-import { auth } from 'utils/auth'
-import { db } from '#/db'
-import { recurringRule, currentAccountUser, currentAccount } from '#/db/schema'
-import { eq, inArray } from 'drizzle-orm'
-import { Cron } from 'croner'
-import z from 'zod'
+
 import { toast } from 'sonner'
 
 import { RefreshCw } from 'lucide-react'
 import { RuleCard } from '#/components/reccuring/card'
+import {
+  fetchRecurringData,
+  toggleRecurringRule,
+} from '#/components/reccuring/actions'
 import type { RuleWithRelations } from '@/types'
-
-// ─── Server functions ──────────────────────────────────────────────────────────
-
-const fetchRecurringData = createServerFn().handler(async () => {
-  const request = getRequest()
-  const session = await auth.api.getSession({ headers: request.headers })
-  if (!session?.user?.id) throw new Error('Не авторизован')
-
-  const userId = session.user.id
-
-  const memberships = await db
-    .select({
-      currentAccountId: currentAccountUser.currentAccountId,
-      role: currentAccountUser.role,
-    })
-    .from(currentAccountUser)
-    .where(eq(currentAccountUser.userId, userId))
-
-  const accountIds = memberships.map((m) => m.currentAccountId)
-
-  if (accountIds.length === 0) {
-    const cats = await db.query.category.findMany({})
-    return { rules: [], categories: cats, accounts: [] }
-  }
-
-  const [rules, cats, accounts] = await Promise.all([
-    db.query.recurringRule.findMany({
-      where: inArray(recurringRule.currentAccountId, accountIds),
-      with: {
-        category: { columns: { id: true, name: true } },
-        currentAccount: { columns: { id: true, name: true } },
-      },
-    }),
-    db.query.category.findMany({}),
-    db.query.currentAccount.findMany({
-      where: inArray(currentAccount.id, accountIds),
-    }),
-  ])
-
-  return { rules, categories: cats, accounts }
-})
-
-// ── Toggle active ──────────────────────────────────────────────────────────────
-
-const toggleRuleSchema = z.object({ id: z.string(), isActive: z.boolean() })
-
-const toggleRecurringRule = createServerFn({ method: 'POST' })
-  .inputValidator(toggleRuleSchema)
-  .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
-
-    // When re-activating, recalculate nextRunAt so it fires at the proper future time
-    let nextRunAt: Date | null = null
-    if (data.isActive) {
-      const existing = await db.query.recurringRule.findFirst({
-        where: eq(recurringRule.id, data.id),
-        columns: { cronExpression: true },
-      })
-      if (existing) {
-        const job = new Cron(existing.cronExpression, { paused: true })
-        nextRunAt = job.nextRun() ?? null
-      }
-    }
-
-    await db
-      .update(recurringRule)
-      .set({
-        isActive: data.isActive,
-        ...(data.isActive && nextRunAt ? { nextRunAt } : {}),
-      })
-      .where(eq(recurringRule.id, data.id))
-  })
 
 // ─── Route ────────────────────────────────────────────────────────────────────
 

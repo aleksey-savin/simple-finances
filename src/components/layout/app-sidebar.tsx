@@ -20,8 +20,8 @@ const navMain = [
     title: 'Обзор',
     items: [
       {
-        title: 'Движение средств',
-        url: '/movements',
+        title: 'Транзакции',
+        url: '/transactions',
       },
       {
         title: 'Запланированные платежи',

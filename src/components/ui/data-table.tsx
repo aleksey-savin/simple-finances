@@ -61,8 +61,9 @@ export function DataTable<TData>({
   defaultPageSize = 20,
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = React.useState<SortingState>(initialSorting)
-  const [columnFilters, setColumnFilters] =
-    React.useState<ColumnFiltersState>([])
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    [],
+  )
   const [globalFilter, setGlobalFilter] = React.useState<string>('')
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
@@ -90,7 +91,7 @@ export function DataTable<TData>({
     <div className="flex flex-col gap-4">
       {toolbar?.(table)}
 
-      <div className="rounded-md border overflow-hidden">
+      <div className="border overflow-hidden">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -260,8 +261,10 @@ function DataTablePagination<TData>({
 
 // ─── Column header with sorting ───────────────────────────────────────────────
 
-interface DataTableColumnHeaderProps<TData, TValue>
-  extends React.HTMLAttributes<HTMLDivElement> {
+interface DataTableColumnHeaderProps<
+  TData,
+  TValue,
+> extends React.HTMLAttributes<HTMLDivElement> {
   column: Column<TData, TValue>
   title: string
 }

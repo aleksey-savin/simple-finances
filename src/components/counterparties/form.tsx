@@ -1,13 +1,18 @@
 import z from 'zod'
 import { useForm } from '@tanstack/react-form'
 import { useRouter } from '@tanstack/react-router'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { counterpartyTypeEnum } from '@/db/schema'
 import type { CounterpartyType } from '@/db/types'
 import type { Counterparty } from '@/types'
 
-import { addCounterparty, updateCounterparty } from './actions'
+import {
+  addCounterparty,
+  updateCounterparty,
+  counterpartiesQueryKey,
+} from './actions'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -42,6 +47,7 @@ export const CounterpartyForm = ({
   onDone,
 }: CounterpartyFormProps) => {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const isEdit = cp !== undefined
 
   const form = useForm({
@@ -63,11 +69,15 @@ export const CounterpartyForm = ({
         if (isEdit) {
           await updateCounterparty({ data: { id: cp.id, ...serverData } })
           await router.invalidate()
+          await queryClient.invalidateQueries({
+            queryKey: counterpartiesQueryKey,
+          })
           toast.success('Контрагент обновлён')
           onDone()
         } else {
           await addCounterparty({ data: serverData })
           router.invalidate()
+          queryClient.invalidateQueries({ queryKey: counterpartiesQueryKey })
           form.reset()
           toast.success('Контрагент успешно добавлен')
         }

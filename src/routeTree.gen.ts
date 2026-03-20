@@ -10,14 +10,15 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UsersRouteImport } from './routes/users'
+import { Route as TransactionsRouteImport } from './routes/transactions'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as RecurringRouteImport } from './routes/recurring'
 import { Route as ReceivablesRouteImport } from './routes/receivables'
 import { Route as PayablesRouteImport } from './routes/payables'
-import { Route as MovementsRouteImport } from './routes/movements'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UsersNewRouteImport } from './routes/users.new'
+import { Route as TransactionsNewRouteImport } from './routes/transactions.new'
 import { Route as RecurringNewRouteImport } from './routes/recurring.new'
 import { Route as UsersIdUpdateRouteImport } from './routes/users.$id.update'
 import { Route as UsersIdUnbanRouteImport } from './routes/users.$id.unban'
@@ -29,6 +30,11 @@ import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 const UsersRoute = UsersRouteImport.update({
   id: '/users',
   path: '/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TransactionsRoute = TransactionsRouteImport.update({
+  id: '/transactions',
+  path: '/transactions',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignupRoute = SignupRouteImport.update({
@@ -51,11 +57,6 @@ const PayablesRoute = PayablesRouteImport.update({
   path: '/payables',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MovementsRoute = MovementsRouteImport.update({
-  id: '/movements',
-  path: '/movements',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -70,6 +71,11 @@ const UsersNewRoute = UsersNewRouteImport.update({
   id: '/new',
   path: '/new',
   getParentRoute: () => UsersRoute,
+} as any)
+const TransactionsNewRoute = TransactionsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => TransactionsRoute,
 } as any)
 const RecurringNewRoute = RecurringNewRouteImport.update({
   id: '/new',
@@ -110,13 +116,14 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/movements': typeof MovementsRoute
   '/payables': typeof PayablesRoute
   '/receivables': typeof ReceivablesRoute
   '/recurring': typeof RecurringRouteWithChildren
   '/signup': typeof SignupRoute
+  '/transactions': typeof TransactionsRouteWithChildren
   '/users': typeof UsersRouteWithChildren
   '/recurring/new': typeof RecurringNewRoute
+  '/transactions/new': typeof TransactionsNewRoute
   '/users/new': typeof UsersNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/recurring/$id/edit': typeof RecurringIdEditRoute
@@ -128,13 +135,14 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/movements': typeof MovementsRoute
   '/payables': typeof PayablesRoute
   '/receivables': typeof ReceivablesRoute
   '/recurring': typeof RecurringRouteWithChildren
   '/signup': typeof SignupRoute
+  '/transactions': typeof TransactionsRouteWithChildren
   '/users': typeof UsersRouteWithChildren
   '/recurring/new': typeof RecurringNewRoute
+  '/transactions/new': typeof TransactionsNewRoute
   '/users/new': typeof UsersNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/recurring/$id/edit': typeof RecurringIdEditRoute
@@ -147,13 +155,14 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/movements': typeof MovementsRoute
   '/payables': typeof PayablesRoute
   '/receivables': typeof ReceivablesRoute
   '/recurring': typeof RecurringRouteWithChildren
   '/signup': typeof SignupRoute
+  '/transactions': typeof TransactionsRouteWithChildren
   '/users': typeof UsersRouteWithChildren
   '/recurring/new': typeof RecurringNewRoute
+  '/transactions/new': typeof TransactionsNewRoute
   '/users/new': typeof UsersNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/recurring/$id/edit': typeof RecurringIdEditRoute
@@ -167,13 +176,14 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
-    | '/movements'
     | '/payables'
     | '/receivables'
     | '/recurring'
     | '/signup'
+    | '/transactions'
     | '/users'
     | '/recurring/new'
+    | '/transactions/new'
     | '/users/new'
     | '/api/auth/$'
     | '/recurring/$id/edit'
@@ -185,13 +195,14 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
-    | '/movements'
     | '/payables'
     | '/receivables'
     | '/recurring'
     | '/signup'
+    | '/transactions'
     | '/users'
     | '/recurring/new'
+    | '/transactions/new'
     | '/users/new'
     | '/api/auth/$'
     | '/recurring/$id/edit'
@@ -203,13 +214,14 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/login'
-    | '/movements'
     | '/payables'
     | '/receivables'
     | '/recurring'
     | '/signup'
+    | '/transactions'
     | '/users'
     | '/recurring/new'
+    | '/transactions/new'
     | '/users/new'
     | '/api/auth/$'
     | '/recurring/$id/edit'
@@ -222,11 +234,11 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
-  MovementsRoute: typeof MovementsRoute
   PayablesRoute: typeof PayablesRoute
   ReceivablesRoute: typeof ReceivablesRoute
   RecurringRoute: typeof RecurringRouteWithChildren
   SignupRoute: typeof SignupRoute
+  TransactionsRoute: typeof TransactionsRouteWithChildren
   UsersRoute: typeof UsersRouteWithChildren
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
@@ -238,6 +250,13 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/users'
       preLoaderRoute: typeof UsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/transactions': {
+      id: '/transactions'
+      path: '/transactions'
+      fullPath: '/transactions'
+      preLoaderRoute: typeof TransactionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/signup': {
@@ -268,13 +287,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PayablesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/movements': {
-      id: '/movements'
-      path: '/movements'
-      fullPath: '/movements'
-      preLoaderRoute: typeof MovementsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -295,6 +307,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/users/new'
       preLoaderRoute: typeof UsersNewRouteImport
       parentRoute: typeof UsersRoute
+    }
+    '/transactions/new': {
+      id: '/transactions/new'
+      path: '/new'
+      fullPath: '/transactions/new'
+      preLoaderRoute: typeof TransactionsNewRouteImport
+      parentRoute: typeof TransactionsRoute
     }
     '/recurring/new': {
       id: '/recurring/new'
@@ -362,6 +381,18 @@ const RecurringRouteWithChildren = RecurringRoute._addFileChildren(
   RecurringRouteChildren,
 )
 
+interface TransactionsRouteChildren {
+  TransactionsNewRoute: typeof TransactionsNewRoute
+}
+
+const TransactionsRouteChildren: TransactionsRouteChildren = {
+  TransactionsNewRoute: TransactionsNewRoute,
+}
+
+const TransactionsRouteWithChildren = TransactionsRoute._addFileChildren(
+  TransactionsRouteChildren,
+)
+
 interface UsersRouteChildren {
   UsersNewRoute: typeof UsersNewRoute
   UsersIdBanRoute: typeof UsersIdBanRoute
@@ -383,11 +414,11 @@ const UsersRouteWithChildren = UsersRoute._addFileChildren(UsersRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
-  MovementsRoute: MovementsRoute,
   PayablesRoute: PayablesRoute,
   ReceivablesRoute: ReceivablesRoute,
   RecurringRoute: RecurringRouteWithChildren,
   SignupRoute: SignupRoute,
+  TransactionsRoute: TransactionsRouteWithChildren,
   UsersRoute: UsersRouteWithChildren,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }

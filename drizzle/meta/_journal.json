@@ -120,6 +120,13 @@
       "when": 1773299983918,
       "tag": "0016_dapper_anthem",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1773990024860,
+      "tag": "0017_goofy_slipstream",
+      "breakpoints": true
     }
   ]
 }
