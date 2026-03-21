@@ -14,7 +14,12 @@ export const AddCategoryForm = () => {
   const router = useRouter()
   const queryClient = useQueryClient()
   const form = useForm({
-    defaultValues: { name: '', useForIncome: false, useForExpenses: false },
+    defaultValues: {
+      name: '',
+      useForIncome: false,
+      useForExpenses: false,
+      isShared: false,
+    },
     validators: { onSubmit: categoryFormSchema },
     onSubmit: async ({ value }) => {
       try {
@@ -23,6 +28,7 @@ export const AddCategoryForm = () => {
             name: value.name,
             useForIncome: value.useForIncome,
             useForExpenses: value.useForExpenses,
+            isShared: value.isShared,
           },
         })
         router.invalidate()
@@ -115,6 +121,28 @@ export const AddCategoryForm = () => {
             }}
           />
         </div>
+
+        <form.Field
+          name="isShared"
+          children={(field) => (
+            <Field>
+              <div className="flex items-center justify-start gap-2">
+                <Switch
+                  id={field.name}
+                  checked={field.state.value}
+                  onCheckedChange={field.handleChange}
+                  onBlur={field.handleBlur}
+                />
+                <FieldLabel htmlFor={field.name} className="cursor-pointer">
+                  Общая категория
+                </FieldLabel>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Общие категории видны всем пользователям
+              </p>
+            </Field>
+          )}
+        />
 
         <Button type="submit">Создать</Button>
       </div>

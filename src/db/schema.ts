@@ -213,6 +213,7 @@ export const category = pgTable('category', {
   name: text().notNull().unique(),
   useForExpenses: boolean('use_for_expenses').notNull().default(false),
   useForIncome: boolean('use_for_income').notNull().default(false),
+  isShared: boolean('is_shared').notNull().default(false),
   createdBy: text('created_by')
     .notNull()
     .references(() => user.id),

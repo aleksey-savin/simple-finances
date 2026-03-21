@@ -123,21 +123,24 @@ export const IncomeItem = ({
               <Badge variant="outline" className="text-xs px-1.5 py-0">
                 {item.currentAccount.name}
               </Badge>
-              {isLinkedIncome && !canEditDelete && (
+              {isLinkedIncome ? (
                 <Badge
                   variant="secondary"
                   className="text-xs px-1.5 py-0 gap-1 text-muted-foreground"
                 >
                   <Link2 className="size-3" />
-                  Создан автоматически
+                  {item.createdByUser
+                    ? `Создан автоматически · ${item.createdByUser.name}`
+                    : 'Создан автоматически'}
                 </Badge>
-              )}
-              {sharedAccountIds.has(item.currentAccount.id) &&
+              ) : (
+                sharedAccountIds.has(item.currentAccount.id) &&
                 item.createdByUser && (
                   <span className="text-xs text-muted-foreground">
                     {item.createdByUser.name}
                   </span>
-                )}
+                )
+              )}
             </div>
           </div>
         </div>

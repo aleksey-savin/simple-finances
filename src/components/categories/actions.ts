@@ -2,7 +2,7 @@ import { db } from '#/db'
 import { category } from '#/db/schema'
 import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
-import { eq } from 'drizzle-orm'
+import { eq, or } from 'drizzle-orm'
 import { auth } from 'utils/auth'
 import z from 'zod'
 
@@ -18,11 +18,16 @@ export const fetchCategories = createServerFn().handler(async () => {
   if (!session?.user?.id) throw new Error('Не авторизован')
 
   return db.query.category.findMany({
+    where: or(
+      eq(category.createdBy, session.user.id),
+      eq(category.isShared, true),
+    ),
     columns: {
       id: true,
       name: true,
       useForExpenses: true,
       useForIncome: true,
+      isShared: true,
     },
   })
 })
@@ -39,6 +44,7 @@ export const categoryFormSchema = z.object({
   name: z.string().min(2, 'Минимум 2 символа'),
   useForIncome: z.boolean(),
   useForExpenses: z.boolean(),
+  isShared: z.boolean(),
 })
 
 export const addCategory = createServerFn({ method: 'POST' })
@@ -57,6 +63,7 @@ export const addCategory = createServerFn({ method: 'POST' })
         name: data.name,
         useForIncome: data.useForIncome,
         useForExpenses: data.useForExpenses,
+        isShared: data.isShared,
         createdBy: session.user.id,
         updatedBy: session.user.id,
       })
@@ -77,6 +84,7 @@ export const updateCategory = createServerFn({ method: 'POST' })
         name: data.name,
         useForExpenses: data.useForExpenses,
         useForIncome: data.useForIncome,
+        isShared: data.isShared,
       })
       .where(eq(category.id, data.id))
   })

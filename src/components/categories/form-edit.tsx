@@ -31,6 +31,7 @@ export const EditCategoryForm = ({
       name: category.name,
       useForExpenses: category.useForExpenses,
       useForIncome: category.useForIncome,
+      isShared: category.isShared,
     },
     validators: { onSubmit: categoryFormSchema },
     onSubmit: async ({ value }) => {
@@ -77,7 +78,7 @@ export const EditCategoryForm = ({
         }}
       </form.Field>
 
-      <div className="flex gap-6">
+      <div className="flex gap-6 flex-wrap">
         <form.Field name="useForExpenses">
           {(field) => (
             <div className="flex items-center gap-2">
@@ -108,6 +109,21 @@ export const EditCategoryForm = ({
           )}
         </form.Field>
       </div>
+
+      <form.Field name="isShared">
+        {(field) => (
+          <div className="flex items-center gap-2">
+            <Switch
+              id={`edit-shared-${category.id}`}
+              checked={field.state.value}
+              onCheckedChange={(val: boolean) => field.handleChange(val)}
+            />
+            <FieldLabel htmlFor={`edit-shared-${category.id}`}>
+              Общая
+            </FieldLabel>
+          </div>
+        )}
+      </form.Field>
 
       <div className="flex gap-2">
         <Button type="submit" size="sm">

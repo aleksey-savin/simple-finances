@@ -58,6 +58,7 @@ type ExpenseFormProps = {
     name: string
     useForExpenses: boolean
     useForIncome: boolean
+    isShared: boolean
   }[]
   accounts: { id: string; name: string }[]
   counterparties?: CounterpartyOption[]
@@ -81,7 +82,9 @@ export const ExpenseForm = ({
   const [paymentAccounts, setPaymentAccounts] = useState<PaymentAccount[]>([])
   const [isFetchingPayments, setIsFetchingPayments] = useState(false)
 
-  const incomeCategories = categories.filter((c) => c.useForIncome)
+  const sharedIncomeCategories = categories.filter(
+    (c) => c.useForIncome && c.isShared,
+  )
 
   const toLocalDatetimeString = (d: Date) => {
     const pad = (n: number) => String(n).padStart(2, '0')
@@ -414,7 +417,7 @@ export const ExpenseForm = ({
                               <SelectValue placeholder="Выберите категорию" />
                             </SelectTrigger>
                             <SelectContent>
-                              {incomeCategories.map((c) => (
+                              {sharedIncomeCategories.map((c) => (
                                 <SelectItem key={c.id} value={c.id}>
                                   {c.name}
                                 </SelectItem>

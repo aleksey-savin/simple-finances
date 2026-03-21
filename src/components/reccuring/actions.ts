@@ -7,8 +7,9 @@ import {
   currentAccountUser,
   currentAccount,
   counterparty,
+  category,
 } from '@/db/schema'
-import { eq, inArray } from 'drizzle-orm'
+import { eq, inArray, or } from 'drizzle-orm'
 import { Cron } from 'croner'
 import { auth } from 'utils/auth'
 
@@ -31,7 +32,12 @@ export const fetchRecurringData = createServerFn().handler(async () => {
 
   if (accountIds.length === 0) {
     const [categories, counterparties] = await Promise.all([
-      db.query.category.findMany({}),
+      db.query.category.findMany({
+        where: or(
+          eq(category.createdBy, session.user.id),
+          eq(category.isShared, true),
+        ),
+      }),
       db.query.counterparty.findMany({
         columns: { id: true, name: true, linkedUserId: true },
       }),
@@ -48,7 +54,12 @@ export const fetchRecurringData = createServerFn().handler(async () => {
         counterparty: { columns: { id: true, name: true } },
       },
     }),
-    db.query.category.findMany({}),
+    db.query.category.findMany({
+      where: or(
+        eq(category.createdBy, session.user.id),
+        eq(category.isShared, true),
+      ),
+    }),
     db.query.currentAccount.findMany({
       where: inArray(currentAccount.id, accountIds),
     }),

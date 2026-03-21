@@ -54,7 +54,7 @@ export type Account = Pick<
 
 export type Category = Pick<
   DBCategory,
-  'id' | 'name' | 'useForExpenses' | 'useForIncome'
+  'id' | 'name' | 'useForExpenses' | 'useForIncome' | 'isShared'
 >
 
 export type Counterparty = Pick<

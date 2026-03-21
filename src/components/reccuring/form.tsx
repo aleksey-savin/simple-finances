@@ -62,6 +62,9 @@ export const RecurringForm = ({
   const [isFetchingPayments, setIsFetchingPayments] = useState(false)
 
   const incomeCategories = categories.filter((c) => c.useForIncome)
+  const paymentIncomeCategories = categories.filter(
+    (c) => c.useForIncome && c.isShared,
+  )
 
   // In edit mode, auto-fetch payment accounts if a counterparty with linkedUserId is pre-selected
   useEffect(() => {
@@ -365,7 +368,7 @@ export const RecurringForm = ({
                                   <SelectValue placeholder="Выберите категорию" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {incomeCategories.map((c) => (
+                                  {paymentIncomeCategories.map((c) => (
                                     <SelectItem key={c.id} value={c.id}>
                                       {c.name}
                                     </SelectItem>

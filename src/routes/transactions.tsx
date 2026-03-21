@@ -17,6 +17,7 @@ import {
 
 import { db } from '#/db'
 import {
+  category,
   currentAccount,
   currentAccountUser,
   expense,
@@ -27,7 +28,7 @@ import { createFileRoute, Outlet } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
 import { auth } from 'utils/auth'
-import { eq, inArray } from 'drizzle-orm'
+import { eq, inArray, or } from 'drizzle-orm'
 import { format } from 'date-fns'
 import { CalendarIcon, Search, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -62,7 +63,9 @@ const fetchData = createServerFn().handler(async () => {
   )
 
   if (accountIds.length === 0) {
-    const categories = await db.query.category.findMany({})
+    const categories = await db.query.category.findMany({
+      where: or(eq(category.createdBy, userId), eq(category.isShared, true)),
+    })
     return { expenses: [], incomes: [], categories, accounts: [] }
   }
 
@@ -99,7 +102,9 @@ const fetchData = createServerFn().handler(async () => {
           createdByUser: { columns: { id: true, name: true } },
         },
       }),
-      db.query.category.findMany({}),
+      db.query.category.findMany({
+        where: or(eq(category.createdBy, userId), eq(category.isShared, true)),
+      }),
       db.query.counterparty.findMany({}),
       db.query.currentAccount.findMany({
         where: inArray(currentAccount.id, accountIds),
