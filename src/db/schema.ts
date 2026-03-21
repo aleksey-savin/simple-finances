@@ -259,6 +259,7 @@ export const expense = pgTable('expense', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
   dueDate: timestamp('due_date'),
   paidAt: timestamp('paid_at'),
+  archivedAt: timestamp('archived_at'),
   createdBy: text('created_by')
     .notNull()
     .references(() => user.id),
@@ -283,6 +284,7 @@ export const income = pgTable('income', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
   dueDate: timestamp('due_date'),
   paidAt: timestamp('paid_at'),
+  archivedAt: timestamp('archived_at'),
   linkedExpenseId: text('linked_expense_id').references(() => expense.id, {
     onDelete: 'set null',
   }),

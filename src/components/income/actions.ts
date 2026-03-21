@@ -6,6 +6,19 @@ import { income } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { auth } from 'utils/auth'
 
+// ─── Archive ──────────────────────────────────────────────────────────────────
+
+const archiveIncomeSchema = z.object({ id: z.string(), archive: z.boolean() })
+
+export const archiveIncome = createServerFn({ method: 'POST' })
+  .inputValidator(archiveIncomeSchema)
+  .handler(async ({ data }) => {
+    await db
+      .update(income)
+      .set({ archivedAt: data.archive ? new Date() : null })
+      .where(eq(income.id, data.id))
+  })
+
 // ─── Delete ───────────────────────────────────────────────────────────────────
 
 const deleteIncomeSchema = z.object({ id: z.string() })

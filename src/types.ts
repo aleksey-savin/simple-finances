@@ -13,7 +13,13 @@ import type {
 
 export type Expense = Pick<
   DBExpense,
-  'id' | 'description' | 'amount' | 'dueDate' | 'paidAt' | 'createdAt'
+  | 'id'
+  | 'description'
+  | 'amount'
+  | 'dueDate'
+  | 'paidAt'
+  | 'createdAt'
+  | 'archivedAt'
 > & {
   category: Pick<DBCategory, 'id' | 'name'>
   currentAccount: Pick<CurrentAccount, 'id' | 'name'>
@@ -32,6 +38,7 @@ export type Income = Pick<
   | 'createdAt'
   | 'createdBy'
   | 'linkedExpenseId'
+  | 'archivedAt'
 > & {
   category: Pick<DBCategory, 'id' | 'name'>
   currentAccount: Pick<CurrentAccount, 'id' | 'name'>

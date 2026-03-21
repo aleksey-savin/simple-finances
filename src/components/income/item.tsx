@@ -1,6 +1,8 @@
 import { format, isToday, isYesterday, isSameYear } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import {
+  Archive,
+  ArchiveRestore,
   ArrowUpCircle,
   CalendarDays,
   CheckCircle2,
@@ -26,8 +28,19 @@ import {
 import { toast } from 'sonner'
 import { DeleteIncome } from './delete'
 import { EditIncome } from './edit'
+import { archiveIncome } from './actions'
 import { useRouter } from '@tanstack/react-router'
 import type { Income } from '#/types'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../ui/alert-dialog'
 
 function formatDate(date: Date): string {
   if (isToday(date)) return 'Сегодня'
@@ -55,11 +68,13 @@ export const IncomeItem = ({
   const { data: session } = authClient.useSession()
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [archiveOpen, setArchiveOpen] = useState(false)
 
   const isLinkedIncome = !!item.linkedExpenseId
   const canEditDelete = item.createdBy === session?.user?.id
 
   const isPaid = item.paidAt !== null
+  const isArchived = item.archivedAt !== null
   const now = new Date()
   const isOverdue =
     !isPaid && item.dueDate !== null && new Date(item.dueDate) < now
@@ -74,7 +89,12 @@ export const IncomeItem = ({
     <Item
       key={item.id}
       variant={isPaid ? 'outline' : 'muted'}
-      className={isOverdue ? 'border-destructive/30 bg-destructive/5' : ''}
+      className={[
+        isOverdue ? 'border-destructive/30 bg-destructive/5' : '',
+        isArchived ? 'opacity-60' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
     >
       <ItemContent className="flex-row items-center gap-4 py-1">
         {/* Icon */}
@@ -123,6 +143,14 @@ export const IncomeItem = ({
               <Badge variant="outline" className="text-xs px-1.5 py-0">
                 {item.currentAccount.name}
               </Badge>
+              {isArchived && (
+                <Badge
+                  variant="secondary"
+                  className="text-xs px-1.5 py-0 gap-1 text-muted-foreground"
+                >
+                  <Archive className="size-3" />В архиве
+                </Badge>
+              )}
               {isLinkedIncome ? (
                 <Badge
                   variant="secondary"
@@ -218,6 +246,36 @@ export const IncomeItem = ({
                   Редактировать
                 </DropdownMenuItem>
               )}
+              {canEditDelete && isPaid && (
+                <>
+                  <DropdownMenuSeparator />
+                  {item.archivedAt ? (
+                    <DropdownMenuItem
+                      onClick={async () => {
+                        try {
+                          await archiveIncome({
+                            data: { id: item.id, archive: false },
+                          })
+                          await router.invalidate()
+                          toast.success('Доход разархивирован')
+                        } catch (e) {
+                          toast.error(
+                            e instanceof Error ? e.message : 'Произошла ошибка',
+                          )
+                        }
+                      }}
+                    >
+                      <ArchiveRestore className="size-3.5" />
+                      Разархивировать
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem onClick={() => setArchiveOpen(true)}>
+                      <Archive className="size-3.5" />
+                      Архивировать
+                    </DropdownMenuItem>
+                  )}
+                </>
+              )}
               {canEditDelete && !isPaid && (
                 <>
                   {canEditDelete && <DropdownMenuSeparator />}
@@ -255,6 +313,36 @@ export const IncomeItem = ({
               onOpenChange={setDeleteOpen}
             />
           )}
+          <AlertDialog open={archiveOpen} onOpenChange={setArchiveOpen}>
+            <AlertDialogContent size="sm">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Архивировать доход?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Запись будет перемещена в архив.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Отмена</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={async () => {
+                    try {
+                      await archiveIncome({
+                        data: { id: item.id, archive: true },
+                      })
+                      await router.invalidate()
+                      toast.success('Доход архивирован')
+                    } catch (e) {
+                      toast.error(
+                        e instanceof Error ? e.message : 'Произошла ошибка',
+                      )
+                    }
+                  }}
+                >
+                  Архивировать
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </ItemContent>
     </Item>

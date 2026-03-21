@@ -45,7 +45,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '#/components/ui/tooltip'
-import { Circle, Search, Trash2, AlertTriangle, X } from 'lucide-react'
+import {
+  Archive,
+  ArchiveRestore,
+  Circle,
+  Search,
+  Trash2,
+  AlertTriangle,
+  X,
+} from 'lucide-react'
 import {
   fetchTags,
   fetchTagTotals,
@@ -86,8 +94,8 @@ const fetchReceivables = createServerFn().handler(async () => {
       with: {
         category: { columns: { id: true, name: true } },
         currentAccount: { columns: { id: true, name: true } },
-        createdByUser: { columns: { id: true, name: true } },
         counterparty: { columns: { id: true, name: true } },
+        createdByUser: { columns: { id: true, name: true } },
       },
       orderBy: (t, { asc }) => asc(t.createdAt),
     }),
@@ -202,6 +210,22 @@ const deleteIncome = createServerFn({ method: 'POST' })
     await db.delete(income).where(eq(income.id, data.id))
   })
 
+// ── Archive ────────────────────────────────────────────────────────────────────
+
+const archiveIncomeSchema = z.object({ id: z.string(), archive: z.boolean() })
+
+const archiveIncome = createServerFn({ method: 'POST' })
+  .inputValidator(archiveIncomeSchema)
+  .handler(async ({ data }) => {
+    const request = getRequest()
+    const session = await auth.api.getSession({ headers: request.headers })
+    if (!session?.user?.id) throw new Error('Не авторизован')
+    await db
+      .update(income)
+      .set({ archivedAt: data.archive ? new Date() : null })
+      .where(eq(income.id, data.id))
+  })
+
 // ─── Route ────────────────────────────────────────────────────────────────────
 
 export const Route = createFileRoute('/receivables')({
@@ -302,6 +326,7 @@ function ReceivablesPage() {
   >(initialTagTotals ?? [])
 
   const [deleteTarget, setDeleteTarget] = useState<IncomeRow | null>(null)
+  const [archiveTarget, setArchiveTarget] = useState<IncomeRow | null>(null)
 
   const refreshTotals = async () => {
     try {
@@ -373,10 +398,52 @@ function ReceivablesPage() {
     }
   }
 
+  const handleArchive = async (row: IncomeRow) => {
+    if (row.archivedAt) {
+      try {
+        await archiveIncome({ data: { id: row.id, archive: false } })
+        await router.invalidate()
+        toast.success('Запись разархивирована')
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Ошибка')
+      }
+    } else {
+      setArchiveTarget(row)
+    }
+  }
+
+  const handleArchiveConfirm = async () => {
+    if (!archiveTarget) return
+    try {
+      await archiveIncome({ data: { id: archiveTarget.id, archive: true } })
+      await router.invalidate()
+      toast.success('Запись архивирована')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Ошибка')
+    } finally {
+      setArchiveTarget(null)
+    }
+  }
+
   // ── Columns ────────────────────────────────────────────────────────────────
 
   const columns = useMemo<ColumnDef<IncomeRow, unknown>[]>(
     () => [
+      {
+        id: 'counterparty',
+        accessorFn: (row) =>
+          (row.counterparty as { name: string } | null)?.name ?? '',
+        filterFn: idFilterFn,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Контрагент" />
+        ),
+        cell: ({ row }) => (
+          <span className="text-muted-foreground text-sm">
+            {(row.original.counterparty as { name: string } | null)?.name ??
+              '—'}
+          </span>
+        ),
+      },
       {
         id: 'description',
         accessorKey: 'description',
@@ -420,16 +487,7 @@ function ReceivablesPage() {
           </span>
         ),
       },
-      {
-        id: 'counterparty',
-        accessorFn: (row) =>
-          (row.counterparty as { name: string } | null)?.name ?? '',
-        filterFn: idFilterFn,
-        enableSorting: false,
-        header: () => null,
-        cell: () => null,
-        size: 0,
-      },
+
       {
         id: 'amount',
         accessorFn: (row) => Number(row.amount),
@@ -574,21 +632,48 @@ function ReceivablesPage() {
                 <TooltipContent>Отметить как полученное</TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={() => setDeleteTarget(row.original)}
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Удалить</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            {row.original.paidAt && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 text-muted-foreground hover:text-foreground"
+                      onClick={() => handleArchive(row.original)}
+                    >
+                      {row.original.archivedAt ? (
+                        <ArchiveRestore className="size-4" />
+                      ) : (
+                        <Archive className="size-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {row.original.archivedAt
+                      ? 'Разархивировать'
+                      : 'Архивировать'}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            {!row.original.paidAt && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => setDeleteTarget(row.original)}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Удалить</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
           </div>
         ),
         meta: { cellClassName: 'text-right' },
@@ -607,14 +692,14 @@ function ReceivablesPage() {
       {/* Page header */}
       <div className="flex flex-wrap items-start justify-end gap-4">
         <div className="flex gap-3">
-          <div className="rounded-lg border px-4 py-2 text-sm">
-            <p className="text-muted-foreground">Всего к получению</p>
+          <div className="border px-4 py-2 text-sm">
+            <p className="text-muted-foreground">Всего ожидается</p>
             <p className="text-lg font-semibold text-green-600 tabular-nums">
               {formatCurrency(totalAll)} ₽
             </p>
           </div>
           {overdueAll > 0 && (
-            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm">
+            <div className="border border-red-200 bg-red-50 px-4 py-2 text-sm">
               <p className="text-red-600">Просрочено</p>
               <p className="text-lg font-semibold text-red-600">
                 {overdueAll} {overdueAll === 1 ? 'запись' : 'записей'}
@@ -658,6 +743,27 @@ function ReceivablesPage() {
             <Button variant="destructive" onClick={handleDeleteConfirm}>
               Удалить
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Archive confirm */}
+      <Dialog
+        open={archiveTarget !== null}
+        onOpenChange={(open) => !open && setArchiveTarget(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Архивировать запись?</DialogTitle>
+            <DialogDescription>
+              «{archiveTarget?.description}» будет перемещена в архив.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Отмена</Button>
+            </DialogClose>
+            <Button onClick={handleArchiveConfirm}>Архивировать</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

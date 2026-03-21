@@ -1,6 +1,8 @@
 import { format, isToday, isYesterday, isSameYear } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import {
+  Archive,
+  ArchiveRestore,
   ArrowDownCircle,
   CalendarDays,
   CheckCircle2,
@@ -24,8 +26,19 @@ import {
 import { toast } from 'sonner'
 import { DeleteExpense } from './delete'
 import { EditExpense } from './edit'
+import { archiveExpense } from './actions'
 import { useRouter } from '@tanstack/react-router'
 import type { Expense } from '#/types'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../ui/alert-dialog'
 
 function formatDate(date: Date): string {
   if (isToday(date)) return 'Сегодня'
@@ -52,8 +65,10 @@ export const ExpenseItem = ({
   const router = useRouter()
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [archiveOpen, setArchiveOpen] = useState(false)
 
   const isPaid = item.paidAt !== null
+  const isArchived = item.archivedAt !== null
   const now = new Date()
   const isOverdue =
     !isPaid && item.dueDate !== null && new Date(item.dueDate) < now
@@ -68,7 +83,12 @@ export const ExpenseItem = ({
     <Item
       key={item.id}
       variant={isPaid ? 'outline' : 'muted'}
-      className={isOverdue ? 'border-destructive/30 bg-destructive/5' : ''}
+      className={[
+        isOverdue ? 'border-destructive/30 bg-destructive/5' : '',
+        isArchived ? 'opacity-60' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
     >
       <ItemContent className="flex-row items-center gap-4 py-1">
         {/* Icon */}
@@ -81,29 +101,18 @@ export const ExpenseItem = ({
             className={`size-5 ${isPaid ? 'text-destructive' : 'text-muted-foreground'}`}
           />
         </div>
-
-        {/* Write area — 3 columns */}
         <div className="flex flex-1 items-center gap-4 min-w-0">
-          {/* Col 1: Date */}
-          <div className="w-20 shrink-0">
+          <div className="flex flex-col justify-center gap-2 w-40 shrink-0">
             <span className="flex items-center gap-1 text-xs text-muted-foreground">
               <CalendarDays className="size-3 shrink-0" />
               {createdDate}
             </span>
-          </div>
-
-          {/* Col 2: Counterparty */}
-          <div className="w-32 shrink-0">
-            {item.counterparty ? (
+            {item.counterparty && (
               <span className="text-sm truncate block">
                 {item.counterparty.name}
               </span>
-            ) : (
-              <span className="text-sm text-muted-foreground/40">—</span>
             )}
           </div>
-
-          {/* Col 3: Description + badges */}
           <div className="flex flex-1 flex-col gap-0.5 min-w-0">
             <ItemTitle
               className={`flex flex-wrap text-lg font-semibold truncate ${!isPaid ? 'text-muted-foreground' : ''}`}
@@ -117,6 +126,14 @@ export const ExpenseItem = ({
               <Badge variant="outline" className="text-xs px-1.5 py-0">
                 {item.currentAccount.name}
               </Badge>
+              {isArchived && (
+                <Badge
+                  variant="secondary"
+                  className="text-xs px-1.5 py-0 gap-1 text-muted-foreground"
+                >
+                  <Archive className="size-3" />В архиве
+                </Badge>
+              )}
               {sharedAccountIds.has(item.currentAccount.id) &&
                 item.createdByUser && (
                   <span className="text-xs text-muted-foreground">
@@ -196,6 +213,33 @@ export const ExpenseItem = ({
                 <Pencil className="size-3.5" />
                 Редактировать
               </DropdownMenuItem>
+              {isPaid && <DropdownMenuSeparator />}
+              {isPaid &&
+                (item.archivedAt ? (
+                  <DropdownMenuItem
+                    onClick={async () => {
+                      try {
+                        await archiveExpense({
+                          data: { id: item.id, archive: false },
+                        })
+                        await router.invalidate()
+                        toast.success('Расход разархивирован')
+                      } catch (e) {
+                        toast.error(
+                          e instanceof Error ? e.message : 'Произошла ошибка',
+                        )
+                      }
+                    }}
+                  >
+                    <ArchiveRestore className="size-3.5" />
+                    Разархивировать
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem onClick={() => setArchiveOpen(true)}>
+                    <Archive className="size-3.5" />
+                    Архивировать
+                  </DropdownMenuItem>
+                ))}
               {!isPaid && (
                 <>
                   <DropdownMenuSeparator />
@@ -227,6 +271,36 @@ export const ExpenseItem = ({
               onOpenChange={setDeleteOpen}
             />
           )}
+          <AlertDialog open={archiveOpen} onOpenChange={setArchiveOpen}>
+            <AlertDialogContent size="sm">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Архивировать расход?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Запись будет перемещена в архив.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Отмена</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={async () => {
+                    try {
+                      await archiveExpense({
+                        data: { id: item.id, archive: true },
+                      })
+                      await router.invalidate()
+                      toast.success('Расход архивирован')
+                    } catch (e) {
+                      toast.error(
+                        e instanceof Error ? e.message : 'Произошла ошибка',
+                      )
+                    }
+                  }}
+                >
+                  Архивировать
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </ItemContent>
     </Item>

@@ -47,7 +47,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '#/components/ui/tooltip'
-import { AlertTriangle, Circle, Clock, Search, Trash2, X } from 'lucide-react'
+import {
+  AlertTriangle,
+  Archive,
+  ArchiveRestore,
+  Circle,
+  Clock,
+  Search,
+  Trash2,
+  X,
+} from 'lucide-react'
 import {
   fetchTags,
   createTag,
@@ -72,6 +81,8 @@ export type ExpenseRow = {
   dueDate: string | null
   /** ISO string | null  — always null for projected rows */
   paidAt: string | null
+  /** ISO string | null  — always null for projected rows */
+  archivedAt: string | null
   category: { id: string; name: string }
   currentAccount: { id: string; name: string }
   counterpartyId: string | null
@@ -136,23 +147,24 @@ const fetchPayables = createServerFn().handler(async () => {
     accounts,
     counterparties,
   ] = await Promise.all([
-    // All expenses this month (paid + unpaid)
+    // All expenses this month (paid + unpaid), excluding archived
     db.query.expense.findMany({
       where: and(
         inArray(expense.currentAccountId, accountIds),
         gte(expense.createdAt, monthStart),
         lte(expense.createdAt, monthEnd),
+        isNull(expense.archivedAt),
       ),
       with: withRelations,
       orderBy: (t, { asc }) => asc(t.createdAt),
     }),
 
-    // Unpaid expenses from months before the current one
+    // All non-archived expenses from months before the current one
     db.query.expense.findMany({
       where: and(
         inArray(expense.currentAccountId, accountIds),
         lt(expense.createdAt, monthStart),
-        isNull(expense.paidAt),
+        isNull(expense.archivedAt),
       ),
       with: withRelations,
       orderBy: (t, { asc }) => asc(t.createdAt),
@@ -206,6 +218,7 @@ const fetchPayables = createServerFn().handler(async () => {
           createdAt: next.toISOString(),
           dueDate: dueDate?.toISOString() ?? null,
           paidAt: null,
+          archivedAt: null,
           category: rule.category,
           currentAccount: rule.currentAccount,
           counterpartyId: rule.counterpartyId ?? null,
@@ -235,6 +248,7 @@ const fetchPayables = createServerFn().handler(async () => {
     createdAt: r.createdAt.toISOString(),
     dueDate: r.dueDate ? r.dueDate.toISOString() : null,
     paidAt: paid,
+    archivedAt: r.archivedAt ? r.archivedAt.toISOString() : null,
     category: r.category,
     currentAccount: r.currentAccount,
     counterpartyId: r.counterpartyId ?? null,
@@ -252,7 +266,7 @@ const fetchPayables = createServerFn().handler(async () => {
   )
 
   const previousUnpaid: ExpenseRow[] = previousUnpaidRaw.map((r) =>
-    toRow(r, null),
+    toRow(r, r.paidAt ? r.paidAt.toISOString() : null),
   )
 
   // ── Unique category list across all rows ───────────────────────────────────
@@ -372,6 +386,22 @@ const markPaid = createServerFn({ method: 'POST' })
     await db
       .update(expense)
       .set({ paidAt: data.paid ? new Date() : null })
+      .where(eq(expense.id, data.id))
+  })
+
+// ── Archive ────────────────────────────────────────────────────────────────────
+
+const archiveExpenseSchema = z.object({ id: z.string(), archive: z.boolean() })
+
+const archiveExpense = createServerFn({ method: 'POST' })
+  .inputValidator(archiveExpenseSchema)
+  .handler(async ({ data }) => {
+    const request = getRequest()
+    const session = await auth.api.getSession({ headers: request.headers })
+    if (!session?.user?.id) throw new Error('Не авторизован')
+    await db
+      .update(expense)
+      .set({ archivedAt: data.archive ? new Date() : null })
       .where(eq(expense.id, data.id))
   })
 
@@ -557,10 +587,12 @@ function ActionButtons({
   row,
   onMarkPaid,
   onDelete,
+  onArchive,
 }: {
   row: ExpenseRow
   onMarkPaid: (row: ExpenseRow) => void
   onDelete: (row: ExpenseRow) => void
+  onArchive: (row: ExpenseRow) => void
 }) {
   // Projected rows: no actions
   if (row.isProjected) return null
@@ -584,21 +616,46 @@ function ActionButtons({
           </Tooltip>
         </TooltipProvider>
       )}
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-              onClick={() => onDelete(row)}
-            >
-              <Trash2 className="size-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Удалить</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      {row.paidAt && (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8 text-muted-foreground hover:text-foreground"
+                onClick={() => onArchive(row)}
+              >
+                {row.archivedAt ? (
+                  <ArchiveRestore className="size-4" />
+                ) : (
+                  <Archive className="size-4" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {row.archivedAt ? 'Разархивировать' : 'Архивировать'}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
+      {!row.paidAt && (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={() => onDelete(row)}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Удалить</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
     </div>
   )
 }
@@ -608,6 +665,7 @@ function ActionButtons({
 function buildColumns(
   onMarkPaid: (row: ExpenseRow) => void,
   onDelete: (row: ExpenseRow) => void,
+  onArchive: (row: ExpenseRow) => void,
   tagsMap: TagsMap,
   allTags: TagItem[],
   onTagAdd: (expenseId: string, tag: TagItem) => Promise<void>,
@@ -615,6 +673,19 @@ function buildColumns(
   onTagCreate: (name: string, color: string) => Promise<TagItem>,
 ): ColumnDef<ExpenseRow, unknown>[] {
   return [
+    {
+      id: 'counterparty',
+      accessorFn: (row) => row.counterparty?.name ?? '',
+      filterFn: idFilterFn,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Контрагент" />
+      ),
+      cell: ({ row }) => (
+        <span className="text-muted-foreground text-sm">
+          {row.original.counterparty?.name ?? '—'}
+        </span>
+      ),
+    },
     {
       id: 'description',
       accessorKey: 'description',
@@ -669,15 +740,7 @@ function buildColumns(
         </span>
       ),
     },
-    {
-      id: 'counterparty',
-      accessorFn: (row) => row.counterparty?.name ?? '',
-      filterFn: idFilterFn,
-      enableSorting: false,
-      header: () => null,
-      cell: () => null,
-      size: 0,
-    },
+
     {
       id: 'amount',
       accessorFn: (row) => Number(row.amount),
@@ -767,6 +830,7 @@ function buildColumns(
           row={row.original}
           onMarkPaid={onMarkPaid}
           onDelete={onDelete}
+          onArchive={onArchive}
         />
       ),
       meta: { cellClassName: 'text-right' },
@@ -1027,6 +1091,7 @@ function PayablesPage() {
   >(initialTagTotals ?? [])
 
   const [deleteTarget, setDeleteTarget] = useState<ExpenseRow | null>(null)
+  const [archiveTarget, setArchiveTarget] = useState<ExpenseRow | null>(null)
 
   // Refresh tag totals from server (called after any tag mutation)
   const refreshTotals = async () => {
@@ -1100,11 +1165,39 @@ function PayablesPage() {
     }
   }
 
+  const handleArchive = async (row: ExpenseRow) => {
+    if (row.archivedAt) {
+      try {
+        await archiveExpense({ data: { id: row.id, archive: false } })
+        await router.invalidate()
+        toast.success('Запись разархивирована')
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Ошибка')
+      }
+    } else {
+      setArchiveTarget(row)
+    }
+  }
+
+  const handleArchiveConfirm = async () => {
+    if (!archiveTarget) return
+    try {
+      await archiveExpense({ data: { id: archiveTarget.id, archive: true } })
+      await router.invalidate()
+      toast.success('Запись архивирована')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Ошибка')
+    } finally {
+      setArchiveTarget(null)
+    }
+  }
+
   const columns = useMemo(
     () =>
       buildColumns(
         handleMarkPaid,
         setDeleteTarget,
+        handleArchive,
         tagsMap,
         allTags,
         handleTagAdd,
@@ -1140,7 +1233,7 @@ function PayablesPage() {
       <div className="flex flex-wrap items-start justify-end gap-4">
         {/* Stat cards */}
         <div className="flex flex-wrap gap-3">
-          <div className="rounded-lg border px-4 py-2 text-sm min-w-35">
+          <div className="border px-4 py-2 text-sm min-w-35">
             <p className="text-muted-foreground">К оплате (месяц)</p>
             <p className="text-lg font-semibold text-red-500 tabular-nums">
               {formatCurrency(currentMonthUnpaid)} ₽
@@ -1148,7 +1241,7 @@ function PayablesPage() {
           </div>
 
           {currentMonthPaid > 0 && (
-            <div className="rounded-lg border px-4 py-2 text-sm min-w-35">
+            <div className="border px-4 py-2 text-sm min-w-35">
               <p className="text-muted-foreground">Оплачено (месяц)</p>
               <p className="text-lg font-semibold text-foreground/60 tabular-nums">
                 {formatCurrency(currentMonthPaid)} ₽
@@ -1157,7 +1250,7 @@ function PayablesPage() {
           )}
 
           {previousTotal > 0 && (
-            <div className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-2 text-sm min-w-35">
+            <div className="border border-orange-200 bg-orange-50 px-4 py-2 text-sm min-w-35">
               <p className="text-orange-700">Долг прошлых периодов</p>
               <p className="text-lg font-semibold text-orange-600 tabular-nums">
                 {formatCurrency(previousTotal)} ₽
@@ -1166,7 +1259,7 @@ function PayablesPage() {
           )}
 
           {overdueCount > 0 && (
-            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm">
+            <div className="border border-red-200 bg-red-50 px-4 py-2 text-sm">
               <p className="text-red-600">Просрочено</p>
               <p className="text-lg font-semibold text-red-600">
                 {overdueCount} {overdueCount === 1 ? 'запись' : 'записей'}
@@ -1253,6 +1346,27 @@ function PayablesPage() {
             <Button variant="destructive" onClick={handleDeleteConfirm}>
               Удалить
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Archive confirmation ──────────────────────────────────────────── */}
+      <Dialog
+        open={archiveTarget !== null}
+        onOpenChange={(open) => !open && setArchiveTarget(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Архивировать запись?</DialogTitle>
+            <DialogDescription>
+              «{archiveTarget?.description}» будет перемещена в архив.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Отмена</Button>
+            </DialogClose>
+            <Button onClick={handleArchiveConfirm}>Архивировать</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

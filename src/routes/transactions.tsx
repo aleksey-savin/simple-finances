@@ -92,6 +92,7 @@ const fetchData = createServerFn().handler(async () => {
           createdAt: true,
           dueDate: true,
           paidAt: true,
+          archivedAt: true,
           createdBy: true,
           linkedExpenseId: true,
         },

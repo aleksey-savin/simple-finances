@@ -42,6 +42,19 @@ export const deleteExpense = createServerFn({ method: 'POST' })
     await db.delete(expense).where(eq(expense.id, data.id))
   })
 
+// ─── Archive ──────────────────────────────────────────────────────────────────
+
+const archiveExpenseSchema = z.object({ id: z.string(), archive: z.boolean() })
+
+export const archiveExpense = createServerFn({ method: 'POST' })
+  .inputValidator(archiveExpenseSchema)
+  .handler(async ({ data }) => {
+    await db
+      .update(expense)
+      .set({ archivedAt: data.archive ? new Date() : null })
+      .where(eq(expense.id, data.id))
+  })
+
 // ─── Add ──────────────────────────────────────────────────────────────────────
 
 export const addExpenseSchema = z.object({
