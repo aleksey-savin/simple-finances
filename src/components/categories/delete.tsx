@@ -1,18 +1,21 @@
 import { Trash2 } from 'lucide-react'
 
 import { useRouter } from '@tanstack/react-router'
+import { useQueryClient } from '@tanstack/react-query'
 
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
-import { deleteCategory } from './actions'
+import { deleteCategory, categoriesQueryKey } from './actions'
 
 export const DeleteCategory = ({ categoryId }: { categoryId: string }) => {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const handleDelete = async () => {
     try {
       await deleteCategory({ data: { id: categoryId } })
       await router.invalidate()
+      await queryClient.invalidateQueries({ queryKey: categoriesQueryKey })
       toast.success('Категория удалена')
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Произошла ошибка')

@@ -1,0 +1,1 @@
+ALTER TABLE "current_account" ADD COLUMN "accept_payments" boolean DEFAULT false NOT NULL;

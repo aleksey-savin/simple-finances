@@ -127,6 +127,34 @@
       "when": 1773990024860,
       "tag": "0017_goofy_slipstream",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1774064716492,
+      "tag": "0018_empty_starjammers",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1774065801553,
+      "tag": "0019_acoustic_satana",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1774068565705,
+      "tag": "0020_steep_green_goblin",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1774071363922,
+      "tag": "0021_robust_oracle",
+      "breakpoints": true
     }
   ]
 }

@@ -1,11 +1,13 @@
 import z from 'zod'
+import { useState } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
+import { Loader2, ArrowRight } from 'lucide-react'
 
 import type { Expense } from '@/db/types'
 
-import { addExpense, updateExpense } from './actions'
+import { addExpense, updateExpense, fetchPaymentAccounts } from './actions'
 
 import { Button } from '@/components/ui/button'
 import { DialogFooter } from '@/components/ui/dialog'
@@ -31,16 +33,34 @@ const uiFormSchema = z.object({
   currentAccountId: z.string().min(1, 'Выберите счёт'),
   counterpartyId: z.string(),
   dueDate: z.string(),
+  createdAt: z.string(),
+  paymentAccountId: z.string(),
+  paymentCategoryId: z.string(),
 })
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type CounterpartyOption = {
+  id: string
+  name: string
+  linkedUserId?: string | null
+}
+
+type PaymentAccount = { id: string; name: string }
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 type ExpenseFormProps = {
   expense?: Expense
   onDone: () => void
-  categories: { id: string; name: string; useForExpenses: boolean }[]
+  categories: {
+    id: string
+    name: string
+    useForExpenses: boolean
+    useForIncome: boolean
+  }[]
   accounts: { id: string; name: string }[]
-  counterparties?: { id: string; name: string }[]
+  counterparties?: CounterpartyOption[]
   asDialog?: boolean
 }
 
@@ -57,6 +77,46 @@ export const ExpenseForm = ({
   const router = useRouter()
   const isEdit = exp !== undefined
 
+  // ── Payment state (add mode only) ─────────────────────────────────────────
+  const [paymentAccounts, setPaymentAccounts] = useState<PaymentAccount[]>([])
+  const [isFetchingPayments, setIsFetchingPayments] = useState(false)
+
+  const incomeCategories = categories.filter((c) => c.useForIncome)
+
+  const toLocalDatetimeString = (d: Date) => {
+    const pad = (n: number) => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  }
+
+  const handleCounterpartyChange = async (
+    val: string,
+    fieldChange: (v: string) => void,
+    resetPaymentAccount: () => void,
+    resetPaymentCategory: () => void,
+  ) => {
+    fieldChange(val)
+    resetPaymentAccount()
+    resetPaymentCategory()
+    setPaymentAccounts([])
+
+    if (!val) return
+
+    const cp = counterparties.find((c) => c.id === val)
+    if (!cp?.linkedUserId) return
+
+    setIsFetchingPayments(true)
+    try {
+      const accounts = await fetchPaymentAccounts({
+        data: { linkedUserId: cp.linkedUserId },
+      })
+      setPaymentAccounts(accounts)
+    } catch {
+      // silently ignore — no payment section shown
+    } finally {
+      setIsFetchingPayments(false)
+    }
+  }
+
   const form = useForm({
     defaultValues: {
       amount: exp ? String(exp.amount) : '',
@@ -67,6 +127,11 @@ export const ExpenseForm = ({
       dueDate: exp?.dueDate
         ? new Date(exp.dueDate).toISOString().split('T')[0]
         : '',
+      createdAt: toLocalDatetimeString(
+        exp ? new Date(exp.createdAt) : new Date(),
+      ),
+      paymentAccountId: '',
+      paymentCategoryId: '',
     },
     validators: { onSubmit: uiFormSchema },
     onSubmit: async ({ value }) => {
@@ -78,6 +143,11 @@ export const ExpenseForm = ({
           currentAccountId: value.currentAccountId,
           counterpartyId: value.counterpartyId || undefined,
           dueDate: value.dueDate || undefined,
+          createdAt: value.createdAt
+            ? new Date(value.createdAt).toISOString()
+            : undefined,
+          paymentAccountId: value.paymentAccountId || undefined,
+          paymentCategoryId: value.paymentCategoryId || undefined,
         }
 
         if (isEdit) {
@@ -90,6 +160,7 @@ export const ExpenseForm = ({
           await router.invalidate()
           toast.success('Расход успешно добавлен')
           form.reset()
+          setPaymentAccounts([])
           onDone()
         }
       } catch (error) {
@@ -233,31 +304,150 @@ export const ExpenseForm = ({
       {counterparties.length > 0 && (
         <form.Field name="counterpartyId">
           {(field) => (
-            <Field>
-              <FieldLabel htmlFor={field.name}>Контрагент</FieldLabel>
-              <Select
-                value={field.state.value}
-                onValueChange={(val) => field.handleChange(val)}
-              >
-                <SelectTrigger
-                  id={field.name}
-                  className="w-full"
-                  onBlur={field.handleBlur}
-                >
-                  <SelectValue placeholder="Выберите контрагента" />
-                </SelectTrigger>
-                <SelectContent>
-                  {counterparties.map((cp) => (
-                    <SelectItem key={cp.id} value={cp.id}>
-                      {cp.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
+            <form.Field name="paymentAccountId">
+              {(paymentAccountField) => (
+                <form.Field name="paymentCategoryId">
+                  {(paymentCategoryField) => (
+                    <Field>
+                      <FieldLabel htmlFor={field.name}>Контрагент</FieldLabel>
+                      <Select
+                        value={field.state.value}
+                        onValueChange={(val) =>
+                          handleCounterpartyChange(
+                            val,
+                            field.handleChange,
+                            () => paymentAccountField.handleChange(''),
+                            () => paymentCategoryField.handleChange(''),
+                          )
+                        }
+                      >
+                        <SelectTrigger
+                          id={field.name}
+                          className="w-full"
+                          onBlur={field.handleBlur}
+                        >
+                          <SelectValue placeholder="Выберите контрагента" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {counterparties.map((cp) => (
+                            <SelectItem key={cp.id} value={cp.id}>
+                              {cp.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  )}
+                </form.Field>
+              )}
+            </form.Field>
           )}
         </form.Field>
       )}
+
+      {/* Payment section — add mode only, shown when counterparty has linked user */}
+      {!isEdit && (
+        <>
+          {isFetchingPayments && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
+              <Loader2 className="size-3 animate-spin" />
+              Загрузка счетов для оплаты…
+            </div>
+          )}
+
+          {!isFetchingPayments && paymentAccounts.length > 0 && (
+            <div className="flex flex-col gap-3 rounded-md border border-dashed p-3">
+              <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                <ArrowRight className="size-3.5" />
+                Зачислить доход контрагенту
+              </p>
+
+              {/* Payment account */}
+              <form.Field name="paymentAccountId">
+                {(field) => (
+                  <Field>
+                    <FieldLabel htmlFor={field.name}>
+                      Счёт получателя
+                    </FieldLabel>
+                    <Select
+                      value={field.state.value}
+                      onValueChange={(val) => field.handleChange(val)}
+                    >
+                      <SelectTrigger
+                        id={field.name}
+                        className="w-full"
+                        onBlur={field.handleBlur}
+                      >
+                        <SelectValue placeholder="Выберите счёт" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {paymentAccounts.map((a) => (
+                          <SelectItem key={a.id} value={a.id}>
+                            {a.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                )}
+              </form.Field>
+
+              {/* Income category — shown once a payment account is picked */}
+              <form.Subscribe selector={(s) => s.values.paymentAccountId}>
+                {(paymentAccountId) =>
+                  paymentAccountId ? (
+                    <form.Field name="paymentCategoryId">
+                      {(field) => (
+                        <Field>
+                          <FieldLabel htmlFor={field.name}>
+                            Категория дохода
+                          </FieldLabel>
+                          <Select
+                            value={field.state.value}
+                            onValueChange={(val) => field.handleChange(val)}
+                          >
+                            <SelectTrigger
+                              id={field.name}
+                              className="w-full"
+                              onBlur={field.handleBlur}
+                            >
+                              <SelectValue placeholder="Выберите категорию" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {incomeCategories.map((c) => (
+                                <SelectItem key={c.id} value={c.id}>
+                                  {c.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </Field>
+                      )}
+                    </form.Field>
+                  ) : null
+                }
+              </form.Subscribe>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Created at */}
+      <form.Field name="createdAt">
+        {(field) => (
+          <Field>
+            <FieldLabel htmlFor={field.name}>Дата создания</FieldLabel>
+            <Input
+              id={field.name}
+              name={field.name}
+              type="datetime-local"
+              value={field.state.value}
+              onBlur={field.handleBlur}
+              onChange={(e) => field.handleChange(e.target.value)}
+            />
+          </Field>
+        )}
+      </form.Field>
 
       {/* Due date */}
       <form.Field name="dueDate">

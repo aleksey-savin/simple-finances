@@ -34,18 +34,47 @@ export default defineTask({
               )
             : undefined
 
-        const table = rule.type === 'expense' ? expense : income
+        if (rule.type === 'expense') {
+          const [inserted] = await db
+            .insert(expense)
+            .values({
+              amount: rule.amount,
+              description: rule.description,
+              categoryId: rule.categoryId,
+              currentAccountId: rule.currentAccountId,
+              counterpartyId: rule.counterpartyId ?? undefined,
+              dueDate,
+              createdBy: rule.createdBy,
+              updatedBy: rule.createdBy,
+            })
+            .returning({ id: expense.id })
 
-        await db.insert(table).values({
-          amount: rule.amount,
-          description: rule.description,
-          categoryId: rule.categoryId,
-          currentAccountId: rule.currentAccountId,
-          counterpartyId: rule.counterpartyId ?? undefined,
-          dueDate,
-          createdBy: rule.createdBy,
-          updatedBy: rule.createdBy,
-        })
+          // Mirror the expense as an income in the counterparty's account
+          if (rule.paymentAccountId && rule.paymentCategoryId) {
+            await db.insert(income).values({
+              amount: rule.amount,
+              description: rule.description,
+              categoryId: rule.paymentCategoryId,
+              currentAccountId: rule.paymentAccountId,
+              counterpartyId: rule.counterpartyId ?? undefined,
+              dueDate,
+              createdBy: rule.createdBy,
+              updatedBy: rule.createdBy,
+              linkedExpenseId: inserted.id,
+            })
+          }
+        } else {
+          await db.insert(income).values({
+            amount: rule.amount,
+            description: rule.description,
+            categoryId: rule.categoryId,
+            currentAccountId: rule.currentAccountId,
+            counterpartyId: rule.counterpartyId ?? undefined,
+            dueDate,
+            createdBy: rule.createdBy,
+            updatedBy: rule.createdBy,
+          })
+        }
 
         // Calculate the next scheduled run using croner (paused = no side-effects)
         const job = new Cron(rule.cronExpression, { paused: true })

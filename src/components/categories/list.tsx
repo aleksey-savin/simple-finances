@@ -1,5 +1,7 @@
 import { Pencil, Tag } from 'lucide-react'
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { fetchCategories, categoriesQueryKey } from './actions'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -90,7 +92,11 @@ function CategoryRow({
   )
 }
 
-export const CategoriesList = ({ categories }: { categories: Category[] }) => {
+export const CategoriesList = () => {
+  const { data: categories = [] } = useQuery({
+    queryKey: categoriesQueryKey,
+    queryFn: () => fetchCategories(),
+  })
   const [editingId, setEditingId] = useState<string | null>(null)
   return (
     <>

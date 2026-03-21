@@ -25,6 +25,7 @@ export const addIncomeSchema = z.object({
   currentAccountId: z.string().min(1, 'Выберите счёт'),
   counterpartyId: z.string().optional(),
   dueDate: z.string().optional(),
+  createdAt: z.string().optional(),
 })
 
 export const addIncome = createServerFn({ method: 'POST' })
@@ -46,6 +47,7 @@ export const addIncome = createServerFn({ method: 'POST' })
         currentAccountId: data.currentAccountId,
         counterpartyId: data.counterpartyId,
         dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
+        createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
         createdBy: session.user.id,
         updatedBy: session.user.id,
       })
@@ -79,6 +81,7 @@ export const updateIncome = createServerFn({ method: 'POST' })
         currentAccountId: data.currentAccountId,
         counterpartyId: data.counterpartyId,
         dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
+        createdAt: data.createdAt ? new Date(data.createdAt) : undefined,
         updatedBy: session.user.id,
       })
       .where(eq(income.id, data.id))

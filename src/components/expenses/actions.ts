@@ -2,9 +2,33 @@ import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
 import { z } from 'zod'
 import { db } from '@/db'
-import { expense } from '@/db/schema'
+import { currentAccountUser, expense, income } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { auth } from 'utils/auth'
+
+// ─── Fetch payment accounts ───────────────────────────────────────────────────
+
+export const fetchPaymentAccounts = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ linkedUserId: z.string() }))
+  .handler(async ({ data }) => {
+    const request = getRequest()
+    const session = await auth.api.getSession({ headers: request.headers })
+    if (!session?.user?.id) throw new Error('Не авторизован')
+
+    const memberships = await db.query.currentAccountUser.findMany({
+      where: eq(currentAccountUser.userId, data.linkedUserId),
+      with: {
+        currentAccount: {
+          columns: { id: true, name: true, acceptPayments: true },
+        },
+      },
+    })
+
+    return memberships
+      .map((m) => m.currentAccount)
+      .filter((a) => a.acceptPayments)
+      .map((a) => ({ id: a.id, name: a.name }))
+  })
 
 // ─── Delete ───────────────────────────────────────────────────────────────────
 
@@ -13,6 +37,8 @@ const deleteExpenseSchema = z.object({ id: z.string() })
 export const deleteExpense = createServerFn({ method: 'POST' })
   .inputValidator(deleteExpenseSchema)
   .handler(async ({ data }) => {
+    // Remove any income that was auto-created from this expense
+    await db.delete(income).where(eq(income.linkedExpenseId, data.id))
     await db.delete(expense).where(eq(expense.id, data.id))
   })
 
@@ -25,6 +51,11 @@ export const addExpenseSchema = z.object({
   currentAccountId: z.string().min(1, 'Выберите счёт'),
   counterpartyId: z.string().optional(),
   dueDate: z.string().optional(),
+  createdAt: z.string().optional(),
+  /** ID of the linked user's account that will receive a mirrored income entry */
+  paymentAccountId: z.string().optional(),
+  /** Category used for the mirrored income entry */
+  paymentCategoryId: z.string().optional(),
 })
 
 export const addExpense = createServerFn({ method: 'POST' })
@@ -37,6 +68,9 @@ export const addExpense = createServerFn({ method: 'POST' })
       throw new Error('Не авторизован')
     }
 
+    const dueDate = data.dueDate ? new Date(data.dueDate) : undefined
+    const createdAt = data.createdAt ? new Date(data.createdAt) : new Date()
+
     const [inserted] = await db
       .insert(expense)
       .values({
@@ -45,11 +79,29 @@ export const addExpense = createServerFn({ method: 'POST' })
         categoryId: data.categoryId,
         currentAccountId: data.currentAccountId,
         counterpartyId: data.counterpartyId,
-        dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
+        dueDate,
+        createdAt,
         createdBy: session.user.id,
         updatedBy: session.user.id,
       })
       .returning({ id: expense.id })
+
+    // If a payment account + category were chosen, create the mirrored income
+    // in the counterparty's linked user account atomically.
+    if (data.paymentAccountId && data.paymentCategoryId) {
+      await db.insert(income).values({
+        amount: data.amount.toString(),
+        description: data.description,
+        categoryId: data.paymentCategoryId,
+        currentAccountId: data.paymentAccountId,
+        counterpartyId: data.counterpartyId,
+        dueDate,
+        createdAt,
+        createdBy: session.user.id,
+        updatedBy: session.user.id,
+        linkedExpenseId: inserted.id,
+      })
+    }
 
     return inserted.id
   })
@@ -70,6 +122,9 @@ export const updateExpense = createServerFn({ method: 'POST' })
       throw new Error('Не авторизован')
     }
 
+    const dueDate = data.dueDate ? new Date(data.dueDate) : undefined
+    const createdAt = data.createdAt ? new Date(data.createdAt) : undefined
+
     await db
       .update(expense)
       .set({
@@ -78,8 +133,21 @@ export const updateExpense = createServerFn({ method: 'POST' })
         categoryId: data.categoryId,
         currentAccountId: data.currentAccountId,
         counterpartyId: data.counterpartyId,
-        dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
+        dueDate,
+        ...(createdAt && { createdAt }),
         updatedBy: session.user.id,
       })
       .where(eq(expense.id, data.id))
+
+    // Sync mirrored income if one is linked to this expense
+    await db
+      .update(income)
+      .set({
+        amount: data.amount.toString(),
+        description: data.description,
+        dueDate,
+        ...(createdAt && { createdAt }),
+        updatedBy: session.user.id,
+      })
+      .where(eq(income.linkedExpenseId, data.id))
   })

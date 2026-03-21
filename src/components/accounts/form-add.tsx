@@ -4,19 +4,25 @@ import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 import { Field, FieldError, FieldLabel } from '../ui/field'
 import { useRouter } from '@tanstack/react-router'
-import { addAccountFormSchema, addAccount } from './actions'
+import { useQueryClient } from '@tanstack/react-query'
+import { addAccountFormSchema, addAccount, accountsQueryKey } from './actions'
 
 export const AddAccountForm = () => {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const form = useForm({
-    defaultValues: { name: '' },
+    defaultValues: { name: '', acceptPayments: false },
     validators: { onSubmit: addAccountFormSchema },
     onSubmit: async ({ value }) => {
       try {
-        await addAccount({ data: { name: value.name } })
+        await addAccount({
+          data: { name: value.name, acceptPayments: value.acceptPayments },
+        })
         router.invalidate()
+        queryClient.invalidateQueries({ queryKey: accountsQueryKey })
         form.reset()
         toast.success('Счёт успешно добавлен')
       } catch (error) {
@@ -59,6 +65,29 @@ export const AddAccountForm = () => {
               </Field>
             )
           }}
+        />
+
+        <form.Field
+          name="acceptPayments"
+          children={(field) => (
+            <Field>
+              <div className="flex items-center justify-between gap-3">
+                <FieldLabel htmlFor={field.name} className="cursor-pointer">
+                  Принимать платежи
+                </FieldLabel>
+                <Switch
+                  id={field.name}
+                  checked={field.state.value}
+                  onCheckedChange={field.handleChange}
+                  onBlur={field.handleBlur}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Другие пользователи смогут направлять расходы на этот счёт как
+                доход
+              </p>
+            </Field>
+          )}
         />
 
         <Button type="submit">Создать</Button>

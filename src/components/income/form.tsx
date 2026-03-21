@@ -31,6 +31,7 @@ const uiFormSchema = z.object({
   currentAccountId: z.string().min(1, 'Выберите счёт'),
   counterpartyId: z.string(),
   dueDate: z.string(),
+  createdAt: z.string(),
 })
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -57,6 +58,11 @@ export const IncomeForm = ({
   const router = useRouter()
   const isEdit = inc !== undefined
 
+  const toLocalDatetimeString = (d: Date) => {
+    const pad = (n: number) => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  }
+
   const form = useForm({
     defaultValues: {
       amount: inc ? String(inc.amount) : '',
@@ -67,6 +73,9 @@ export const IncomeForm = ({
       dueDate: inc?.dueDate
         ? new Date(inc.dueDate).toISOString().split('T')[0]
         : '',
+      createdAt: toLocalDatetimeString(
+        inc ? new Date(inc.createdAt) : new Date(),
+      ),
     },
     validators: { onSubmit: uiFormSchema },
     onSubmit: async ({ value }) => {
@@ -78,6 +87,9 @@ export const IncomeForm = ({
           currentAccountId: value.currentAccountId,
           counterpartyId: value.counterpartyId || undefined,
           dueDate: value.dueDate || undefined,
+          createdAt: value.createdAt
+            ? new Date(value.createdAt).toISOString()
+            : undefined,
         }
 
         if (isEdit) {
@@ -261,6 +273,23 @@ export const IncomeForm = ({
           )}
         </form.Field>
       )}
+
+      {/* Created at */}
+      <form.Field name="createdAt">
+        {(field) => (
+          <Field>
+            <FieldLabel htmlFor={field.name}>Дата создания</FieldLabel>
+            <Input
+              id={field.name}
+              name={field.name}
+              type="datetime-local"
+              value={field.state.value}
+              onBlur={field.handleBlur}
+              onChange={(e) => field.handleChange(e.target.value)}
+            />
+          </Field>
+        )}
+      </form.Field>
 
       {/* Due date */}
       <form.Field name="dueDate">

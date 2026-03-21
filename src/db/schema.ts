@@ -154,6 +154,7 @@ export const currentAccount = pgTable('current_account', {
     .$defaultFn(() => crypto.randomUUID()),
   name: text().notNull(),
   balance: numeric().notNull().default('0'),
+  acceptPayments: boolean('accept_payments').notNull().default(false),
   createdBy: text('created_by')
     .notNull()
     .references(() => user.id),
@@ -228,6 +229,9 @@ export const counterparty = pgTable('counterparty', {
   fullName: text().unique(),
   tin: text().unique(),
   type: counterpartyTypeEnum('type'),
+  linkedUserId: text('linked_user_id').references(() => user.id, {
+    onDelete: 'set null',
+  }),
   createdBy: text('created_by')
     .notNull()
     .references(() => user.id),
@@ -278,6 +282,9 @@ export const income = pgTable('income', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
   dueDate: timestamp('due_date'),
   paidAt: timestamp('paid_at'),
+  linkedExpenseId: text('linked_expense_id').references(() => expense.id, {
+    onDelete: 'set null',
+  }),
   createdBy: text('created_by')
     .notNull()
     .references(() => user.id),
@@ -298,6 +305,15 @@ export const recurringRule = pgTable('recurring_rule', {
     .notNull()
     .references(() => category.id),
   counterpartyId: text('counterparty_id').references(() => counterparty.id),
+  /** Account in the counterparty's system that receives the mirrored income (expense rules only) */
+  paymentAccountId: text('payment_account_id').references(
+    () => currentAccount.id,
+    { onDelete: 'set null' },
+  ),
+  /** Category used for the mirrored income entry (expense rules only) */
+  paymentCategoryId: text('payment_category_id').references(() => category.id, {
+    onDelete: 'set null',
+  }),
   currentAccountId: text('current_account_id')
     .notNull()
     .references(() => currentAccount.id),
@@ -425,13 +441,24 @@ export const incomeRelations = relations(income, ({ one, many }) => ({
     fields: [income.createdBy],
     references: [user.id],
   }),
+  linkedExpense: one(expense, {
+    fields: [income.linkedExpenseId],
+    references: [expense.id],
+  }),
 }))
 
-export const counterpartyRelations = relations(counterparty, ({ many }) => ({
-  expenses: many(expense),
-  incomes: many(income),
-  recurringRules: many(recurringRule),
-}))
+export const counterpartyRelations = relations(
+  counterparty,
+  ({ one, many }) => ({
+    expenses: many(expense),
+    incomes: many(income),
+    recurringRules: many(recurringRule),
+    linkedUser: one(user, {
+      fields: [counterparty.linkedUserId],
+      references: [user.id],
+    }),
+  }),
+)
 
 export const categoryRelations = relations(category, ({ many }) => ({
   expenses: many(expense),

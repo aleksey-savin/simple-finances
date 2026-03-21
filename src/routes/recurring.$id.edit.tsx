@@ -48,6 +48,8 @@ function EditRulePage() {
     dueDaysFromCreation: rule.dueDaysFromCreation
       ? String(rule.dueDaysFromCreation)
       : '',
+    paymentAccountId: rule.paymentAccountId ?? '',
+    paymentCategoryId: rule.paymentCategoryId ?? '',
   }
 
   const handleSubmit = async (value: RuleFormValues) => {
@@ -72,6 +74,8 @@ function EditRulePage() {
           +value.dueDaysFromCreation > 0
             ? +value.dueDaysFromCreation
             : null,
+        paymentAccountId: value.paymentAccountId || undefined,
+        paymentCategoryId: value.paymentCategoryId || undefined,
       },
     })
     toast.success('Правило обновлено')

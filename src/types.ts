@@ -24,7 +24,14 @@ export type Expense = Pick<
 
 export type Income = Pick<
   DBIncome,
-  'id' | 'description' | 'amount' | 'dueDate' | 'paidAt' | 'createdAt'
+  | 'id'
+  | 'description'
+  | 'amount'
+  | 'dueDate'
+  | 'paidAt'
+  | 'createdAt'
+  | 'createdBy'
+  | 'linkedExpenseId'
 > & {
   category: Pick<DBCategory, 'id' | 'name'>
   currentAccount: Pick<CurrentAccount, 'id' | 'name'>
@@ -37,7 +44,10 @@ export type Member = Pick<CurrentAccountUser, 'id' | 'role'> & {
   user: Pick<User, 'id' | 'name' | 'email'>
 }
 
-export type Account = Pick<CurrentAccount, 'id' | 'name' | 'createdBy'> & {
+export type Account = Pick<
+  CurrentAccount,
+  'id' | 'name' | 'createdBy' | 'acceptPayments'
+> & {
   role: string
   members: Member[]
 }
@@ -49,8 +59,10 @@ export type Category = Pick<
 
 export type Counterparty = Pick<
   DBCounterparty,
-  'id' | 'name' | 'fullName' | 'type' | 'tin'
->
+  'id' | 'name' | 'fullName' | 'type' | 'tin' | 'linkedUserId'
+> & {
+  linkedUser: Pick<User, 'id' | 'name' | 'email'> | null
+}
 
 // ─── Recurring Rule ───────────────────────────────────────────────────────────
 
@@ -72,6 +84,8 @@ export type RuleWithRelations = Pick<
   | 'updatedBy'
   | 'createdAt'
   | 'updatedAt'
+  | 'paymentAccountId'
+  | 'paymentCategoryId'
 > & {
   category: { id: string; name: string }
   currentAccount: { id: string; name: string }

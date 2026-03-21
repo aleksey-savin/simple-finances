@@ -1,36 +1,43 @@
 import { useRouter } from '@tanstack/react-router'
-
+import { useQueryClient } from '@tanstack/react-query'
 import { useForm } from '@tanstack/react-form'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-
+import { Switch } from '@/components/ui/switch'
 import { Field, FieldError, FieldLabel } from '../ui/field'
 
-import type { CurrentAccountUpdate } from '#/db/types'
-import { updateAccount, updateAccountSchema } from './actions'
+import type { Account } from '#/types'
+import { updateAccount, updateAccountSchema, accountsQueryKey } from './actions'
 
 export const EditAccountForm = ({
   account,
   onDone,
 }: {
-  account: CurrentAccountUpdate
+  account: Account
   onDone: () => void
 }) => {
   const router = useRouter()
+  const queryClient = useQueryClient()
 
   const form = useForm({
     defaultValues: {
-      name: account.name,
+      name: account.name ?? '',
+      acceptPayments: account.acceptPayments ?? false,
     },
     validators: { onSubmit: updateAccountSchema },
     onSubmit: async ({ value }) => {
       try {
         await updateAccount({
-          data: { id: account.id, name: value.name || '' },
+          data: {
+            id: account.id,
+            name: value.name,
+            acceptPayments: value.acceptPayments,
+          },
         })
         await router.invalidate()
+        queryClient.invalidateQueries({ queryKey: accountsQueryKey })
         toast.success('Счёт обновлен')
         onDone()
       } catch (e) {
@@ -47,6 +54,7 @@ export const EditAccountForm = ({
         form.handleSubmit()
       }}
     >
+      {/* Name */}
       <form.Field name="name">
         {(field) => {
           const isInvalid =
@@ -66,6 +74,24 @@ export const EditAccountForm = ({
             </Field>
           )
         }}
+      </form.Field>
+
+      {/* Accept payments */}
+      <form.Field name="acceptPayments">
+        {(field) => (
+          <Field>
+            <div className="flex items-center justify-between">
+              <FieldLabel htmlFor={field.name} className="cursor-pointer">
+                Принимать платежи
+              </FieldLabel>
+              <Switch
+                id={field.name}
+                checked={field.state.value}
+                onCheckedChange={field.handleChange}
+              />
+            </div>
+          </Field>
+        )}
       </form.Field>
 
       <div className="flex gap-2">

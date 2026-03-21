@@ -20,9 +20,7 @@ import { Separator } from '../ui/separator'
 
 import { CategoriesList } from '.'
 
-import type { Category } from '#/types'
-
-const Categories = ({ categories }: { categories: Category[] }) => {
+const Categories = () => {
   const [open, setOpen] = useState(false)
 
   return (
@@ -44,7 +42,7 @@ const Categories = ({ categories }: { categories: Category[] }) => {
           <AddCategoryForm />
         </div>
         <Separator />
-        <CategoriesList categories={categories} />
+        <CategoriesList />
         <SheetFooter className="px-6 py-4 border-t">
           <SheetClose asChild>
             <Button variant="outline" className="w-full">

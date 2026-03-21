@@ -8,8 +8,13 @@ import { Field, FieldError, FieldLabel } from '../ui/field'
 
 import { Switch } from '../ui/switch'
 
+import { useQueryClient } from '@tanstack/react-query'
 import type { Category } from '#/types'
-import { updateCategory, updateCategorySchema } from './actions'
+import {
+  updateCategory,
+  categoryFormSchema,
+  categoriesQueryKey,
+} from './actions'
 
 export const EditCategoryForm = ({
   category,
@@ -19,6 +24,7 @@ export const EditCategoryForm = ({
   onDone: () => void
 }) => {
   const router = useRouter()
+  const queryClient = useQueryClient()
 
   const form = useForm({
     defaultValues: {
@@ -26,13 +32,14 @@ export const EditCategoryForm = ({
       useForExpenses: category.useForExpenses,
       useForIncome: category.useForIncome,
     },
-    validators: { onSubmit: updateCategorySchema },
+    validators: { onSubmit: categoryFormSchema },
     onSubmit: async ({ value }) => {
       try {
         await updateCategory({
           data: { id: category.id, ...value },
         })
         await router.invalidate()
+        queryClient.invalidateQueries({ queryKey: categoriesQueryKey })
         toast.success('Категория обновлена')
         onDone()
       } catch (e) {

@@ -1,8 +1,10 @@
 import z from 'zod'
+import { useState, useEffect, useRef } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { useRouter } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { Loader2, UserCheck, UserX, X } from 'lucide-react'
 
 import { counterpartyTypeEnum } from '@/db/schema'
 import type { CounterpartyType } from '@/db/types'
@@ -11,6 +13,7 @@ import type { Counterparty } from '@/types'
 import {
   addCounterparty,
   updateCounterparty,
+  searchUserByEmail,
   counterpartiesQueryKey,
 } from './actions'
 
@@ -30,9 +33,14 @@ import {
 const uiFormSchema = z.object({
   name: z.string().min(2, 'Минимум 2 символа'),
   fullName: z.string(),
-  type: z.enum(counterpartyTypeEnum.enumValues),
+  type: z.union([z.literal(''), z.enum(counterpartyTypeEnum.enumValues)]),
   tin: z.string(),
+  linkedUserId: z.string(),
 })
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type FoundUser = { id: string; name: string; email: string }
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -50,12 +58,23 @@ export const CounterpartyForm = ({
   const queryClient = useQueryClient()
   const isEdit = cp !== undefined
 
+  // ── Linked-user search state ──────────────────────────────────────────────
+  const [emailInput, setEmailInput] = useState(cp?.linkedUser?.email ?? '')
+  const [foundUser, setFoundUser] = useState<FoundUser | null>(
+    cp?.linkedUser ?? null,
+  )
+  const [notFound, setNotFound] = useState(false)
+  const [isSearching, setIsSearching] = useState(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // ── Form ──────────────────────────────────────────────────────────────────
   const form = useForm({
     defaultValues: {
       name: cp?.name ?? '',
       fullName: cp?.fullName ?? '',
       type: (cp?.type ?? '') as CounterpartyType | '',
       tin: cp?.tin ?? '',
+      linkedUserId: cp?.linkedUserId ?? '',
     },
     validators: { onSubmit: uiFormSchema },
     onSubmit: async ({ value }) => {
@@ -63,8 +82,9 @@ export const CounterpartyForm = ({
         const serverData = {
           name: value.name,
           fullName: value.fullName || undefined,
-          type: value.type as CounterpartyType,
+          type: value.type as CounterpartyType | undefined,
           tin: value.tin || undefined,
+          linkedUserId: value.linkedUserId || undefined,
         }
         if (isEdit) {
           await updateCounterparty({ data: { id: cp.id, ...serverData } })
@@ -79,6 +99,9 @@ export const CounterpartyForm = ({
           router.invalidate()
           queryClient.invalidateQueries({ queryKey: counterpartiesQueryKey })
           form.reset()
+          setEmailInput('')
+          setFoundUser(null)
+          setNotFound(false)
           toast.success('Контрагент успешно добавлен')
         }
       } catch (error) {
@@ -86,6 +109,60 @@ export const CounterpartyForm = ({
       }
     },
   })
+
+  // ── Debounced email search ────────────────────────────────────────────────
+  useEffect(() => {
+    const trimmed = emailInput.trim()
+
+    // If the current foundUser already matches the input, skip search
+    if (foundUser && foundUser.email === trimmed) return
+
+    // Clear linked user if input is emptied
+    if (!trimmed) {
+      setFoundUser(null)
+      setNotFound(false)
+      setIsSearching(false)
+      form.setFieldValue('linkedUserId', '')
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+      return
+    }
+
+    setIsSearching(true)
+    setNotFound(false)
+
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const result = await searchUserByEmail({ data: { email: trimmed } })
+        if (result) {
+          setFoundUser(result)
+          setNotFound(false)
+          form.setFieldValue('linkedUserId', result.id)
+        } else {
+          setFoundUser(null)
+          setNotFound(true)
+          form.setFieldValue('linkedUserId', '')
+        }
+      } catch {
+        setFoundUser(null)
+        setNotFound(false)
+      } finally {
+        setIsSearching(false)
+      }
+    }, 500)
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [emailInput])
+
+  const handleClearLinkedUser = () => {
+    setEmailInput('')
+    setFoundUser(null)
+    setNotFound(false)
+    form.setFieldValue('linkedUserId', '')
+  }
 
   return (
     <form
@@ -223,6 +300,64 @@ export const CounterpartyForm = ({
             )
           }}
         />
+
+        {/* Linked user by email */}
+        <Field>
+          <FieldLabel htmlFor="linked-user-email">
+            Привязать пользователя
+          </FieldLabel>
+          <div className="relative">
+            <Input
+              id="linked-user-email"
+              type="email"
+              autoComplete="off"
+              placeholder="Введите email пользователя"
+              value={emailInput}
+              onChange={(e) => setEmailInput(e.target.value)}
+              className={
+                foundUser
+                  ? 'border-green-500 pr-8'
+                  : notFound
+                    ? 'border-destructive pr-8'
+                    : emailInput
+                      ? 'pr-8'
+                      : ''
+              }
+            />
+            {/* Clear button */}
+            {emailInput && (
+              <button
+                type="button"
+                onClick={handleClearLinkedUser}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                tabIndex={-1}
+                aria-label="Очистить"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Status feedback */}
+          {isSearching && (
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Loader2 className="size-3 animate-spin" />
+              Поиск…
+            </p>
+          )}
+          {!isSearching && foundUser && (
+            <p className="flex items-center gap-1.5 text-xs text-green-600">
+              <UserCheck className="size-3.5" />
+              {foundUser.name} ({foundUser.email})
+            </p>
+          )}
+          {!isSearching && notFound && emailInput && (
+            <p className="flex items-center gap-1.5 text-xs text-destructive">
+              <UserX className="size-3.5" />
+              Пользователь не найден
+            </p>
+          )}
+        </Field>
 
         {/* Actions */}
         {isEdit ? (

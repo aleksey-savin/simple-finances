@@ -6,6 +6,27 @@ import { eq } from 'drizzle-orm'
 import { auth } from 'utils/auth'
 import z from 'zod'
 
+// ─── Query key ────────────────────────────────────────────────────────────────
+
+export const categoriesQueryKey = ['categories'] as const
+
+// ─── Fetch ────────────────────────────────────────────────────────────────────
+
+export const fetchCategories = createServerFn().handler(async () => {
+  const request = getRequest()
+  const session = await auth.api.getSession({ headers: request.headers })
+  if (!session?.user?.id) throw new Error('Не авторизован')
+
+  return db.query.category.findMany({
+    columns: {
+      id: true,
+      name: true,
+      useForExpenses: true,
+      useForIncome: true,
+    },
+  })
+})
+
 const deleteCategorySchema = z.object({ id: z.string() })
 
 export const deleteCategory = createServerFn({ method: 'POST' })
@@ -14,14 +35,14 @@ export const deleteCategory = createServerFn({ method: 'POST' })
     await db.delete(category).where(eq(category.id, data.id))
   })
 
-export const addCategorySchema = z.object({
+export const categoryFormSchema = z.object({
   name: z.string().min(2, 'Минимум 2 символа'),
   useForIncome: z.boolean(),
   useForExpenses: z.boolean(),
 })
 
 export const addCategory = createServerFn({ method: 'POST' })
-  .inputValidator(addCategorySchema)
+  .inputValidator(categoryFormSchema)
   .handler(async ({ data }) => {
     const request = getRequest()
     const session = await auth.api.getSession({ headers: request.headers })
@@ -43,11 +64,8 @@ export const addCategory = createServerFn({ method: 'POST' })
     return inserted.id
   })
 
-export const updateCategorySchema = z.object({
+export const updateCategorySchema = categoryFormSchema.extend({
   id: z.string(),
-  name: z.string().min(2, 'Минимум 2 символа'),
-  useForExpenses: z.boolean(),
-  useForIncome: z.boolean(),
 })
 
 export const updateCategory = createServerFn({ method: 'POST' })

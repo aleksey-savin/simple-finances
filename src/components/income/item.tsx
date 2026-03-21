@@ -5,11 +5,13 @@ import {
   CalendarDays,
   CheckCircle2,
   Circle,
+  Link2,
   MoreHorizontal,
   Pencil,
   Trash2,
 } from 'lucide-react'
 import { useState } from 'react'
+import { authClient } from 'utils/auth-client'
 
 import { Item, ItemContent, ItemTitle } from '../ui/item'
 import { Badge } from '../ui/badge'
@@ -50,8 +52,12 @@ export const IncomeItem = ({
   counterparties?: { id: string; name: string }[]
 }) => {
   const router = useRouter()
+  const { data: session } = authClient.useSession()
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+
+  const isLinkedIncome = !!item.linkedExpenseId
+  const canEditDelete = item.createdBy === session?.user?.id
 
   const isPaid = item.paidAt !== null
   const now = new Date()
@@ -117,6 +123,15 @@ export const IncomeItem = ({
               <Badge variant="outline" className="text-xs px-1.5 py-0">
                 {item.currentAccount.name}
               </Badge>
+              {isLinkedIncome && !canEditDelete && (
+                <Badge
+                  variant="secondary"
+                  className="text-xs px-1.5 py-0 gap-1 text-muted-foreground"
+                >
+                  <Link2 className="size-3" />
+                  Создан автоматически
+                </Badge>
+              )}
               {sharedAccountIds.has(item.currentAccount.id) &&
                 item.createdByUser && (
                   <span className="text-xs text-muted-foreground">
@@ -194,13 +209,15 @@ export const IncomeItem = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setEditOpen(true)}>
-                <Pencil className="size-3.5" />
-                Редактировать
-              </DropdownMenuItem>
-              {!isPaid && (
+              {canEditDelete && (
+                <DropdownMenuItem onClick={() => setEditOpen(true)}>
+                  <Pencil className="size-3.5" />
+                  Редактировать
+                </DropdownMenuItem>
+              )}
+              {canEditDelete && !isPaid && (
                 <>
-                  <DropdownMenuSeparator />
+                  {canEditDelete && <DropdownMenuSeparator />}
                   <DropdownMenuItem
                     variant="destructive"
                     onClick={() => setDeleteOpen(true)}
@@ -209,6 +226,12 @@ export const IncomeItem = ({
                     Удалить
                   </DropdownMenuItem>
                 </>
+              )}
+              {!canEditDelete && (
+                <DropdownMenuItem disabled>
+                  <Link2 className="size-3.5" />
+                  Только просмотр
+                </DropdownMenuItem>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
@@ -222,7 +245,7 @@ export const IncomeItem = ({
             open={editOpen}
             onOpenChange={setEditOpen}
           />
-          {!isPaid && (
+          {canEditDelete && !isPaid && (
             <DeleteIncome
               incomeId={item.id}
               open={deleteOpen}

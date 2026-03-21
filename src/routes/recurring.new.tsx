@@ -34,6 +34,8 @@ function NewRulePage() {
     cronPreset: '0 9 1 * *',
     cronCustom: '',
     dueDaysFromCreation: '',
+    paymentAccountId: '',
+    paymentCategoryId: '',
   }
 
   const handleSubmit = async (value: RuleFormValues) => {
@@ -57,6 +59,8 @@ function NewRulePage() {
           +value.dueDaysFromCreation > 0
             ? +value.dueDaysFromCreation
             : null,
+        paymentAccountId: value.paymentAccountId || undefined,
+        paymentCategoryId: value.paymentCategoryId || undefined,
       },
     })
     toast.success('Правило создано')

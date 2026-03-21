@@ -2,7 +2,12 @@ import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
 import { z } from 'zod'
 import { db } from '@/db'
-import { recurringRule, currentAccountUser, currentAccount } from '@/db/schema'
+import {
+  recurringRule,
+  currentAccountUser,
+  currentAccount,
+  counterparty,
+} from '@/db/schema'
 import { eq, inArray } from 'drizzle-orm'
 import { Cron } from 'croner'
 import { auth } from 'utils/auth'
@@ -27,7 +32,9 @@ export const fetchRecurringData = createServerFn().handler(async () => {
   if (accountIds.length === 0) {
     const [categories, counterparties] = await Promise.all([
       db.query.category.findMany({}),
-      db.query.counterparty.findMany({ columns: { id: true, name: true } }),
+      db.query.counterparty.findMany({
+        columns: { id: true, name: true, linkedUserId: true },
+      }),
     ])
     return { rules: [], categories, accounts: [], counterparties }
   }
@@ -45,7 +52,9 @@ export const fetchRecurringData = createServerFn().handler(async () => {
     db.query.currentAccount.findMany({
       where: inArray(currentAccount.id, accountIds),
     }),
-    db.query.counterparty.findMany({ columns: { id: true, name: true } }),
+    db.query.counterparty.findMany({
+      columns: { id: true, name: true, linkedUserId: true },
+    }),
   ])
 
   return { rules, categories, accounts, counterparties }
@@ -116,6 +125,8 @@ const createRuleSchema = z.object({
   currentAccountId: z.string().min(1, 'Выберите счёт'),
   cronExpression: z.string().min(1, 'Введите расписание'),
   dueDaysFromCreation: z.number().nullable(),
+  paymentAccountId: z.string().optional(),
+  paymentCategoryId: z.string().optional(),
 })
 
 export const createRecurringRule = createServerFn({ method: 'POST' })
@@ -137,6 +148,8 @@ export const createRecurringRule = createServerFn({ method: 'POST' })
       currentAccountId: data.currentAccountId,
       cronExpression: data.cronExpression,
       dueDaysFromCreation: data.dueDaysFromCreation,
+      paymentAccountId: data.paymentAccountId || null,
+      paymentCategoryId: data.paymentCategoryId || null,
       nextRunAt,
       createdBy: session.user.id,
       updatedBy: session.user.id,
@@ -155,6 +168,8 @@ const updateRuleSchema = z.object({
   currentAccountId: z.string().min(1, 'Выберите счёт'),
   cronExpression: z.string().min(1, 'Введите расписание'),
   dueDaysFromCreation: z.number().nullable(),
+  paymentAccountId: z.string().optional(),
+  paymentCategoryId: z.string().optional(),
 })
 
 export const updateRecurringRule = createServerFn({ method: 'POST' })
@@ -178,6 +193,8 @@ export const updateRecurringRule = createServerFn({ method: 'POST' })
         currentAccountId: data.currentAccountId,
         cronExpression: data.cronExpression,
         dueDaysFromCreation: data.dueDaysFromCreation,
+        paymentAccountId: data.paymentAccountId || null,
+        paymentCategoryId: data.paymentCategoryId || null,
         nextRunAt,
         updatedBy: session.user.id,
       })

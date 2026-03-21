@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Pencil, User } from 'lucide-react'
+import { Pencil, User, UserCheck } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 
 import { Button } from '@/components/ui/button'
@@ -37,6 +37,16 @@ function CounterpartyRow({
 
         <ItemContent>
           <ItemTitle>{counterparty.name}</ItemTitle>
+          {counterparty.linkedUser && (
+            <p className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+              <UserCheck className="size-3 shrink-0 text-green-500" />
+              <span className="truncate">
+                <span className="text-muted-foreground/60 ml-1">
+                  ({counterparty.linkedUser.email})
+                </span>
+              </span>
+            </p>
+          )}
         </ItemContent>
 
         <ItemActions>

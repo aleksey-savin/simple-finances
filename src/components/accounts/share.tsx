@@ -3,7 +3,8 @@ import { useRouter } from '@tanstack/react-router'
 import { Share2, Trash2, UserPlus } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { addMember, removeMember } from './actions'
+import { useQueryClient } from '@tanstack/react-query'
+import { addMember, removeMember, accountsQueryKey } from './actions'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -45,6 +46,7 @@ export function ShareAccount({
   members: Member[]
 }) {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<'editor' | 'viewer'>('viewer')
@@ -56,6 +58,7 @@ export function ShareAccount({
     try {
       await addMember({ data: { accountId, email, role } })
       await router.invalidate()
+      queryClient.invalidateQueries({ queryKey: accountsQueryKey })
       setEmail('')
       toast.success('Участник добавлен')
     } catch (e) {
@@ -69,6 +72,7 @@ export function ShareAccount({
     try {
       await removeMember({ data: { memberId, accountId } })
       await router.invalidate()
+      queryClient.invalidateQueries({ queryKey: accountsQueryKey })
       toast.success('Участник удалён')
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Произошла ошибка')

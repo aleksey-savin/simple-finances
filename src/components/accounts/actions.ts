@@ -2,9 +2,54 @@ import { db } from '@/db'
 import { currentAccount, currentAccountUser, user } from '@/db/schema'
 import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { auth } from 'utils/auth'
 import z from 'zod'
+
+// ─── Query key ────────────────────────────────────────────────────────────────
+
+export const accountsQueryKey = ['accounts'] as const
+
+// ─── Fetch ────────────────────────────────────────────────────────────────────
+
+export const fetchAccounts = createServerFn().handler(async () => {
+  const request = getRequest()
+  const session = await auth.api.getSession({ headers: request.headers })
+  if (!session?.user?.id) throw new Error('Не авторизован')
+
+  const userId = session.user.id
+
+  const memberships = await db
+    .select({
+      currentAccountId: currentAccountUser.currentAccountId,
+      role: currentAccountUser.role,
+    })
+    .from(currentAccountUser)
+    .where(eq(currentAccountUser.userId, userId))
+
+  if (memberships.length === 0) return []
+
+  const accountIds = memberships.map((m) => m.currentAccountId)
+  const roleByAccountId = new Map(
+    memberships.map((m) => [m.currentAccountId, m.role]),
+  )
+
+  const accountsData = await db.query.currentAccount.findMany({
+    where: inArray(currentAccount.id, accountIds),
+    with: {
+      members: {
+        with: {
+          user: { columns: { id: true, name: true, email: true } },
+        },
+      },
+    },
+  })
+
+  return accountsData.map((a) => ({
+    ...a,
+    role: roleByAccountId.get(a.id) ?? 'viewer',
+  }))
+})
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
 
@@ -37,6 +82,7 @@ export const deleteAccount = createServerFn({ method: 'POST' })
 
 export const addAccountFormSchema = z.object({
   name: z.string().min(2, 'Минимум 2 символа'),
+  acceptPayments: z.boolean(),
 })
 
 export const addAccount = createServerFn({ method: 'POST' })
@@ -53,6 +99,7 @@ export const addAccount = createServerFn({ method: 'POST' })
       .insert(currentAccount)
       .values({
         name: data.name,
+        acceptPayments: data.acceptPayments,
         createdBy: session.user.id,
         updatedBy: session.user.id,
       })
@@ -70,6 +117,7 @@ export const addAccount = createServerFn({ method: 'POST' })
 export const updateAccountSchema = z.object({
   id: z.string(),
   name: z.string().min(2, 'Минимум 2 символа'),
+  acceptPayments: z.boolean(),
 })
 
 export const updateAccount = createServerFn({ method: 'POST' })
@@ -77,7 +125,7 @@ export const updateAccount = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     await db
       .update(currentAccount)
-      .set({ name: data.name })
+      .set({ name: data.name, acceptPayments: data.acceptPayments })
       .where(eq(currentAccount.id, data.id))
   })
 

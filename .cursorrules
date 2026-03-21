@@ -17,7 +17,7 @@ Composed types that extend or pick from DB types (e.g. with extra fields like `r
 # server functions
 
 - **Components** – all `createServerFn` calls live in `actions.server.ts` inside the component's feature folder (e.g. `src/components/accounts/actions.server.ts`). Plain async helper functions called only from within server handlers (e.g. `requireOwner`) also live there — no need to wrap them in `createServerFn`.
-- **Routes** – all `createServerFn` calls live in a sibling `*.server.ts` file next to the route (e.g. `src/routes/movements.server.ts`). If multiple child routes share a loader (e.g. `users.$id.ban.tsx`, `users.$id.delete.tsx`), extract it to a shared `users.$id.server.ts`.
+- **Routes** – all `createServerFn` calls live in a sibling `*.server.ts` file next to the route (e.g. `src/routes/transactions.server.ts`). If multiple child routes share a loader (e.g. `users.$id.ban.tsx`, `users.$id.delete.tsx`), extract it to a shared `users.$id.server.ts`.
 
 # standard components rules
 

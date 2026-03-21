@@ -1,5 +1,7 @@
 import { Pencil, Tag } from 'lucide-react'
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { fetchAccounts, accountsQueryKey } from './actions'
 
 import { Button } from '@/components/ui/button'
 
@@ -15,7 +17,6 @@ import { EditAccountForm } from '.'
 import { DeleteAccount } from '.'
 import { ShareAccount } from './share'
 import type { Account } from '#/types'
-
 import { authClient } from 'utils/auth-client'
 
 function AccountRow({
@@ -76,7 +77,11 @@ function AccountRow({
   )
 }
 
-export const AccountsList = ({ accounts }: { accounts: Account[] }) => {
+export const AccountsList = () => {
+  const { data: accounts = [] } = useQuery({
+    queryKey: accountsQueryKey,
+    queryFn: () => fetchAccounts(),
+  })
   const [editingId, setEditingId] = useState<string | null>(null)
   return (
     <>

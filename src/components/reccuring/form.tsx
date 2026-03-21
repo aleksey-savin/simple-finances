@@ -1,7 +1,10 @@
 import z from 'zod'
 import { useForm } from '@tanstack/react-form'
 import { toast } from 'sonner'
+import { useEffect, useState } from 'react'
+import { ArrowRight, Loader2 } from 'lucide-react'
 import { CRON_PRESETS } from '@/components/reccuring/constants'
+import { fetchPaymentAccounts } from '@/components/expenses/actions'
 import { Button } from '@/components/ui/button'
 import { DialogFooter } from '@/components/ui/dialog'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
@@ -28,9 +31,13 @@ export const ruleFormSchema = z.object({
   cronPreset: z.string(),
   cronCustom: z.string(),
   dueDaysFromCreation: z.string(),
+  paymentAccountId: z.string(),
+  paymentCategoryId: z.string(),
 })
 
 export type RuleFormValues = z.infer<typeof ruleFormSchema>
+
+type PaymentAccount = { id: string; name: string }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -47,10 +54,57 @@ export const RecurringForm = ({
   onSubmit: (value: RuleFormValues) => Promise<void>
   categories: Category[]
   accounts: CurrentAccount[]
-  counterparties: { id: string; name: string }[]
+  counterparties: { id: string; name: string; linkedUserId: string | null }[]
   isEdit: boolean
   onClose: () => void
 }) => {
+  const [paymentAccounts, setPaymentAccounts] = useState<PaymentAccount[]>([])
+  const [isFetchingPayments, setIsFetchingPayments] = useState(false)
+
+  const incomeCategories = categories.filter((c) => c.useForIncome)
+
+  // In edit mode, auto-fetch payment accounts if a counterparty with linkedUserId is pre-selected
+  useEffect(() => {
+    if (!defaultValues.counterpartyId) return
+    const cp = counterparties.find((c) => c.id === defaultValues.counterpartyId)
+    if (!cp?.linkedUserId) return
+
+    setIsFetchingPayments(true)
+    fetchPaymentAccounts({ data: { linkedUserId: cp.linkedUserId } })
+      .then(setPaymentAccounts)
+      .catch(() => {})
+      .finally(() => setIsFetchingPayments(false))
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleCounterpartyChange = async (
+    val: string,
+    fieldChange: (v: string) => void,
+    resetPaymentAccount: () => void,
+    resetPaymentCategory: () => void,
+  ) => {
+    fieldChange(val)
+    resetPaymentAccount()
+    resetPaymentCategory()
+    setPaymentAccounts([])
+
+    if (!val) return
+
+    const cp = counterparties.find((c) => c.id === val)
+    if (!cp?.linkedUserId) return
+
+    setIsFetchingPayments(true)
+    try {
+      const accounts = await fetchPaymentAccounts({
+        data: { linkedUserId: cp.linkedUserId },
+      })
+      setPaymentAccounts(accounts)
+    } catch {
+      // silently ignore — no payment section shown
+    } finally {
+      setIsFetchingPayments(false)
+    }
+  }
+
   const form = useForm({
     defaultValues,
     validators: { onSubmit: ruleFormSchema },
@@ -84,6 +138,9 @@ export const RecurringForm = ({
                   onClick={() => {
                     field.handleChange(t)
                     form.setFieldValue('categoryId', '')
+                    form.setFieldValue('paymentAccountId', '')
+                    form.setFieldValue('paymentCategoryId', '')
+                    setPaymentAccounts([])
                   }}
                   className={`flex-1 px-4 py-2 transition-colors ${
                     field.state.value === t
@@ -189,31 +246,144 @@ export const RecurringForm = ({
       </form.Subscribe>
 
       {/* Counterparty */}
-      <form.Field name="counterpartyId">
-        {(field) => (
-          <Field>
-            <FieldLabel>Контрагент</FieldLabel>
-            <Select
-              value={field.state.value || '__none__'}
-              onValueChange={(v) =>
-                field.handleChange(v === '__none__' ? '' : v)
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Выберите контрагента (необязательно)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">Не указан</SelectItem>
-                {counterparties.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
+      <form.Subscribe selector={(s) => s.values.type}>
+        {(type) => (
+          <form.Field name="counterpartyId">
+            {(field) => (
+              <form.Field name="paymentAccountId">
+                {(paymentAccountField) => (
+                  <form.Field name="paymentCategoryId">
+                    {(paymentCategoryField) => (
+                      <Field>
+                        <FieldLabel>Контрагент</FieldLabel>
+                        <Select
+                          value={field.state.value || '__none__'}
+                          onValueChange={(v) => {
+                            const val = v === '__none__' ? '' : v
+                            if (type === 'expense') {
+                              handleCounterpartyChange(
+                                val,
+                                field.handleChange,
+                                () => paymentAccountField.handleChange(''),
+                                () => paymentCategoryField.handleChange(''),
+                              )
+                            } else {
+                              field.handleChange(val)
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Выберите контрагента (необязательно)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none__">Не указан</SelectItem>
+                            {counterparties.map((c) => (
+                              <SelectItem key={c.id} value={c.id}>
+                                {c.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </Field>
+                    )}
+                  </form.Field>
+                )}
+              </form.Field>
+            )}
+          </form.Field>
         )}
-      </form.Field>
+      </form.Subscribe>
+
+      {/* Payment section — expense rules only, shown when counterparty has linked accounts */}
+      <form.Subscribe selector={(s) => s.values.type}>
+        {(type) =>
+          type === 'expense' ? (
+            <>
+              {isFetchingPayments && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
+                  <Loader2 className="size-3 animate-spin" />
+                  Загрузка счетов для оплаты…
+                </div>
+              )}
+
+              {!isFetchingPayments && paymentAccounts.length > 0 && (
+                <div className="flex flex-col gap-3 rounded-md border border-dashed p-3">
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                    <ArrowRight className="size-3.5" />
+                    Зачислить доход контрагенту
+                  </p>
+
+                  {/* Payment account */}
+                  <form.Field name="paymentAccountId">
+                    {(field) => (
+                      <Field>
+                        <FieldLabel htmlFor={field.name}>
+                          Счёт получателя
+                        </FieldLabel>
+                        <Select
+                          value={field.state.value}
+                          onValueChange={(val) => field.handleChange(val)}
+                        >
+                          <SelectTrigger
+                            id={field.name}
+                            className="w-full"
+                            onBlur={field.handleBlur}
+                          >
+                            <SelectValue placeholder="Выберите счёт" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {paymentAccounts.map((a) => (
+                              <SelectItem key={a.id} value={a.id}>
+                                {a.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </Field>
+                    )}
+                  </form.Field>
+
+                  {/* Income category — shown once a payment account is picked */}
+                  <form.Subscribe selector={(s) => s.values.paymentAccountId}>
+                    {(paymentAccountId) =>
+                      paymentAccountId ? (
+                        <form.Field name="paymentCategoryId">
+                          {(field) => (
+                            <Field>
+                              <FieldLabel htmlFor={field.name}>
+                                Категория дохода
+                              </FieldLabel>
+                              <Select
+                                value={field.state.value}
+                                onValueChange={(val) => field.handleChange(val)}
+                              >
+                                <SelectTrigger
+                                  id={field.name}
+                                  className="w-full"
+                                  onBlur={field.handleBlur}
+                                >
+                                  <SelectValue placeholder="Выберите категорию" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {incomeCategories.map((c) => (
+                                    <SelectItem key={c.id} value={c.id}>
+                                      {c.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </Field>
+                          )}
+                        </form.Field>
+                      ) : null
+                    }
+                  </form.Subscribe>
+                </div>
+              )}
+            </>
+          ) : null
+        }
+      </form.Subscribe>
 
       {/* Account */}
       <form.Field name="currentAccountId">

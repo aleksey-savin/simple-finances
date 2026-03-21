@@ -7,13 +7,15 @@ import { Input } from '@/components/ui/input'
 import { Field, FieldError, FieldLabel } from '../ui/field'
 import { Switch } from '../ui/switch'
 import { useRouter } from '@tanstack/react-router'
-import { addCategory, updateCategorySchema } from './actions'
+import { useQueryClient } from '@tanstack/react-query'
+import { addCategory, categoryFormSchema, categoriesQueryKey } from './actions'
 
 export const AddCategoryForm = () => {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const form = useForm({
     defaultValues: { name: '', useForIncome: false, useForExpenses: false },
-    validators: { onSubmit: updateCategorySchema },
+    validators: { onSubmit: categoryFormSchema },
     onSubmit: async ({ value }) => {
       try {
         await addCategory({
@@ -24,6 +26,7 @@ export const AddCategoryForm = () => {
           },
         })
         router.invalidate()
+        queryClient.invalidateQueries({ queryKey: categoriesQueryKey })
         form.reset()
         toast.success('Категория успешно добавлена')
       } catch (error) {

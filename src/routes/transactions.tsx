@@ -1,3 +1,4 @@
+import { TransactionSummary } from '#/components/transactions/summary'
 import { Button } from '#/components/ui/button'
 import { Calendar } from '#/components/ui/calendar'
 import { Input } from '#/components/ui/input'
@@ -78,6 +79,19 @@ const fetchData = createServerFn().handler(async () => {
       }),
       db.query.income.findMany({
         where: inArray(income.currentAccountId, accountIds),
+        columns: {
+          id: true,
+          amount: true,
+          description: true,
+          categoryId: true,
+          currentAccountId: true,
+          counterpartyId: true,
+          createdAt: true,
+          dueDate: true,
+          paidAt: true,
+          createdBy: true,
+          linkedExpenseId: true,
+        },
         with: {
           category: { columns: { id: true, name: true } },
           counterparty: { columns: { id: true, name: true } },
@@ -156,6 +170,9 @@ function App() {
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [counterpartyFilter, setCounterpartyFilter] = useState('all')
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
+  const [dateField, setDateField] = useState<'createdAt' | 'paidAt'>(
+    'createdAt',
+  )
 
   const hasActiveFilters =
     search !== '' ||
@@ -174,6 +191,7 @@ function App() {
     setCategoryFilter('all')
     setCounterpartyFilter('all')
     setDateRange(undefined)
+    setDateField('createdAt')
   }
 
   const filteredFeed = useMemo(() => {
@@ -187,7 +205,6 @@ function App() {
       const isPaid = item.paidAt !== null
       const isOverdue =
         !isPaid && item.dueDate !== null && new Date(item.dueDate) < now
-      const itemDate = new Date(item.createdAt)
 
       if (typeFilter !== 'all' && item.type !== typeFilter) return false
       if (statusFilter === 'paid' && !isPaid) return false
@@ -202,8 +219,16 @@ function App() {
         item.counterparty?.id !== counterpartyFilter
       )
         return false
-      if (fromDate && itemDate < fromDate) return false
-      if (toDate && itemDate > toDate) return false
+
+      if (fromDate || toDate) {
+        const rawDate = dateField === 'paidAt' ? item.paidAt : item.createdAt
+        // When filtering by paidAt, items with no paidAt are excluded
+        if (!rawDate) return false
+        const itemDate = new Date(rawDate)
+        if (fromDate && itemDate < fromDate) return false
+        if (toDate && itemDate > toDate) return false
+      }
+
       if (search.trim()) {
         const q = search.trim().toLowerCase()
         const haystack = [
@@ -230,10 +255,14 @@ function App() {
     categoryFilter,
     counterpartyFilter,
     dateRange,
+    dateField,
   ])
 
   return (
     <>
+      {/* ── Summary cards ──────────────────────────────────────────────────── */}
+      <TransactionSummary feed={filteredFeed} />
+
       {/* ── Filter bar ─────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-2">
         <div className="flex gap-2">
@@ -248,46 +277,65 @@ function App() {
                 {t === 'all' ? 'Все' : t === 'income' ? 'Доходы' : 'Расходы'}
               </ToggleGroupItem>
             ))}
-          </ToggleGroup>{' '}
-          {/* Date range */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-9 gap-2 font-normal text-sm"
-              >
-                <CalendarIcon className="size-3.5 text-muted-foreground" />
-                {dateRange?.from ? (
-                  dateRange.to ? (
-                    <>
-                      {format(dateRange.from, 'dd.MM.yyyy')}
-                      {' — '}
-                      {format(dateRange.to, 'dd.MM.yyyy')}
-                    </>
+          </ToggleGroup>
+
+          {/* Date range + field toggle */}
+          <div className="flex items-center gap-1">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 gap-2 font-normal text-sm"
+                >
+                  <CalendarIcon className="size-3.5 text-muted-foreground" />
+                  {dateRange?.from ? (
+                    dateRange.to ? (
+                      <>
+                        {format(dateRange.from, 'dd.MM.yyyy')}
+                        {' — '}
+                        {format(dateRange.to, 'dd.MM.yyyy')}
+                      </>
+                    ) : (
+                      format(dateRange.from, 'dd.MM.yyyy')
+                    )
                   ) : (
-                    format(dateRange.from, 'dd.MM.yyyy')
-                  )
-                ) : (
-                  <span className="text-muted-foreground">Период</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="range"
-                selected={dateRange}
-                onSelect={setDateRange}
-                numberOfMonths={2}
-              />
-            </PopoverContent>
-          </Popover>
+                    <span className="text-muted-foreground">Период</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="range"
+                  selected={dateRange}
+                  onSelect={setDateRange}
+                  numberOfMonths={2}
+                />
+              </PopoverContent>
+            </Popover>
+
+            <ToggleGroup
+              variant="outline"
+              type="single"
+              value={dateField}
+              onValueChange={(v) => {
+                if (v) setDateField(v as 'createdAt' | 'paidAt')
+              }}
+            >
+              <ToggleGroupItem value="createdAt" className="h-9 text-sm px-3">
+                Создание
+              </ToggleGroupItem>
+              <ToggleGroupItem value="paidAt" className="h-9 text-sm px-3">
+                Оплата
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
         </div>
 
         {/* Toggle rows + selects */}
         <div className="flex flex-wrap gap-2 items-center">
           {/* Search */}
-          <div className="relative w-96">
+          <div className="relative w-76">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
             <Input
               placeholder="Поиск по описанию, категории, счёту..."

@@ -20,9 +20,7 @@ import { Separator } from '../ui/separator'
 
 import { AccountsList } from '.'
 
-import type { Account } from '#/types'
-
-const Accounts = ({ accounts }: { accounts: Account[] }) => {
+const Accounts = () => {
   const [open, setOpen] = useState(false)
 
   return (
@@ -42,7 +40,7 @@ const Accounts = ({ accounts }: { accounts: Account[] }) => {
           <AddAccountForm />
         </div>
         <Separator />
-        <AccountsList accounts={accounts} />
+        <AccountsList />
         <SheetFooter className="px-6 py-4 border-t">
           <SheetClose asChild>
             <Button variant="outline" className="w-full">
