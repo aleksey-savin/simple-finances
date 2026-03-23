@@ -122,7 +122,7 @@ export const RecurringForm = ({
 
   return (
     <form
-      className="flex flex-col gap-4 mt-2"
+      className="flex flex-col gap-4 mt-2 flex-1 min-h-0 overflow-y-auto"
       onSubmit={(e) => {
         e.preventDefault()
         form.handleSubmit()
