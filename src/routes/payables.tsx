@@ -698,7 +698,7 @@ function buildColumns(
           <div className="flex flex-col gap-0.5">
             <div className="flex items-center gap-2">
               <span
-                className={`font-medium ${
+                className={`font-medium wrap-break-word whitespace-normal ${
                   row.original.isProjected ? 'text-muted-foreground' : ''
                 }`}
               >

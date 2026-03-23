@@ -115,7 +115,7 @@ export const ExpenseItem = ({
           </div>
           <div className="flex flex-1 flex-col gap-0.5 min-w-0">
             <ItemTitle
-              className={`flex flex-wrap text-lg font-semibold truncate ${!isPaid ? 'text-muted-foreground' : ''}`}
+              className={`text-lg font-semibold wrap-break-word whitespace-normal w-full ${!isPaid ? 'text-muted-foreground' : ''}`}
             >
               {item.description}
             </ItemTitle>

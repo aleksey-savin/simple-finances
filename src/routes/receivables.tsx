@@ -454,7 +454,9 @@ function ReceivablesPage() {
           const tags = tagsMap[row.original.id] ?? []
           return (
             <div className="flex flex-col gap-0.5">
-              <span className="font-medium">{row.original.description}</span>
+              <span className="font-medium `wrap-break-word whitespace-normal w-full">
+                {row.original.description}
+              </span>
               <TagChips tags={tags} />
             </div>
           )

@@ -210,7 +210,7 @@ export const category = pgTable('category', {
   id: text('id')
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
-  name: text().notNull().unique(),
+  name: text().notNull(),
   useForExpenses: boolean('use_for_expenses').notNull().default(false),
   useForIncome: boolean('use_for_income').notNull().default(false),
   isShared: boolean('is_shared').notNull().default(false),
