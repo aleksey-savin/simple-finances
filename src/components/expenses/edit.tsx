@@ -63,7 +63,7 @@ export const EditExpense = ({
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent>
+      <DialogContent aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>Редактировать расход</DialogTitle>
         </DialogHeader>

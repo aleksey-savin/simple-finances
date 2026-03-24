@@ -39,7 +39,10 @@ export function ResponsiveDialog({
   if (!isMobile) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-5xl flex flex-col max-h-[90dvh]">
+        <DialogContent
+          className="sm:max-w-5xl flex flex-col max-h-[90dvh]"
+          {...(!description && { 'aria-describedby': undefined })}
+        >
           <DialogHeader className="shrink-0">
             <DialogTitle>{title}</DialogTitle>
             {description && (

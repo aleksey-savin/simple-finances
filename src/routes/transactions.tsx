@@ -445,31 +445,29 @@ function App() {
             Ничего не найдено
           </p>
         )}
-        {filteredFeed.map((item) => {
-          return (
-            <>
-              {item.type === 'expense' ? (
-                <ExpenseItem
-                  item={item}
-                  sharedAccountIds={sharedAccountIds}
-                  togglePaid={togglePaid}
-                  categories={categories}
-                  accounts={accounts}
-                  counterparties={counterparties ?? []}
-                />
-              ) : (
-                <IncomeItem
-                  item={item}
-                  sharedAccountIds={sharedAccountIds}
-                  togglePaid={togglePaid}
-                  categories={categories}
-                  accounts={accounts}
-                  counterparties={counterparties ?? []}
-                />
-              )}
-            </>
-          )
-        })}
+        {filteredFeed.map((item) =>
+          item.type === 'expense' ? (
+            <ExpenseItem
+              key={item.id}
+              item={item}
+              sharedAccountIds={sharedAccountIds}
+              togglePaid={togglePaid}
+              categories={categories}
+              accounts={accounts}
+              counterparties={counterparties ?? []}
+            />
+          ) : (
+            <IncomeItem
+              key={item.id}
+              item={item}
+              sharedAccountIds={sharedAccountIds}
+              togglePaid={togglePaid}
+              categories={categories}
+              accounts={accounts}
+              counterparties={counterparties ?? []}
+            />
+          ),
+        )}
       </div>
       <Outlet />
     </>

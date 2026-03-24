@@ -92,7 +92,7 @@ export function ShareAccount({
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>Поделиться — {accountName}</DialogTitle>
         </DialogHeader>

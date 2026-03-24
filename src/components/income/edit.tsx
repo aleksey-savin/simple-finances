@@ -63,7 +63,7 @@ export const EditIncome = ({
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent>
+      <DialogContent aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>Редактировать доход</DialogTitle>
         </DialogHeader>
