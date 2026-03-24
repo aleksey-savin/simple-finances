@@ -187,7 +187,7 @@ export const ExpenseForm = ({
           const isInvalid =
             field.state.meta.isTouched && !field.state.meta.isValid
           return (
-            <Field data-invalid={isInvalid}>
+            <Field data-invalid={isInvalid} className="w-1/2 sm:pe-2">
               <FieldLabel htmlFor={field.name}>Сумма</FieldLabel>
               <Input
                 id={field.name}
@@ -233,75 +233,76 @@ export const ExpenseForm = ({
         }}
       </form.Field>
 
-      {/* Category */}
-      <form.Field name="categoryId">
-        {(field) => {
-          const isInvalid =
-            field.state.meta.isTouched && !field.state.meta.isValid
-          return (
-            <Field data-invalid={isInvalid}>
-              <FieldLabel htmlFor={field.name}>Категория</FieldLabel>
-              <Select
-                value={field.state.value}
-                onValueChange={(val) => field.handleChange(val)}
-              >
-                <SelectTrigger
-                  id={field.name}
-                  aria-invalid={isInvalid}
-                  className="w-full"
-                  onBlur={field.handleBlur}
+      <div className="flex gap-2">
+        {/* Category */}
+        <form.Field name="categoryId">
+          {(field) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
+            return (
+              <Field data-invalid={isInvalid}>
+                <FieldLabel htmlFor={field.name}>Категория</FieldLabel>
+                <Select
+                  value={field.state.value}
+                  onValueChange={(val) => field.handleChange(val)}
                 >
-                  <SelectValue placeholder="Выберите категорию" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories
-                    .filter((c) => c.useForExpenses)
-                    .map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
+                  <SelectTrigger
+                    id={field.name}
+                    aria-invalid={isInvalid}
+                    className="w-full"
+                    onBlur={field.handleBlur}
+                  >
+                    <SelectValue placeholder="Выберите категорию" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories
+                      .filter((c) => c.useForExpenses)
+                      .map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            )
+          }}
+        </form.Field>
+        {/* Account */}
+        <form.Field name="currentAccountId">
+          {(field) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
+            return (
+              <Field data-invalid={isInvalid}>
+                <FieldLabel htmlFor={field.name}>Счёт</FieldLabel>
+                <Select
+                  value={field.state.value}
+                  onValueChange={(val) => field.handleChange(val)}
+                >
+                  <SelectTrigger
+                    id={field.name}
+                    aria-invalid={isInvalid}
+                    className="w-full"
+                    onBlur={field.handleBlur}
+                  >
+                    <SelectValue placeholder="Выберите счёт" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {accounts.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.name}
                       </SelectItem>
                     ))}
-                </SelectContent>
-              </Select>
-              {isInvalid && <FieldError errors={field.state.meta.errors} />}
-            </Field>
-          )
-        }}
-      </form.Field>
-
-      {/* Account */}
-      <form.Field name="currentAccountId">
-        {(field) => {
-          const isInvalid =
-            field.state.meta.isTouched && !field.state.meta.isValid
-          return (
-            <Field data-invalid={isInvalid}>
-              <FieldLabel htmlFor={field.name}>Счёт</FieldLabel>
-              <Select
-                value={field.state.value}
-                onValueChange={(val) => field.handleChange(val)}
-              >
-                <SelectTrigger
-                  id={field.name}
-                  aria-invalid={isInvalid}
-                  className="w-full"
-                  onBlur={field.handleBlur}
-                >
-                  <SelectValue placeholder="Выберите счёт" />
-                </SelectTrigger>
-                <SelectContent>
-                  {accounts.map((a) => (
-                    <SelectItem key={a.id} value={a.id}>
-                      {a.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {isInvalid && <FieldError errors={field.state.meta.errors} />}
-            </Field>
-          )
-        }}
-      </form.Field>
+                  </SelectContent>
+                </Select>
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            )
+          }}
+        </form.Field>
+      </div>
 
       {/* Counterparty (optional) */}
       {counterparties.length > 0 && (
@@ -309,9 +310,9 @@ export const ExpenseForm = ({
           {(field) => (
             <form.Field name="paymentAccountId">
               {(paymentAccountField) => (
-                <form.Field name="paymentCategoryId">
+                <form.Field name="paymentAccountId">
                   {(paymentCategoryField) => (
-                    <Field>
+                    <Field className="sm:w-1/2 sm:pe-2">
                       <FieldLabel htmlFor={field.name}>Контрагент</FieldLabel>
                       <Select
                         value={field.state.value}
@@ -359,7 +360,7 @@ export const ExpenseForm = ({
           )}
 
           {!isFetchingPayments && paymentAccounts.length > 0 && (
-            <div className="flex flex-col gap-3 rounded-md border border-dashed p-3">
+            <div className="flex flex-col gap-3 rounded-md border border-dashed p-3 sm:w-1/2">
               <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                 <ArrowRight className="size-3.5" />
                 Зачислить доход контрагенту
@@ -435,41 +436,40 @@ export const ExpenseForm = ({
         </>
       )}
 
-      {/* Created at */}
-      <form.Field name="createdAt">
-        {(field) => (
-          <Field>
-            <FieldLabel htmlFor={field.name}>Дата создания</FieldLabel>
-            <Input
-              id={field.name}
-              name={field.name}
-              type="datetime-local"
-              value={field.state.value}
-              onBlur={field.handleBlur}
-              onChange={(e) => field.handleChange(e.target.value)}
-            />
-          </Field>
-        )}
-      </form.Field>
-
-      {/* Due date */}
-      <form.Field name="dueDate">
-        {(field) => (
-          <Field>
-            <FieldLabel htmlFor={field.name}>
-              Оплатить до (необязательно)
-            </FieldLabel>
-            <Input
-              id={field.name}
-              name={field.name}
-              type="date"
-              value={field.state.value}
-              onBlur={field.handleBlur}
-              onChange={(e) => field.handleChange(e.target.value)}
-            />
-          </Field>
-        )}
-      </form.Field>
+      <div className="flex gap-2">
+        {/* Created at */}
+        <form.Field name="createdAt">
+          {(field) => (
+            <Field>
+              <FieldLabel htmlFor={field.name}>Дата создания</FieldLabel>
+              <Input
+                id={field.name}
+                name={field.name}
+                type="date"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(e) => field.handleChange(e.target.value)}
+              />
+            </Field>
+          )}
+        </form.Field>
+        {/* Due date */}
+        <form.Field name="dueDate">
+          {(field) => (
+            <Field>
+              <FieldLabel htmlFor={field.name}>Оплатить до</FieldLabel>
+              <Input
+                id={field.name}
+                name={field.name}
+                type="date"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(e) => field.handleChange(e.target.value)}
+              />
+            </Field>
+          )}
+        </form.Field>
+      </div>
 
       {/* Actions */}
       {isEdit ? (

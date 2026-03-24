@@ -16,7 +16,13 @@ import type { Expense as DBExpense } from '@/db/types'
 
 type EditExpenseProps = {
   item: Expense
-  categories: { id: string; name: string; useForExpenses: boolean }[]
+  categories: {
+    id: string
+    name: string
+    useForExpenses: boolean
+    useForIncome: boolean
+    isShared: boolean
+  }[]
   accounts: { id: string; name: string }[]
   counterparties?: { id: string; name: string }[]
   open?: boolean

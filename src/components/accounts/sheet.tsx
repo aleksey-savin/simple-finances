@@ -26,7 +26,7 @@ const Accounts = () => {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline">
+        <Button variant="secondary">
           <PlusCircle /> Счет
         </Button>
       </SheetTrigger>

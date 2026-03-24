@@ -19,7 +19,7 @@ export const AppHeader = () => {
         />
         <AppBreadCrumbs />
       </div>
-      <div className="flex gap-2 items-center">
+      <div className="hidden sm:flex gap-2 items-center">
         <Accounts />
         <Counterparties />
         <Categories />

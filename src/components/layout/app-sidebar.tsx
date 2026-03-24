@@ -14,17 +14,30 @@ import {
 
 import { Link } from '@tanstack/react-router'
 import { NavUser } from './nav-user'
+import {
+  BanknoteArrowDown,
+  BanknoteArrowUp,
+  CalendarCheck,
+  User,
+  Wallet,
+} from 'lucide-react'
+import Accounts from '../accounts'
+import CounterParties from '../counterparties'
+import Categories from '../categories'
+import { ModeToggle } from '../mode-toggle'
 
 const navMain = [
   {
     title: 'Обзор',
     items: [
       {
-        title: 'Транзакции',
+        title: 'Все транзакции',
+        icon: <Wallet className="size-5" />,
         url: '/transactions',
       },
       {
-        title: 'Запланированные платежи',
+        title: 'Расписание платежей',
+        icon: <CalendarCheck className="size-5" />,
         url: '/recurring',
       },
     ],
@@ -33,11 +46,13 @@ const navMain = [
     title: 'Отчёты',
     items: [
       {
-        title: 'Дебиторская задолженность',
+        title: 'Дебиторка',
+        icon: <BanknoteArrowUp className="size-5" />,
         url: '/receivables',
       },
       {
         title: 'Платежи и обязательства',
+        icon: <BanknoteArrowDown className="size-5" />,
         url: '/payables',
       },
     ],
@@ -47,6 +62,7 @@ const navMain = [
     items: [
       {
         title: 'Пользователи',
+        icon: <User className="size-5" />,
         url: '/users',
       },
     ],
@@ -69,8 +85,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <SidebarMenu>
                 {item.items.map((child) => (
                   <SidebarMenuItem key={child.title}>
-                    <SidebarMenuButton asChild className="text-base">
-                      <Link to={child.url}>{child.title}</Link>
+                    <SidebarMenuButton
+                      asChild
+                      className="flex items-center gap-2 text-base"
+                    >
+                      <Link to={child.url}>
+                        {child.icon && <span>{child.icon}</span>}
+                        {child.title}
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
@@ -80,6 +102,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         ))}
       </SidebarContent>
       <SidebarFooter>
+        <div className="flex flex-col w-auto sm:hidden gap-2 mx-4">
+          <Accounts />
+          <CounterParties />
+          <Categories />
+        </div>
         <NavUser />
       </SidebarFooter>
       <SidebarRail />

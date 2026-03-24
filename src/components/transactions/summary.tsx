@@ -42,11 +42,11 @@ export function TransactionSummary({ feed }: Props) {
 
   return (
     <div className="flex gap-2 mb-4">
-      <Card className="w-fit py-4 px-4 gap-2">
+      <Card className="w-full sm:width-fit py-4 px-4 gap-2">
         <CardHeader className="p-0">
           <CardTitle className="font-medium">Расходы</CardTitle>
         </CardHeader>
-        <CardContent className="flex gap-12 p-0">
+        <CardContent className="flex flex-col sm:flex-row gap-2 sm:gap-12 p-0">
           <div>
             <p className="text-[10px] text-muted-foreground leading-none mb-1">
               Не оплачено
@@ -66,11 +66,11 @@ export function TransactionSummary({ feed }: Props) {
         </CardContent>
       </Card>
 
-      <Card className="w-fit py-4 px-4  gap-2">
+      <Card className="w-full sm:width-fit py-4 px-4  gap-2">
         <CardHeader className="p-0">
           <CardTitle className="font-medium">Доходы</CardTitle>
         </CardHeader>
-        <CardContent className="flex gap-12  p-0">
+        <CardContent className="flex flex-col sm:flex-row gap-2 sm:gap-12 p-0">
           <div>
             <p className="text-[10px] text-muted-foreground leading-none mb-1">
               Не оплачено

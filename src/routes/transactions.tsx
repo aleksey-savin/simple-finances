@@ -270,8 +270,18 @@ function App() {
       <TransactionSummary feed={filteredFeed} />
 
       {/* ── Filter bar ─────────────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-2">
-        <div className="flex gap-2">
+      <div className="flex flex-col gap-8">
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+          <Input
+            placeholder="Поиск по описанию, категории, счёту..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <div className="flex flex-wrap w-full lg:justify-between items-center gap-2">
           {/* Type */}
           <ToggleGroup variant="outline" type="single" defaultValue="all">
             {(['all', 'income', 'expense'] as const).map((t) => (
@@ -280,7 +290,11 @@ function App() {
                 key={t}
                 onClick={() => setTypeFilter(t)}
               >
-                {t === 'all' ? 'Все' : t === 'income' ? 'Доходы' : 'Расходы'}
+                {t === 'all'
+                  ? 'Все'
+                  : t === 'income'
+                    ? 'Поступления'
+                    : 'Списания'}
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
@@ -292,7 +306,7 @@ function App() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-9 gap-2 font-normal text-sm"
+                  className="h-9 gap-2 font-normal text-sm min-w-40"
                 >
                   <CalendarIcon className="size-3.5 text-muted-foreground" />
                   {dateRange?.from ? (
@@ -329,36 +343,21 @@ function App() {
               }}
             >
               <ToggleGroupItem value="createdAt" className="h-9 text-sm px-3">
-                Создание
+                Создан
               </ToggleGroupItem>
               <ToggleGroupItem value="paidAt" className="h-9 text-sm px-3">
-                Оплата
+                Оплачен
               </ToggleGroupItem>
             </ToggleGroup>
           </div>
-        </div>
-
-        {/* Toggle rows + selects */}
-        <div className="flex flex-wrap gap-2 items-center">
-          {/* Search */}
-          <div className="relative w-76">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-            <Input
-              placeholder="Поиск по описанию, категории, счёту..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-
           {/* Status */}
           <ToggleGroup variant="outline" type="single" defaultValue="all">
             {(
               [
                 ['all', 'Все'],
-                ['paid', 'Оплаченные'],
-                ['unpaid', 'Неоплаченные'],
-                ['overdue', 'Просроченные'],
+                ['paid', 'Оплачены'],
+                ['unpaid', 'Неоплачены'],
+                ['overdue', 'Просрочены'],
               ] as const
             ).map(([val, label]) => (
               <ToggleGroupItem
@@ -370,7 +369,6 @@ function App() {
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
-
           {/* Account */}
           <Select value={accountFilter} onValueChange={setAccountFilter}>
             <SelectTrigger className="w-44 h-8 text-sm">
@@ -385,7 +383,6 @@ function App() {
               ))}
             </SelectContent>
           </Select>
-
           {/* Category */}
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger className="w-44 h-8 text-sm">
@@ -400,7 +397,6 @@ function App() {
               ))}
             </SelectContent>
           </Select>
-
           {/* Counterparty */}
           <Select
             value={counterpartyFilter}
@@ -418,7 +414,6 @@ function App() {
               ))}
             </SelectContent>
           </Select>
-
           {/* Clear */}
           {hasActiveFilters && (
             <Button
@@ -431,7 +426,6 @@ function App() {
               Сброс
             </Button>
           )}
-
           {/* Count */}
           <span className="text-xs text-muted-foreground ml-auto">
             {filteredFeed.length} из {feed.length}

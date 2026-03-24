@@ -12,6 +12,7 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
+  XCircle,
 } from 'lucide-react'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
@@ -111,11 +112,8 @@ export function TransactionItem({
 
   const cfg = isExpense
     ? {
-        Icon: ArrowDownCircle,
-        iconBg: isPaid ? 'bg-destructive/10' : 'bg-muted/50',
-        iconColor: isPaid ? 'text-destructive' : 'text-muted-foreground',
         amountPrefix: '−',
-        amountColor: isPaid ? 'text-destructive' : 'text-muted-foreground',
+        amountColor: isPaid ? 'text-amber-600' : 'text-muted-foreground',
         paidLabel: 'Оплачено',
         toggleTitle: isPaid
           ? 'Отметить как неоплаченное'
@@ -124,15 +122,8 @@ export function TransactionItem({
         entityName: 'Расход',
       }
     : {
-        Icon: ArrowUpCircle,
-        iconBg: isPaid ? 'bg-emerald-500/10' : 'bg-muted/50',
-        iconColor: isPaid
-          ? 'text-emerald-700 dark:text-emerald-500'
-          : 'text-muted-foreground',
         amountPrefix: '+',
-        amountColor: isPaid
-          ? 'text-emerald-700 dark:text-emerald-500'
-          : 'text-muted-foreground',
+        amountColor: isPaid ? 'text-emerald-700' : 'text-muted-foreground',
         paidLabel: 'Получено',
         toggleTitle: isPaid
           ? 'Отметить как неполученное'
@@ -141,7 +132,139 @@ export function TransactionItem({
         entityName: 'Доход',
       }
 
-  const { Icon } = cfg
+  const amountFormatted = Number(item.amount).toLocaleString('ru-RU', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+
+  // ─── Shared fragments ─────────────────────────────────────────────────────
+
+  const menuDropdown = (
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="size-8 shrink-0">
+          <MoreHorizontal className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem
+          onClick={async () => {
+            try {
+              await togglePaid({
+                data: { id: item.id, type: item.type, paid: !isPaid },
+              })
+              await router.invalidate()
+            } catch (e) {
+              toast.error(e instanceof Error ? e.message : 'Произошла ошибка')
+            }
+          }}
+        >
+          {!isPaid ? (
+            <>
+              <CheckCircle2 className="size-3.5" /> Оплачено
+            </>
+          ) : (
+            <>
+              <XCircle className="size-3.5" /> Неоплачено
+            </>
+          )}
+        </DropdownMenuItem>
+        {canEditDelete ? (
+          <>
+            <DropdownMenuItem onClick={() => setEditOpen(true)}>
+              <DropdownMenuSeparator />
+              <Pencil className="size-3.5" />
+              Редактировать
+            </DropdownMenuItem>
+            {isPaid && (
+              <>
+                <DropdownMenuSeparator />
+                {item.archivedAt ? (
+                  <DropdownMenuItem
+                    onClick={async () => {
+                      try {
+                        await archiveFn({
+                          data: { id: item.id, archive: false },
+                        })
+                        await router.invalidate()
+                        toast.success(`${cfg.entityName} разархивирован`)
+                      } catch (e) {
+                        toast.error(
+                          e instanceof Error ? e.message : 'Произошла ошибка',
+                        )
+                      }
+                    }}
+                  >
+                    <ArchiveRestore className="size-3.5" />
+                    Разархивировать
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem onClick={() => setArchiveOpen(true)}>
+                    <Archive className="size-3.5" />
+                    Архивировать
+                  </DropdownMenuItem>
+                )}
+              </>
+            )}
+
+            {!isPaid && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => setDeleteOpen(true)}
+                >
+                  <Trash2 className="size-3.5" />
+                  Удалить
+                </DropdownMenuItem>
+              </>
+            )}
+          </>
+        ) : (
+          <DropdownMenuItem disabled>
+            <Link2 className="size-3.5" />
+            Только просмотр
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+
+  const badgesRow = (
+    <div className="flex items-center gap-1.5 flex-wrap">
+      <Badge variant="outline" className="text-xs px-1.5 py-0">
+        {item.category.name}
+      </Badge>
+      <Badge variant="outline" className="text-xs px-1.5 py-0">
+        {item.currentAccount.name}
+      </Badge>
+
+      {isArchived && (
+        <Badge variant="secondary" className="text-xs px-1.5 py-0 gap-1 ">
+          <Archive className="size-3" />В архиве
+        </Badge>
+      )}
+
+      {isLinkedIncome ? (
+        <Badge
+          variant="secondary"
+          className="text-xs px-1.5 py-0 gap-1 text-muted-foreground"
+        >
+          <Link2 className="size-3" />
+          {item.createdByUser
+            ? `Создан автоматически · ${item.createdByUser.name}`
+            : 'Создан автоматически'}
+        </Badge>
+      ) : (
+        sharedAccountIds.has(item.currentAccount.id) &&
+        item.createdByUser && (
+          <span className="text-xs text-muted-foreground">
+            {item.createdByUser.name}
+          </span>
+        )
+      )}
+    </div>
+  )
 
   // ─── Render ──────────────────────────────────────────────────────────────
 
@@ -151,19 +274,118 @@ export function TransactionItem({
       className={[
         isOverdue ? 'border-destructive/30 bg-destructive/5' : '',
         isArchived ? 'opacity-60' : '',
+        !isPaid ? 'border border-muted' : '',
       ]
         .filter(Boolean)
         .join(' ')}
     >
-      <ItemContent className="gap-0">
-        <div className="flex items-start sm:items-center gap-3">
-          {/* ── Date column — desktop only ─────────────────────────────── */}
-          <span className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground shrink-0 w-16 pt-0.5">
+      <ItemContent className="gap-0 relative">
+        {/* ── Portaled dialogs — rendered once ─────────────────────────── */}
+        {canEditDelete && renderEdit(editOpen, setEditOpen)}
+        {canEditDelete && !isPaid && renderDelete?.(deleteOpen, setDeleteOpen)}
+        <AlertDialog open={archiveOpen} onOpenChange={setArchiveOpen}>
+          <AlertDialogContent size="sm">
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Архивировать {isExpense ? 'расход' : 'доход'}?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Запись будет перемещена в архив.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Отмена</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={async () => {
+                  try {
+                    await archiveFn({ data: { id: item.id, archive: true } })
+                    await router.invalidate()
+                    toast.success(`${cfg.entityName} архивирован`)
+                  } catch (e) {
+                    toast.error(
+                      e instanceof Error ? e.message : 'Произошла ошибка',
+                    )
+                  }
+                }}
+              >
+                Архивировать
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* ── Actions — rendered once, absolute on mobile / inline on desktop ── */}
+
+        {/* ── Mobile card layout ───────────────────────────────────────── */}
+
+        <div className="flex sm:hidden flex-col gap-2">
+          {/* Row 1: date */}
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <CalendarDays className="size-3 shrink-0" />
+              {createdDate}
+            </span>
+            {menuDropdown}
+          </div>
+
+          {/* Counterparty */}
+          {item.counterparty && (
+            <p
+              className={`font-bold text-base leading-snug ${
+                !isPaid ? 'text-muted-foreground' : ''
+              }`}
+            >
+              {item.counterparty.name}
+            </p>
+          )}
+
+          {/* Description */}
+          <p
+            className={`text-sm whitespace-normal ${
+              !isPaid ? 'text-muted-foreground' : ''
+            }`}
+          >
+            {item.description}
+          </p>
+
+          {/* Badges */}
+          {badgesRow}
+
+          {/* Amount */}
+          <div className="flex items-center justify-end pt-1">
+            <div className="flex flex-col gap-0.5 items-end">
+              <span
+                className={`text-2xl font-bold tabular-nums ${cfg.amountColor}`}
+              >
+                {cfg.amountPrefix}
+                {amountFormatted}
+              </span>
+              {paidDate && (
+                <span className="text-xs text-muted-foreground">
+                  {cfg.paidLabel} {paidDate}
+                </span>
+              )}
+              {dueDateFormatted && !isPaid && (
+                <span
+                  className={`text-xs font-medium ${
+                    isOverdue ? 'text-destructive' : 'text-muted-foreground'
+                  }`}
+                >
+                  До {dueDateFormatted}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Desktop row layout ───────────────────────────────────────── */}
+        <div className="hidden sm:flex items-center gap-3">
+          {/* Date column */}
+          <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0 w-16 pt-0.5">
             <CalendarDays className="size-3 shrink-0" />
             {createdDate}
           </span>
-
-          {/* ── Middle: counterparty + description + meta ──────────────── */}
+          {/* Content: counterparty + description + badges */}
           <div className="flex-1 min-w-0">
             {item.counterparty && (
               <div
@@ -181,222 +403,35 @@ export function TransactionItem({
             >
               {item.description}
             </div>
-
-            {/* Meta row: date (mobile only) + badges */}
-            <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
-              <span className="flex sm:hidden items-center gap-1 text-xs text-muted-foreground">
-                <CalendarDays className="size-3 shrink-0" />
-                {createdDate}
-              </span>
-
-              <Badge variant="outline" className="text-xs px-1.5 py-0">
-                {item.category.name}
-              </Badge>
-              <Badge variant="outline" className="text-xs px-1.5 py-0">
-                {item.currentAccount.name}
-              </Badge>
-
-              {isArchived && (
-                <Badge
-                  variant="secondary"
-                  className="text-xs px-1.5 py-0 gap-1 text-muted-foreground"
-                >
-                  <Archive className="size-3" />В архиве
-                </Badge>
-              )}
-
-              {isLinkedIncome ? (
-                <Badge
-                  variant="secondary"
-                  className="text-xs px-1.5 py-0 gap-1 text-muted-foreground"
-                >
-                  <Link2 className="size-3" />
-                  {item.createdByUser
-                    ? `Создан автоматически · ${item.createdByUser.name}`
-                    : 'Создан автоматически'}
-                </Badge>
-              ) : (
-                sharedAccountIds.has(item.currentAccount.id) &&
-                item.createdByUser && (
-                  <span className="text-xs text-muted-foreground">
-                    {item.createdByUser.name}
-                  </span>
-                )
-              )}
-            </div>
+            <div className="mt-1.5">{badgesRow}</div>
           </div>
 
-          {/* ── Right: amount + dates + actions ───────────────────────── */}
-          <div className="flex flex-col sm:flex-row items-end gap-4">
-            {/* Amount + paid/due dates */}
-            <div className="flex flex-col items-end gap-1">
+          {/* Right: amount + actions */}
+          <div className="flex items-start gap-0.5 shrink-0">
+            <div className="flex flex-col items-end gap-0.5 mr-1">
               <span
                 className={`text-base font-semibold tabular-nums ${cfg.amountColor}`}
               >
                 {cfg.amountPrefix}
-                {Number(item.amount).toLocaleString('ru-RU', {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
+                {amountFormatted}
               </span>
-
               {dueDateFormatted && !isPaid && (
                 <span
                   className={`text-xs font-medium ${
-                    isOverdue ? 'text-destructive' : 'text-muted-foreground'
+                    isOverdue ? 'text-warning' : 'text-muted-foreground'
                   }`}
                 >
                   До {dueDateFormatted}
                 </span>
               )}
-
               {paidDate && (
                 <span className="text-xs text-muted-foreground">
                   {cfg.paidLabel} {paidDate}
                 </span>
               )}
             </div>
-
-            <div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8"
-                title={cfg.toggleTitle}
-                onClick={async () => {
-                  try {
-                    await togglePaid({
-                      data: { id: item.id, type: item.type, paid: !isPaid },
-                    })
-                    await router.invalidate()
-                  } catch (e) {
-                    toast.error(
-                      e instanceof Error ? e.message : 'Произошла ошибка',
-                    )
-                  }
-                }}
-              >
-                {isPaid ? (
-                  <CheckCircle2 className={`size-4 ${cfg.toggleIconColor}`} />
-                ) : (
-                  <Circle className="size-4 text-muted-foreground" />
-                )}
-              </Button>
-              {/* 3-dot menu */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="size-8">
-                    <MoreHorizontal className="size-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {canEditDelete ? (
-                    <>
-                      <DropdownMenuItem onClick={() => setEditOpen(true)}>
-                        <Pencil className="size-3.5" />
-                        Редактировать
-                      </DropdownMenuItem>
-
-                      {isPaid && (
-                        <>
-                          <DropdownMenuSeparator />
-                          {item.archivedAt ? (
-                            <DropdownMenuItem
-                              onClick={async () => {
-                                try {
-                                  await archiveFn({
-                                    data: { id: item.id, archive: false },
-                                  })
-                                  await router.invalidate()
-                                  toast.success(
-                                    `${cfg.entityName} разархивирован`,
-                                  )
-                                } catch (e) {
-                                  toast.error(
-                                    e instanceof Error
-                                      ? e.message
-                                      : 'Произошла ошибка',
-                                  )
-                                }
-                              }}
-                            >
-                              <ArchiveRestore className="size-3.5" />
-                              Разархивировать
-                            </DropdownMenuItem>
-                          ) : (
-                            <DropdownMenuItem
-                              onClick={() => setArchiveOpen(true)}
-                            >
-                              <Archive className="size-3.5" />
-                              Архивировать
-                            </DropdownMenuItem>
-                          )}
-                        </>
-                      )}
-
-                      {!isPaid && (
-                        <>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            variant="destructive"
-                            onClick={() => setDeleteOpen(true)}
-                          >
-                            <Trash2 className="size-3.5" />
-                            Удалить
-                          </DropdownMenuItem>
-                        </>
-                      )}
-                    </>
-                  ) : (
-                    <DropdownMenuItem disabled>
-                      <Link2 className="size-3.5" />
-                      Только просмотр
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            {/* Toggle paid/received */}
-
-            {/* Portaled dialogs — rendered here so they're always mounted */}
-            {canEditDelete && renderEdit(editOpen, setEditOpen)}
-            {canEditDelete &&
-              !isPaid &&
-              renderDelete?.(deleteOpen, setDeleteOpen)}
-
-            {/* Archive confirmation */}
-            <AlertDialog open={archiveOpen} onOpenChange={setArchiveOpen}>
-              <AlertDialogContent size="sm">
-                <AlertDialogHeader>
-                  <AlertDialogTitle>
-                    Архивировать {isExpense ? 'расход' : 'доход'}?
-                  </AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Запись будет перемещена в архив.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Отмена</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={async () => {
-                      try {
-                        await archiveFn({
-                          data: { id: item.id, archive: true },
-                        })
-                        await router.invalidate()
-                        toast.success(`${cfg.entityName} архивирован`)
-                      } catch (e) {
-                        toast.error(
-                          e instanceof Error ? e.message : 'Произошла ошибка',
-                        )
-                      }
-                    }}
-                  >
-                    Архивировать
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            {menuDropdown}
+            {/* ↑ desktop only instance — the mobile one is absolutely positioned above */}
           </div>
         </div>
       </ItemContent>

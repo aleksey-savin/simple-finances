@@ -88,7 +88,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                   <AppSidebar />
                   <SidebarInset>
                     <AppHeader />
-                    <div className="flex flex-col gap-4 p-8">{children}</div>
+                    <div className="flex flex-col gap-4 p-2 sm:p-8">
+                      {children}
+                    </div>
                   </SidebarInset>
 
                   {/* <main className="container flex flex-col gap-4 px-4 pb-8 pt-14">

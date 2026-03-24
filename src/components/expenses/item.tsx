@@ -15,7 +15,13 @@ export const ExpenseItem = ({
   item: Expense
   sharedAccountIds: Set<string>
   togglePaid: any
-  categories: { id: string; name: string; useForExpenses: boolean }[]
+  categories: {
+    id: string
+    name: string
+    useForExpenses: boolean
+    useForIncome: boolean
+    isShared: boolean
+  }[]
   accounts: { id: string; name: string }[]
   counterparties?: { id: string; name: string }[]
 }) => (

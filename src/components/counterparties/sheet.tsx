@@ -19,7 +19,7 @@ export default function CounterParties() {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" className="gap-1.5">
+        <Button variant="secondary" className="gap-1.5">
           <PlusCircle className="size-3.5" />
           Контрагент
         </Button>
