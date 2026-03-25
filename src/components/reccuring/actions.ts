@@ -6,12 +6,15 @@ import {
   recurringRule,
   currentAccountUser,
   currentAccount,
-  counterparty,
   category,
 } from '@/db/schema'
 import { eq, inArray, or } from 'drizzle-orm'
 import { Cron } from 'croner'
 import { auth } from 'utils/auth'
+import {
+  createRecurringEntry,
+  syncRecurringRulesForAccounts,
+} from '#/lib/recurring'
 
 // ─── Fetch list (route loader) ────────────────────────────────────────────────
 
@@ -44,6 +47,8 @@ export const fetchRecurringData = createServerFn().handler(async () => {
     ])
     return { rules: [], categories, accounts: [], counterparties }
   }
+
+  await syncRecurringRulesForAccounts(accountIds)
 
   const [rules, categories, accounts, counterparties] = await Promise.all([
     db.query.recurringRule.findMany({
@@ -210,6 +215,49 @@ export const updateRecurringRule = createServerFn({ method: 'POST' })
         updatedBy: session.user.id,
       })
       .where(eq(recurringRule.id, data.id))
+  })
+
+// ─── Create now ───────────────────────────────────────────────────────────────
+
+const createNowSchema = z.object({ id: z.string() })
+
+export const createRecurringNow = createServerFn({ method: 'POST' })
+  .inputValidator(createNowSchema)
+  .handler(async ({ data }) => {
+    const request = getRequest()
+    const session = await auth.api.getSession({ headers: request.headers })
+    if (!session?.user?.id) throw new Error('Не авторизован')
+
+    const memberships = await db
+      .select({ currentAccountId: currentAccountUser.currentAccountId })
+      .from(currentAccountUser)
+      .where(eq(currentAccountUser.userId, session.user.id))
+
+    const accountIds = memberships.map((m) => m.currentAccountId)
+
+    const rule = await db.query.recurringRule.findFirst({
+      where: eq(recurringRule.id, data.id),
+      columns: {
+        id: true,
+        type: true,
+        amount: true,
+        description: true,
+        categoryId: true,
+        counterpartyId: true,
+        currentAccountId: true,
+        dueDaysFromCreation: true,
+        createdBy: true,
+        updatedBy: true,
+        paymentAccountId: true,
+        paymentCategoryId: true,
+      },
+    })
+
+    if (!rule || !accountIds.includes(rule.currentAccountId)) {
+      throw new Error('Правило не найдено')
+    }
+
+    await createRecurringEntry(rule, new Date(), session.user.id)
   })
 
 // ─── Delete ───────────────────────────────────────────────────────────────────

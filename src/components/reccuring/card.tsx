@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { RuleWithRelations } from '@/types'
 import { DeleteRule } from './delete'
 import { CRON_PRESETS } from '@/components/reccuring/constants'
@@ -5,7 +6,17 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Item, ItemContent, ItemFooter, ItemHeader } from '@/components/ui/item'
-import { Calendar, Clock, PenLine } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Calendar, Clock, PenLine, Plus } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 
 function getCronLabel(expr: string): string {
@@ -38,13 +49,16 @@ function pluralDays(n: number): string {
 export const RuleCard = ({
   rule,
   onEdit,
+  onCreateNow,
   onToggle,
 }: {
   rule: RuleWithRelations
   onEdit: () => void
+  onCreateNow: () => Promise<void>
   onToggle: (v: boolean) => void
 }) => {
   const isExpense = rule.type === 'expense'
+  const [createNowOpen, setCreateNowOpen] = useState(false)
 
   return (
     <Item variant="outline" className="px-4">
@@ -117,6 +131,39 @@ export const RuleCard = ({
       <Separator />
 
       <ItemFooter className="flex justify-end items-center">
+        <AlertDialog open={createNowOpen} onOpenChange={setCreateNowOpen}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 text-muted-foreground"
+            onClick={() => setCreateNowOpen(true)}
+          >
+            <Plus className="size-3.5" />
+            Создать сейчас
+          </Button>
+          <AlertDialogContent size="sm">
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Создать {isExpense ? 'расход' : 'доход'} сейчас?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Будет создана новая запись по правилу «{rule.description}».
+                Расписание и следующий запуск правила не изменятся.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Отмена</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={async () => {
+                  await onCreateNow()
+                  setCreateNowOpen(false)
+                }}
+              >
+                Создать
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         <Button
           variant="ghost"
           size="sm"

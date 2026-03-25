@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 import { RefreshCw } from 'lucide-react'
 import { RuleCard } from '#/components/reccuring/card'
 import {
+  createRecurringNow,
   fetchRecurringData,
   toggleRecurringRule,
 } from '#/components/reccuring/actions'
@@ -45,6 +46,16 @@ function RecurringPage() {
     }
   }
 
+  const handleCreateNow = async (rule: RuleWithRelations) => {
+    try {
+      await createRecurringNow({ data: { id: rule.id } })
+      await router.invalidate()
+      toast.success(rule.type === 'expense' ? 'Расход создан' : 'Доход создан')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Произошла ошибка')
+    }
+  }
+
   return (
     <>
       {rules.length === 0 ? (
@@ -64,6 +75,7 @@ function RecurringPage() {
                   params: { id: rule.id },
                 })
               }
+              onCreateNow={() => handleCreateNow(rule)}
               onToggle={(v) => handleToggle(rule, v)}
             />
           ))}

@@ -66,6 +66,7 @@ import {
 } from '#/routes/api/-tags'
 import { TagPicker, TagChips, type TagItem } from '#/components/ui/tag-picker'
 import { TagSummaryPanel } from '#/components/ui/tag-summary-panel'
+import { syncRecurringRulesForAccounts } from '#/lib/recurring'
 
 // ─── Normalised row shared by both tables ─────────────────────────────────────
 
@@ -117,6 +118,8 @@ const fetchPayables = createServerFn().handler(async () => {
       monthLabel: '',
     }
   }
+
+  await syncRecurringRulesForAccounts(accountIds)
 
   const now = new Date()
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)

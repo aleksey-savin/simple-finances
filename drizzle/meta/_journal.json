@@ -176,6 +176,13 @@
       "when": 1774237255506,
       "tag": "0024_absent_hardball",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1774448323966,
+      "tag": "0025_shiny_hex",
+      "breakpoints": true
     }
   ]
 }

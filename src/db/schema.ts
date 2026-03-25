@@ -243,58 +243,90 @@ export const counterparty = pgTable('counterparty', {
     .notNull(),
 })
 
-export const expense = pgTable('expense', {
-  id: text('id')
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  amount: numeric('value').notNull(),
-  description: text().notNull(),
-  categoryId: text('category_id')
-    .notNull()
-    .references(() => category.id),
-  counterpartyId: text('counterparty_id').references(() => counterparty.id),
-  currentAccountId: text('current_account_id')
-    .notNull()
-    .references(() => currentAccount.id),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  dueDate: timestamp('due_date'),
-  paidAt: timestamp('paid_at'),
-  archivedAt: timestamp('archived_at'),
-  createdBy: text('created_by')
-    .notNull()
-    .references(() => user.id),
-  updatedBy: text('updated_by')
-    .notNull()
-    .references(() => user.id),
-})
+export const expense = pgTable(
+  'expense',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    amount: numeric('value').notNull(),
+    description: text().notNull(),
+    categoryId: text('category_id')
+      .notNull()
+      .references(() => category.id),
+    counterpartyId: text('counterparty_id').references(() => counterparty.id),
+    currentAccountId: text('current_account_id')
+      .notNull()
+      .references(() => currentAccount.id),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    dueDate: timestamp('due_date'),
+    paidAt: timestamp('paid_at'),
+    archivedAt: timestamp('archived_at'),
+    recurringRuleId: text('recurring_rule_id').references(
+      () => recurringRule.id,
+      {
+        onDelete: 'set null',
+      },
+    ),
+    recurringOccurrenceAt: timestamp('recurring_occurrence_at'),
+    createdBy: text('created_by')
+      .notNull()
+      .references(() => user.id),
+    updatedBy: text('updated_by')
+      .notNull()
+      .references(() => user.id),
+  },
+  (table) => [
+    unique('expense_recurring_occurrence_unique').on(
+      table.recurringRuleId,
+      table.recurringOccurrenceAt,
+    ),
+  ],
+)
 
-export const income = pgTable('income', {
-  id: text('id')
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  amount: numeric('value').notNull(),
-  description: text().notNull(),
-  categoryId: text('category_id')
-    .notNull()
-    .references(() => category.id),
-  counterpartyId: text('counterparty_id').references(() => counterparty.id),
-  currentAccountId: text('current_account_id')
-    .notNull()
-    .references(() => currentAccount.id),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  dueDate: timestamp('due_date'),
-  paidAt: timestamp('paid_at'),
-  archivedAt: timestamp('archived_at'),
-  linkedExpenseId: text('linked_expense_id').references(() => expense.id, {
-    onDelete: 'set null',
-  }),
-  createdBy: text('created_by')
-    .notNull()
-    .references(() => user.id),
-  updatedBy: text('updated_by')
-    .notNull()
-    .references(() => user.id),
-})
+export const income = pgTable(
+  'income',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    amount: numeric('value').notNull(),
+    description: text().notNull(),
+    categoryId: text('category_id')
+      .notNull()
+      .references(() => category.id),
+    counterpartyId: text('counterparty_id').references(() => counterparty.id),
+    currentAccountId: text('current_account_id')
+      .notNull()
+      .references(() => currentAccount.id),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    dueDate: timestamp('due_date'),
+    paidAt: timestamp('paid_at'),
+    archivedAt: timestamp('archived_at'),
+    recurringRuleId: text('recurring_rule_id').references(
+      () => recurringRule.id,
+      {
+        onDelete: 'set null',
+      },
+    ),
+    recurringOccurrenceAt: timestamp('recurring_occurrence_at'),
+    linkedExpenseId: text('linked_expense_id').references(() => expense.id, {
+      onDelete: 'set null',
+    }),
+    createdBy: text('created_by')
+      .notNull()
+      .references(() => user.id),
+    updatedBy: text('updated_by')
+      .notNull()
+      .references(() => user.id),
+  },
+  (table) => [
+    unique('income_recurring_occurrence_unique').on(
+      table.recurringRuleId,
+      table.recurringOccurrenceAt,
+    ),
+  ],
+)
 
 export const recurringRule = pgTable('recurring_rule', {
   id: text('id')

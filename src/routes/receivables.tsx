@@ -63,6 +63,7 @@ import {
 } from '#/routes/api/-tags'
 import { TagPicker, TagChips, type TagItem } from '#/components/ui/tag-picker'
 import { TagSummaryPanel } from '#/components/ui/tag-summary-panel'
+import { syncRecurringRulesForAccounts } from '#/lib/recurring'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -86,6 +87,8 @@ const fetchReceivables = createServerFn().handler(async () => {
   if (accountIds.length === 0) {
     return { rows: [], accounts: [], categories: [], counterparties: [] }
   }
+
+  await syncRecurringRulesForAccounts(accountIds)
 
   const [rows, accounts, counterparties] = await Promise.all([
     db.query.income.findMany({

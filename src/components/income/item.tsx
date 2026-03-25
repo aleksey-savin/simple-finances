@@ -1,9 +1,10 @@
 import { authClient } from 'utils/auth-client'
 
-import { archiveIncome } from './actions'
+import { addIncome, archiveIncome } from './actions'
 import { DeleteIncome } from './delete'
 import { EditIncome } from './edit'
 import { TransactionItem } from '#/components/transactions/item'
+import { buildDuplicateTransactionDates } from '#/components/transactions/duplicate'
 import type { Income } from '#/types'
 
 export const IncomeItem = ({
@@ -30,6 +31,18 @@ export const IncomeItem = ({
       sharedAccountIds={sharedAccountIds}
       togglePaid={togglePaid}
       archiveFn={archiveIncome}
+      duplicateFn={() =>
+        addIncome({
+          data: {
+            amount: Number(item.amount),
+            description: item.description,
+            categoryId: item.category.id,
+            currentAccountId: item.currentAccount.id,
+            counterpartyId: item.counterparty?.id ?? undefined,
+            ...buildDuplicateTransactionDates(item),
+          },
+        })
+      }
       canEditDelete={canEditDelete}
       renderEdit={(open, onOpenChange) => (
         <EditIncome

@@ -38,6 +38,7 @@ import z from 'zod'
 import { ExpenseItem } from '#/components/expenses/item'
 import { IncomeItem } from '#/components/income/item'
 import { ToggleGroup, ToggleGroupItem } from '#/components/ui/toggle-group'
+import { syncRecurringRulesForAccounts } from '#/lib/recurring'
 
 const fetchData = createServerFn().handler(async () => {
   const request = getRequest()
@@ -68,6 +69,8 @@ const fetchData = createServerFn().handler(async () => {
     })
     return { expenses: [], incomes: [], categories, accounts: [] }
   }
+
+  await syncRecurringRulesForAccounts(accountIds)
 
   const [expenses, incomes, categories, counterparties, accountsData] =
     await Promise.all([

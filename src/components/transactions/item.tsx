@@ -3,11 +3,9 @@ import { ru } from 'date-fns/locale'
 import {
   Archive,
   ArchiveRestore,
-  ArrowDownCircle,
-  ArrowUpCircle,
   CalendarDays,
   CheckCircle2,
-  Circle,
+  Copy,
   Link2,
   MoreHorizontal,
   Pencil,
@@ -67,6 +65,8 @@ type TransactionItemProps = {
   renderDelete?: DialogRenderProp
   /** Archive server function for this transaction type. */
   archiveFn: (args: { data: { id: string; archive: boolean } }) => Promise<void>
+  /** Creates a new transaction by duplicating this item with fresh timestamps. */
+  duplicateFn: () => Promise<unknown>
   /**
    * Whether the current user is allowed to edit/delete this item.
    * Defaults to `true` (expenses are always editable by the owner;
@@ -84,6 +84,7 @@ export function TransactionItem({
   renderEdit,
   renderDelete,
   archiveFn,
+  duplicateFn,
   canEditDelete = true,
 }: TransactionItemProps) {
   const router = useRouter()
@@ -175,6 +176,22 @@ export function TransactionItem({
               <DropdownMenuSeparator />
               <Pencil className="size-3.5" />
               Редактировать
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={async () => {
+                try {
+                  await duplicateFn()
+                  await router.invalidate()
+                  toast.success(`${cfg.entityName} скопирован`)
+                } catch (e) {
+                  toast.error(
+                    e instanceof Error ? e.message : 'Произошла ошибка',
+                  )
+                }
+              }}
+            >
+              <Copy className="size-3.5" />
+              Копировать
             </DropdownMenuItem>
             {isPaid && (
               <>

@@ -1,7 +1,8 @@
-import { archiveExpense } from './actions'
+import { addExpense, archiveExpense } from './actions'
 import { DeleteExpense } from './delete'
 import { EditExpense } from './edit'
 import { TransactionItem } from '#/components/transactions/item'
+import { buildDuplicateTransactionDates } from '#/components/transactions/duplicate'
 import type { Expense } from '#/types'
 
 export const ExpenseItem = ({
@@ -30,6 +31,18 @@ export const ExpenseItem = ({
     sharedAccountIds={sharedAccountIds}
     togglePaid={togglePaid}
     archiveFn={archiveExpense}
+    duplicateFn={() =>
+      addExpense({
+        data: {
+          amount: Number(item.amount),
+          description: item.description,
+          categoryId: item.category.id,
+          currentAccountId: item.currentAccount.id,
+          counterpartyId: item.counterparty?.id ?? undefined,
+          ...buildDuplicateTransactionDates(item),
+        },
+      })
+    }
     renderEdit={(open, onOpenChange) => (
       <EditExpense
         item={item}
