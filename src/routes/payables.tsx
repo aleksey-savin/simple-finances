@@ -26,12 +26,9 @@ import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '#/components/ui/select'
+  MultiSelectCombobox,
+  type MultiSelectOption,
+} from '#/components/ui/multi-select-combobox'
 import {
   Dialog,
   DialogClose,
@@ -456,15 +453,16 @@ function getDueMeta(dueDate: string | null | undefined) {
 
 // ─── Custom TanStack Table filter fns ─────────────────────────────────────────
 
-const idFilterFn: FilterFn<ExpenseRow> = (row, columnId, value: string) => {
-  if (!value) return true
-  if (columnId === 'account') return row.original.currentAccount.id === value
-  if (columnId === 'category') return row.original.category.id === value
+const idFilterFn: FilterFn<ExpenseRow> = (row, columnId, value: string[]) => {
+  if (!value?.length) return true
+  if (columnId === 'account')
+    return value.includes(row.original.currentAccount.id)
+  if (columnId === 'category') return value.includes(row.original.category.id)
   if (columnId === 'counterparty')
-    return row.original.counterparty?.id === value
+    return value.includes(row.original.counterparty?.id ?? '')
   return true
 }
-idFilterFn.autoRemove = (v) => !v
+idFilterFn.autoRemove = (v) => !v?.length
 
 const overdueFilterFn: FilterFn<ExpenseRow> = (row, _id, value: boolean) => {
   if (!value) return true
@@ -493,12 +491,12 @@ function getExpenseStatus(row: ExpenseRow): ExpenseStatus {
 const statusFilterFn: FilterFn<ExpenseRow> = (
   row,
   _id,
-  value: ExpenseStatus,
+  value: ExpenseStatus[],
 ) => {
-  if (!value) return true
-  return getExpenseStatus(row.original) === value
+  if (!value?.length) return true
+  return value.includes(getExpenseStatus(row.original))
 }
-statusFilterFn.autoRemove = (v) => !v
+statusFilterFn.autoRemove = (v) => !v?.length
 
 // ─── Status badge (shared by both tables) ────────────────────────────────────
 
@@ -804,9 +802,11 @@ function buildColumns(
       enableSorting: false,
       size: 40,
       accessorFn: (row) => (tagsMap[row.id] ?? []).map((t) => t.id).join(','),
-      filterFn: (row, _id, value: string) => {
-        if (!value) return true
-        return (tagsMap[row.original.id] ?? []).some((t) => t.id === value)
+      filterFn: (row, _id, value: string[]) => {
+        if (!value?.length) return true
+        return (tagsMap[row.original.id] ?? []).some((t) =>
+          value.includes(t.id),
+        )
       },
       header: '',
       cell: ({ row }) => {
@@ -860,25 +860,54 @@ function Toolbar({
 }) {
   const globalFilter = (table.getState().globalFilter as string) ?? ''
   const accountFilter =
-    (table.getColumn('account')?.getFilterValue() as string) ?? ''
+    (table.getColumn('account')?.getFilterValue() as string[]) ?? []
   const categoryFilter =
-    (table.getColumn('category')?.getFilterValue() as string) ?? ''
+    (table.getColumn('category')?.getFilterValue() as string[]) ?? []
   const counterpartyFilter =
-    (table.getColumn('counterparty')?.getFilterValue() as string) ?? ''
+    (table.getColumn('counterparty')?.getFilterValue() as string[]) ?? []
   const overdueOnly =
     (table.getColumn('dueDate')?.getFilterValue() as boolean) ?? false
   const statusFilter =
-    (table.getColumn('status')?.getFilterValue() as ExpenseStatus) ?? ''
-  const tagFilter = (table.getColumn('tags')?.getFilterValue() as string) ?? ''
+    (table.getColumn('status')?.getFilterValue() as ExpenseStatus[]) ?? []
+  const tagFilter =
+    (table.getColumn('tags')?.getFilterValue() as string[]) ?? []
+
+  const accountOptions: MultiSelectOption[] = accounts.map((account) => ({
+    value: account.id,
+    label: account.name,
+  }))
+  const categoryOptions: MultiSelectOption[] = categories.map((category) => ({
+    value: category.id,
+    label: category.name,
+  }))
+  const counterpartyOptions: MultiSelectOption[] = counterparties.map(
+    (counterparty) => ({
+      value: counterparty.id,
+      label: counterparty.name,
+    }),
+  )
+  const statusOptions: MultiSelectOption[] = [
+    { value: 'overdue', label: 'Просрочен' },
+    { value: 'soon', label: 'Скоро' },
+    { value: 'ontime', label: 'В срок' },
+    { value: 'nodate', label: 'Без срока' },
+    { value: 'paid', label: 'Оплачено' },
+    { value: 'projected', label: 'Запланировано' },
+  ]
+  const tagOptions: MultiSelectOption[] = allTags.map((tag) => ({
+    value: tag.id,
+    label: tag.name,
+    color: tag.color,
+  }))
 
   const hasFilters =
     globalFilter ||
-    accountFilter ||
-    categoryFilter ||
-    counterpartyFilter ||
+    accountFilter.length > 0 ||
+    categoryFilter.length > 0 ||
+    counterpartyFilter.length > 0 ||
     overdueOnly ||
-    statusFilter ||
-    tagFilter
+    statusFilter.length > 0 ||
+    tagFilter.length > 0
 
   const filteredRows = table.getFilteredRowModel().rows
   const filteredTotal = filteredRows.reduce(
@@ -902,120 +931,74 @@ function Toolbar({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Select
-          value={accountFilter || '_all'}
-          onValueChange={(v) =>
+        <MultiSelectCombobox
+          options={accountOptions}
+          value={accountFilter}
+          onValueChange={(value) =>
             table
               .getColumn('account')
-              ?.setFilterValue(v === '_all' ? undefined : v)
+              ?.setFilterValue(value.length ? value : undefined)
           }
-        >
-          <SelectTrigger className="h-8 w-44 text-sm">
-            <SelectValue placeholder="Все счета" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="_all">Все счета</SelectItem>
-            {accounts.map((a) => (
-              <SelectItem key={a.id} value={a.id}>
-                {a.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          placeholder="Все счета"
+          searchPlaceholder="Поиск счета…"
+          emptyText="Счета не найдены"
+        />
 
-        <Select
-          value={categoryFilter || '_all'}
-          onValueChange={(v) =>
+        <MultiSelectCombobox
+          options={categoryOptions}
+          value={categoryFilter}
+          onValueChange={(value) =>
             table
               .getColumn('category')
-              ?.setFilterValue(v === '_all' ? undefined : v)
+              ?.setFilterValue(value.length ? value : undefined)
           }
-        >
-          <SelectTrigger className="h-8 w-44 text-sm">
-            <SelectValue placeholder="Все категории" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="_all">Все категории</SelectItem>
-            {categories.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                {c.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          placeholder="Все категории"
+          searchPlaceholder="Поиск категории…"
+          emptyText="Категории не найдены"
+        />
 
         {counterparties.length > 0 && (
-          <Select
-            value={counterpartyFilter || '_all'}
-            onValueChange={(v) =>
+          <MultiSelectCombobox
+            options={counterpartyOptions}
+            value={counterpartyFilter}
+            onValueChange={(value) =>
               table
                 .getColumn('counterparty')
-                ?.setFilterValue(v === '_all' ? undefined : v)
+                ?.setFilterValue(value.length ? value : undefined)
             }
-          >
-            <SelectTrigger className="h-8 w-44 text-sm">
-              <SelectValue placeholder="Все контрагенты" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="_all">Все контрагенты</SelectItem>
-              {counterparties.map((cp) => (
-                <SelectItem key={cp.id} value={cp.id}>
-                  {cp.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="Все контрагенты"
+            searchPlaceholder="Поиск контрагента…"
+            emptyText="Контрагенты не найдены"
+          />
         )}
 
-        <Select
-          value={statusFilter || '_all'}
-          onValueChange={(v) =>
+        <MultiSelectCombobox
+          options={statusOptions}
+          value={statusFilter}
+          onValueChange={(value) =>
             table
               .getColumn('status')
-              ?.setFilterValue(v === '_all' ? undefined : v)
+              ?.setFilterValue(value.length ? value : undefined)
           }
-        >
-          <SelectTrigger className="h-8 w-40 text-sm">
-            <SelectValue placeholder="Все статусы" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="_all">Все статусы</SelectItem>
-            <SelectItem value="overdue">Просрочен</SelectItem>
-            <SelectItem value="soon">Скоро</SelectItem>
-            <SelectItem value="ontime">В срок</SelectItem>
-            <SelectItem value="nodate">Без срока</SelectItem>
-            <SelectItem value="paid">Оплачено</SelectItem>
-            <SelectItem value="projected">Запланировано</SelectItem>
-          </SelectContent>
-        </Select>
+          placeholder="Все статусы"
+          searchPlaceholder="Поиск статуса…"
+          emptyText="Статусы не найдены"
+          className="w-48"
+        />
 
         {allTags.length > 0 && (
-          <Select
-            value={tagFilter || '_all'}
-            onValueChange={(v) =>
+          <MultiSelectCombobox
+            options={tagOptions}
+            value={tagFilter}
+            onValueChange={(value) =>
               table
                 .getColumn('tags')
-                ?.setFilterValue(v === '_all' ? undefined : v)
+                ?.setFilterValue(value.length ? value : undefined)
             }
-          >
-            <SelectTrigger className="h-8 w-44 text-sm">
-              <SelectValue placeholder="Все теги" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="_all">Все теги</SelectItem>
-              {allTags.map((t) => (
-                <SelectItem key={t.id} value={t.id}>
-                  <span className="flex items-center gap-1.5">
-                    <span
-                      className="inline-block size-2 rounded-full shrink-0"
-                      style={{ backgroundColor: t.color }}
-                    />
-                    {t.name}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="Все теги"
+            searchPlaceholder="Поиск тега…"
+            emptyText="Теги не найдены"
+          />
         )}
 
         <Button

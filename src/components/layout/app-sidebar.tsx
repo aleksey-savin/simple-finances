@@ -24,7 +24,6 @@ import {
 import Accounts from '../accounts'
 import CounterParties from '../counterparties'
 import Categories from '../categories'
-import { ModeToggle } from '../mode-toggle'
 
 const navMain = [
   {

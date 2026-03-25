@@ -1,19 +1,22 @@
 import { TransactionSummary } from '#/components/transactions/summary'
 import { Button } from '#/components/ui/button'
 import { Calendar } from '#/components/ui/calendar'
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from '#/components/ui/drawer'
 import { Input } from '#/components/ui/input'
+import {
+  MultiSelectCombobox,
+  type MultiSelectOption,
+} from '#/components/ui/multi-select-combobox'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '#/components/ui/popover'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '#/components/ui/select'
 
 import { db } from '#/db'
 import {
@@ -38,6 +41,7 @@ import z from 'zod'
 import { ExpenseItem } from '#/components/expenses/item'
 import { IncomeItem } from '#/components/income/item'
 import { ToggleGroup, ToggleGroupItem } from '#/components/ui/toggle-group'
+import { useIsMobile } from '#/hooks/use-mobile'
 import { syncRecurringRulesForAccounts } from '#/lib/recurring'
 
 const fetchData = createServerFn().handler(async () => {
@@ -154,6 +158,7 @@ export const Route = createFileRoute('/transactions')({
 function App() {
   const { expenses, incomes, categories, counterparties, accounts } =
     Route.useLoaderData()
+  const isMobile = useIsMobile()
 
   const feed = [
     ...expenses.map((e) => ({ ...e, type: 'expense' as const })),
@@ -175,32 +180,55 @@ function App() {
   const [statusFilter, setStatusFilter] = useState<
     'all' | 'paid' | 'unpaid' | 'overdue'
   >('all')
-  const [accountFilter, setAccountFilter] = useState('all')
-  const [categoryFilter, setCategoryFilter] = useState('all')
-  const [counterpartyFilter, setCounterpartyFilter] = useState('all')
+  const [accountFilter, setAccountFilter] = useState<string[]>([])
+  const [categoryFilter, setCategoryFilter] = useState<string[]>([])
+  const [counterpartyFilter, setCounterpartyFilter] = useState<string[]>([])
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
   const [dateField, setDateField] = useState<'createdAt' | 'paidAt'>(
     'createdAt',
+  )
+  const [datePickerOpen, setDatePickerOpen] = useState(false)
+
+  const accountOptions: MultiSelectOption[] = accounts.map((account) => ({
+    value: account.id,
+    label: account.name,
+  }))
+  const categoryOptions: MultiSelectOption[] = categories.map((category) => ({
+    value: category.id,
+    label: category.name,
+  }))
+  const counterpartyOptions: MultiSelectOption[] = (counterparties ?? []).map(
+    (counterparty) => ({
+      value: counterparty.id,
+      label: counterparty.name,
+    }),
   )
 
   const hasActiveFilters =
     search !== '' ||
     typeFilter !== 'all' ||
     statusFilter !== 'all' ||
-    accountFilter !== 'all' ||
-    categoryFilter !== 'all' ||
-    counterpartyFilter !== 'all' ||
+    accountFilter.length > 0 ||
+    categoryFilter.length > 0 ||
+    counterpartyFilter.length > 0 ||
     dateRange !== undefined
 
   const clearFilters = () => {
     setSearch('')
     setTypeFilter('all')
     setStatusFilter('all')
-    setAccountFilter('all')
-    setCategoryFilter('all')
-    setCounterpartyFilter('all')
+    setAccountFilter([])
+    setCategoryFilter([])
+    setCounterpartyFilter([])
     setDateRange(undefined)
     setDateField('createdAt')
+  }
+
+  const handleDateRangeChange = (nextRange: DateRange | undefined) => {
+    setDateRange(nextRange)
+    if (isMobile && nextRange?.from && nextRange?.to) {
+      setDatePickerOpen(false)
+    }
   }
 
   const filteredFeed = useMemo(() => {
@@ -219,13 +247,19 @@ function App() {
       if (statusFilter === 'paid' && !isPaid) return false
       if (statusFilter === 'unpaid' && isPaid) return false
       if (statusFilter === 'overdue' && !isOverdue) return false
-      if (accountFilter !== 'all' && item.currentAccount.id !== accountFilter)
-        return false
-      if (categoryFilter !== 'all' && item.category.id !== categoryFilter)
+      if (
+        accountFilter.length > 0 &&
+        !accountFilter.includes(item.currentAccount.id)
+      )
         return false
       if (
-        counterpartyFilter !== 'all' &&
-        item.counterparty?.id !== counterpartyFilter
+        categoryFilter.length > 0 &&
+        !categoryFilter.includes(item.category.id)
+      )
+        return false
+      if (
+        counterpartyFilter.length > 0 &&
+        !counterpartyFilter.includes(item.counterparty?.id ?? '')
       )
         return false
 
@@ -304,12 +338,13 @@ function App() {
 
           {/* Date range + field toggle */}
           <div className="flex items-center gap-1">
-            <Popover>
-              <PopoverTrigger asChild>
+            {isMobile ? (
+              <>
                 <Button
                   variant="outline"
                   size="sm"
                   className="h-9 gap-2 font-normal text-sm min-w-40"
+                  onClick={() => setDatePickerOpen(true)}
                 >
                   <CalendarIcon className="size-3.5 text-muted-foreground" />
                   {dateRange?.from ? (
@@ -326,16 +361,57 @@ function App() {
                     <span className="text-muted-foreground">Период</span>
                   )}
                 </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="range"
-                  selected={dateRange}
-                  onSelect={setDateRange}
-                  numberOfMonths={2}
-                />
-              </PopoverContent>
-            </Popover>
+                <Drawer open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                  <DrawerContent>
+                    <DrawerHeader>
+                      <DrawerTitle>Выберите период</DrawerTitle>
+                    </DrawerHeader>
+                    <div className="overflow-y-auto px-2 pb-6">
+                      <Calendar
+                        mode="range"
+                        selected={dateRange}
+                        onSelect={handleDateRangeChange}
+                        numberOfMonths={1}
+                        className="mx-auto"
+                      />
+                    </div>
+                  </DrawerContent>
+                </Drawer>
+              </>
+            ) : (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9 gap-2 font-normal text-sm min-w-40"
+                  >
+                    <CalendarIcon className="size-3.5 text-muted-foreground" />
+                    {dateRange?.from ? (
+                      dateRange.to ? (
+                        <>
+                          {format(dateRange.from, 'dd.MM.yyyy')}
+                          {' — '}
+                          {format(dateRange.to, 'dd.MM.yyyy')}
+                        </>
+                      ) : (
+                        format(dateRange.from, 'dd.MM.yyyy')
+                      )
+                    ) : (
+                      <span className="text-muted-foreground">Период</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="range"
+                    selected={dateRange}
+                    onSelect={handleDateRangeChange}
+                    numberOfMonths={2}
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
 
             <ToggleGroup
               variant="outline"
@@ -372,51 +448,30 @@ function App() {
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
-          {/* Account */}
-          <Select value={accountFilter} onValueChange={setAccountFilter}>
-            <SelectTrigger className="w-44 h-8 text-sm">
-              <SelectValue placeholder="Все счета" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Все счета</SelectItem>
-              {accounts.map((a) => (
-                <SelectItem key={a.id} value={a.id}>
-                  {a.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {/* Category */}
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-44 h-8 text-sm">
-              <SelectValue placeholder="Все категории" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Все категории</SelectItem>
-              {categories.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {/* Counterparty */}
-          <Select
+          <MultiSelectCombobox
+            options={accountOptions}
+            value={accountFilter}
+            onValueChange={setAccountFilter}
+            placeholder="Все счета"
+            searchPlaceholder="Поиск счета…"
+            emptyText="Счета не найдены"
+          />
+          <MultiSelectCombobox
+            options={categoryOptions}
+            value={categoryFilter}
+            onValueChange={setCategoryFilter}
+            placeholder="Все категории"
+            searchPlaceholder="Поиск категории…"
+            emptyText="Категории не найдены"
+          />
+          <MultiSelectCombobox
+            options={counterpartyOptions}
             value={counterpartyFilter}
             onValueChange={setCounterpartyFilter}
-          >
-            <SelectTrigger className="w-44 h-8 text-sm">
-              <SelectValue placeholder="Все контрагенты" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Все контрагенты</SelectItem>
-              {counterparties?.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="Все контрагенты"
+            searchPlaceholder="Поиск контрагента…"
+            emptyText="Контрагенты не найдены"
+          />
           {/* Clear */}
           {hasActiveFilters && (
             <Button

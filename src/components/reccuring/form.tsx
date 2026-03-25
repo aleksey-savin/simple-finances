@@ -61,7 +61,6 @@ export const RecurringForm = ({
   const [paymentAccounts, setPaymentAccounts] = useState<PaymentAccount[]>([])
   const [isFetchingPayments, setIsFetchingPayments] = useState(false)
 
-  const incomeCategories = categories.filter((c) => c.useForIncome)
   const paymentIncomeCategories = categories.filter(
     (c) => c.useForIncome && c.isShared,
   )
