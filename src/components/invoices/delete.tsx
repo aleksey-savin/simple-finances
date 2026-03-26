@@ -3,7 +3,7 @@ import { Trash2 } from 'lucide-react'
 import { useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
 
-import { deleteInvoice } from './actions.server'
+import { deleteInvoice } from './actions'
 
 import { Button } from '@/components/ui/button'
 import {

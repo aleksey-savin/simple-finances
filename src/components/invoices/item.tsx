@@ -2,7 +2,7 @@ import { authClient } from 'utils/auth-client'
 
 import type { Invoice } from '#/types'
 
-import { addInvoice, archiveInvoice } from './actions.server'
+import { addInvoice, archiveInvoice } from './actions'
 import { DeleteInvoice } from './delete'
 import { buildDuplicateInvoiceDates } from './duplicate'
 import { EditInvoice } from './edit'

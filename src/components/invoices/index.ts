@@ -4,7 +4,7 @@ export {
   deleteInvoice,
   fetchPaymentAccounts,
   updateInvoice,
-} from './actions.server'
+} from './actions'
 export { buildDuplicateInvoiceDates } from './duplicate'
 export { DeleteInvoice } from './delete'
 export { EditInvoice } from './edit'

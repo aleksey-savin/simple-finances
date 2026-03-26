@@ -7,11 +7,7 @@ import z from 'zod'
 
 import type { Invoice } from '@/db/types'
 
-import {
-  addInvoice,
-  fetchPaymentAccounts,
-  updateInvoice,
-} from './actions.server'
+import { addInvoice, fetchPaymentAccounts, updateInvoice } from './actions'
 
 import { Button } from '@/components/ui/button'
 import { DialogFooter } from '@/components/ui/dialog'
