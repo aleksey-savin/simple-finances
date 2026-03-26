@@ -1,4 +1,7 @@
-import { format, isToday, isYesterday, isSameYear } from 'date-fns'
+import { useState } from 'react'
+import type { ReactNode } from 'react'
+import { useRouter } from '@tanstack/react-router'
+import { format, isSameYear, isToday, isYesterday } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import {
   Archive,
@@ -12,19 +15,13 @@ import {
   Trash2,
   XCircle,
 } from 'lucide-react'
-import { useState } from 'react'
-import type { ReactNode } from 'react'
+import { toast } from 'sonner'
 
-import { Item, ItemContent } from '../ui/item'
+import type { Invoice } from '#/types'
+
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '../ui/dropdown-menu'
+import { Item, ItemContent } from '../ui/item'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,11 +32,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../ui/alert-dialog'
-import { toast } from 'sonner'
-import { useRouter } from '@tanstack/react-router'
-import type { Expense, Income } from '#/types'
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../ui/dropdown-menu'
 
 function formatDate(date: Date): string {
   if (isToday(date)) return 'Сегодня'
@@ -48,36 +47,23 @@ function formatDate(date: Date): string {
   return format(date, 'd MMM yyyy', { locale: ru })
 }
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type DialogRenderProp = (
   open: boolean,
   onOpenChange: (open: boolean) => void,
 ) => ReactNode
 
-type TransactionItemProps = {
-  item: Expense | Income
+type InvoiceListItemProps = {
+  item: Invoice
   sharedAccountIds: Set<string>
   togglePaid: any
-  /** Render the type-specific edit dialog. Receives open state + setter. */
   renderEdit: DialogRenderProp
-  /** Render the type-specific delete dialog. Receives open state + setter. */
   renderDelete?: DialogRenderProp
-  /** Archive server function for this transaction type. */
   archiveFn: (args: { data: { id: string; archive: boolean } }) => Promise<void>
-  /** Creates a new transaction by duplicating this item with fresh timestamps. */
   duplicateFn: () => Promise<unknown>
-  /**
-   * Whether the current user is allowed to edit/delete this item.
-   * Defaults to `true` (expenses are always editable by the owner;
-   * income from a shared account may restrict editing to the creator).
-   */
   canEditDelete?: boolean
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
-export function TransactionItem({
+export function InvoiceListItem({
   item,
   sharedAccountIds,
   togglePaid,
@@ -86,18 +72,14 @@ export function TransactionItem({
   archiveFn,
   duplicateFn,
   canEditDelete = true,
-}: TransactionItemProps) {
+}: InvoiceListItemProps) {
   const router = useRouter()
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [archiveOpen, setArchiveOpen] = useState(false)
 
-  const isExpense = item.type === 'expense'
-  const isLinkedIncome =
-    !isExpense &&
-    'linkedExpenseId' in item &&
-    !!(item as Income).linkedExpenseId
-
+  const isPayable = item.kind === 'payable'
+  const isLinkedReceivable = !isPayable && !!item.linkedInvoiceId
   const isPaid = item.paidAt !== null
   const isArchived = item.archivedAt !== null
   const isOverdue =
@@ -109,27 +91,17 @@ export function TransactionItem({
     ? formatDate(new Date(item.dueDate))
     : null
 
-  // ─── Visual config per type ──────────────────────────────────────────────
-
-  const cfg = isExpense
+  const cfg = isPayable
     ? {
         amountPrefix: '−',
         amountColor: isPaid ? 'text-amber-600' : 'text-muted-foreground',
         paidLabel: 'Оплачено',
-        toggleTitle: isPaid
-          ? 'Отметить как неоплаченное'
-          : 'Отметить как оплаченное',
-        toggleIconColor: 'text-green-600',
         entityName: 'Расход',
       }
     : {
         amountPrefix: '+',
         amountColor: isPaid ? 'text-emerald-700' : 'text-muted-foreground',
         paidLabel: 'Получено',
-        toggleTitle: isPaid
-          ? 'Отметить как неполученное'
-          : 'Отметить как полученное',
-        toggleIconColor: 'text-emerald-600',
         entityName: 'Доход',
       }
 
@@ -137,8 +109,6 @@ export function TransactionItem({
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
-
-  // ─── Shared fragments ─────────────────────────────────────────────────────
 
   const menuDropdown = (
     <DropdownMenu modal={false}>
@@ -152,11 +122,13 @@ export function TransactionItem({
           onClick={async () => {
             try {
               await togglePaid({
-                data: { id: item.id, type: item.type, paid: !isPaid },
+                data: { id: item.id, kind: item.kind, paid: !isPaid },
               })
               await router.invalidate()
-            } catch (e) {
-              toast.error(e instanceof Error ? e.message : 'Произошла ошибка')
+            } catch (error) {
+              toast.error(
+                error instanceof Error ? error.message : 'Произошла ошибка',
+              )
             }
           }}
         >
@@ -183,9 +155,9 @@ export function TransactionItem({
                   await duplicateFn()
                   await router.invalidate()
                   toast.success(`${cfg.entityName} скопирован`)
-                } catch (e) {
+                } catch (error) {
                   toast.error(
-                    e instanceof Error ? e.message : 'Произошла ошибка',
+                    error instanceof Error ? error.message : 'Произошла ошибка',
                   )
                 }
               }}
@@ -205,9 +177,11 @@ export function TransactionItem({
                         })
                         await router.invalidate()
                         toast.success(`${cfg.entityName} разархивирован`)
-                      } catch (e) {
+                      } catch (error) {
                         toast.error(
-                          e instanceof Error ? e.message : 'Произошла ошибка',
+                          error instanceof Error
+                            ? error.message
+                            : 'Произошла ошибка',
                         )
                       }
                     }}
@@ -248,24 +222,24 @@ export function TransactionItem({
   )
 
   const badgesRow = (
-    <div className="flex items-center gap-1.5 flex-wrap">
-      <Badge variant="outline" className="text-xs px-1.5 py-0">
+    <div className="flex flex-wrap items-center gap-1.5">
+      <Badge variant="outline" className="px-1.5 py-0 text-xs">
         {item.category.name}
       </Badge>
-      <Badge variant="outline" className="text-xs px-1.5 py-0">
+      <Badge variant="outline" className="px-1.5 py-0 text-xs">
         {item.currentAccount.name}
       </Badge>
 
       {isArchived && (
-        <Badge variant="secondary" className="text-xs px-1.5 py-0 gap-1 ">
+        <Badge variant="secondary" className="gap-1 px-1.5 py-0 text-xs">
           <Archive className="size-3" />В архиве
         </Badge>
       )}
 
-      {isLinkedIncome ? (
+      {isLinkedReceivable ? (
         <Badge
           variant="secondary"
-          className="text-xs px-1.5 py-0 gap-1 text-muted-foreground"
+          className="gap-1 px-1.5 py-0 text-xs text-muted-foreground"
         >
           <Link2 className="size-3" />
           {item.createdByUser
@@ -283,8 +257,6 @@ export function TransactionItem({
     </div>
   )
 
-  // ─── Render ──────────────────────────────────────────────────────────────
-
   return (
     <Item
       variant={isPaid ? 'outline' : 'muted'}
@@ -296,15 +268,14 @@ export function TransactionItem({
         .filter(Boolean)
         .join(' ')}
     >
-      <ItemContent className="gap-0 relative">
-        {/* ── Portaled dialogs — rendered once ─────────────────────────── */}
+      <ItemContent className="relative gap-0">
         {canEditDelete && renderEdit(editOpen, setEditOpen)}
         {canEditDelete && !isPaid && renderDelete?.(deleteOpen, setDeleteOpen)}
         <AlertDialog open={archiveOpen} onOpenChange={setArchiveOpen}>
           <AlertDialogContent size="sm">
             <AlertDialogHeader>
               <AlertDialogTitle>
-                Архивировать {isExpense ? 'расход' : 'доход'}?
+                Архивировать {isPayable ? 'расход' : 'доход'}?
               </AlertDialogTitle>
               <AlertDialogDescription>
                 Запись будет перемещена в архив.
@@ -318,9 +289,11 @@ export function TransactionItem({
                     await archiveFn({ data: { id: item.id, archive: true } })
                     await router.invalidate()
                     toast.success(`${cfg.entityName} архивирован`)
-                  } catch (e) {
+                  } catch (error) {
                     toast.error(
-                      e instanceof Error ? e.message : 'Произошла ошибка',
+                      error instanceof Error
+                        ? error.message
+                        : 'Произошла ошибка',
                     )
                   }
                 }}
@@ -331,12 +304,7 @@ export function TransactionItem({
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* ── Actions — rendered once, absolute on mobile / inline on desktop ── */}
-
-        {/* ── Mobile card layout ───────────────────────────────────────── */}
-
-        <div className="flex sm:hidden flex-col gap-2">
-          {/* Row 1: date */}
+        <div className="flex flex-col gap-2 sm:hidden">
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-1 text-xs text-muted-foreground">
               <CalendarDays className="size-3 shrink-0" />
@@ -345,10 +313,9 @@ export function TransactionItem({
             {menuDropdown}
           </div>
 
-          {/* Counterparty */}
           {item.counterparty && (
             <p
-              className={`font-bold text-base leading-snug ${
+              className={`text-base font-bold leading-snug ${
                 !isPaid ? 'text-muted-foreground' : ''
               }`}
             >
@@ -356,21 +323,18 @@ export function TransactionItem({
             </p>
           )}
 
-          {/* Description */}
           <p
-            className={`text-sm whitespace-normal ${
+            className={`whitespace-normal text-sm ${
               !isPaid ? 'text-muted-foreground' : ''
             }`}
           >
             {item.description}
           </p>
 
-          {/* Badges */}
           {badgesRow}
 
-          {/* Amount */}
           <div className="flex items-center justify-end pt-1">
-            <div className="flex flex-col gap-0.5 items-end">
+            <div className="flex flex-col items-end gap-0.5">
               <span
                 className={`text-2xl font-bold tabular-nums ${cfg.amountColor}`}
               >
@@ -395,18 +359,16 @@ export function TransactionItem({
           </div>
         </div>
 
-        {/* ── Desktop row layout ───────────────────────────────────────── */}
-        <div className="hidden sm:flex items-center gap-3">
-          {/* Date column */}
-          <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0 w-16 pt-0.5">
+        <div className="hidden items-center gap-3 sm:flex">
+          <span className="flex w-16 shrink-0 items-center gap-1 pt-0.5 text-xs text-muted-foreground">
             <CalendarDays className="size-3 shrink-0" />
             {createdDate}
           </span>
-          {/* Content: counterparty + description + badges */}
-          <div className="flex-1 min-w-0">
+
+          <div className="min-w-0 flex-1">
             {item.counterparty && (
               <div
-                className={`font-semibold leading-snug wrap-break-word ${
+                className={`wrap-break-word font-semibold leading-snug ${
                   !isPaid ? 'text-muted-foreground' : ''
                 }`}
               >
@@ -414,7 +376,7 @@ export function TransactionItem({
               </div>
             )}
             <div
-              className={`text-sm wrap-break-word whitespace-normal ${
+              className={`wrap-break-word whitespace-normal text-sm ${
                 !isPaid ? 'text-muted-foreground' : ''
               }`}
             >
@@ -423,9 +385,8 @@ export function TransactionItem({
             <div className="mt-1.5">{badgesRow}</div>
           </div>
 
-          {/* Right: amount + actions */}
-          <div className="flex items-start gap-0.5 shrink-0">
-            <div className="flex flex-col items-end gap-0.5 mr-1">
+          <div className="flex shrink-0 items-start gap-0.5">
+            <div className="mr-1 flex flex-col items-end gap-0.5">
               <span
                 className={`text-base font-semibold tabular-nums ${cfg.amountColor}`}
               >
@@ -448,7 +409,6 @@ export function TransactionItem({
               )}
             </div>
             {menuDropdown}
-            {/* ↑ desktop only instance — the mobile one is absolutely positioned above */}
           </div>
         </div>
       </ItemContent>

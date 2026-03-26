@@ -1,5 +1,7 @@
 import type {
   account,
+  bankTransaction,
+  bankTransactionDirectionEnum,
   category,
   counterparty,
   counterpartyTypeEnum,
@@ -7,10 +9,14 @@ import type {
   currentAccountUser,
   expense,
   expenseTag,
+  invoice,
+  invoiceKindEnum,
+  invoiceTag,
   income,
   incomeTag,
   recurringRule,
   session,
+  settlement,
   tag,
   user,
   verification,
@@ -19,6 +25,9 @@ import type {
 // ─── Enum ─────────────────────────────────────────────────────────────────────
 
 export type CounterpartyType = (typeof counterpartyTypeEnum.enumValues)[number]
+export type InvoiceKind = (typeof invoiceKindEnum.enumValues)[number]
+export type BankTransactionDirection =
+  (typeof bankTransactionDirectionEnum.enumValues)[number]
 
 // ─── Auth (managed by better-auth, no Insert/Update needed) ──────────────────
 
@@ -87,6 +96,31 @@ export type IncomeUpdate = Partial<IncomeInsert> & { id: string }
 
 export type IncomeTag = typeof incomeTag.$inferSelect
 export type IncomeTagInsert = typeof incomeTag.$inferInsert
+
+// ─── Invoice ──────────────────────────────────────────────────────────────────
+
+export type Invoice = typeof invoice.$inferSelect
+export type InvoiceInsert = typeof invoice.$inferInsert
+export type InvoiceUpdate = Partial<InvoiceInsert> & { id: string }
+
+// ─── Invoice Tag (junction — no Update) ──────────────────────────────────────
+
+export type InvoiceTag = typeof invoiceTag.$inferSelect
+export type InvoiceTagInsert = typeof invoiceTag.$inferInsert
+
+// ─── Bank Transaction ─────────────────────────────────────────────────────────
+
+export type BankTransaction = typeof bankTransaction.$inferSelect
+export type BankTransactionInsert = typeof bankTransaction.$inferInsert
+export type BankTransactionUpdate = Partial<BankTransactionInsert> & {
+  id: string
+}
+
+// ─── Settlement ───────────────────────────────────────────────────────────────
+
+export type Settlement = typeof settlement.$inferSelect
+export type SettlementInsert = typeof settlement.$inferInsert
+export type SettlementUpdate = Partial<SettlementInsert> & { id: string }
 
 // ─── Recurring Rule ───────────────────────────────────────────────────────────
 

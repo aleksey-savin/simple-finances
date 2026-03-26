@@ -1,9 +1,8 @@
 import { createFileRoute, getRouteApi, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 
+import { AddInvoiceForm } from '#/components/invoices'
 import { ResponsiveDialog } from '#/components/ui/responsive-dialog'
-import { ExpenseForm } from '#/components/expenses'
-import { IncomeForm } from '#/components/income'
 
 const transactionsRoute = getRouteApi('/transactions')
 
@@ -20,7 +19,7 @@ function NewTransactionPage() {
   const { categories, accounts, counterparties } =
     transactionsRoute.useLoaderData()
 
-  const [type, setType] = useState<'expense' | 'income'>('expense')
+  const [kind, setKind] = useState<'payable' | 'receivable'>('payable')
 
   const handleClose = () => router.navigate({ to: '/transactions' })
 
@@ -32,39 +31,31 @@ function NewTransactionPage() {
     >
       {/* Type toggle */}
       <div className="flex border overflow-hidden divide-x text-sm mb-4 shrink-0">
-        {(['expense', 'income'] as const).map((t) => (
+        {(['payable', 'receivable'] as const).map((value) => (
           <button
-            key={t}
+            key={value}
             type="button"
-            onClick={() => setType(t)}
+            onClick={() => setKind(value)}
             className={`flex-1 px-4 py-2 transition-colors ${
-              type === t
+              kind === value
                 ? 'bg-primary text-primary-foreground'
                 : 'hover:bg-muted'
             }`}
           >
-            {t === 'expense' ? 'Расход' : 'Доход'}
+            {value === 'payable' ? 'Расход' : 'Доход'}
           </button>
         ))}
       </div>
 
-      {type === 'expense' ? (
-        <ExpenseForm
-          onDone={handleClose}
-          categories={categories}
-          accounts={accounts}
-          counterparties={counterparties}
-          asDialog
-        />
-      ) : (
-        <IncomeForm
-          onDone={handleClose}
-          categories={categories}
-          accounts={accounts}
-          counterparties={counterparties}
-          asDialog
-        />
-      )}
+      <AddInvoiceForm
+        key={kind}
+        defaultKind={kind}
+        onDone={handleClose}
+        categories={categories}
+        accounts={accounts}
+        counterparties={counterparties}
+        asDialog
+      />
     </ResponsiveDialog>
   )
 }

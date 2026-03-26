@@ -1,13 +1,14 @@
 import { authClient } from 'utils/auth-client'
 
-import { addIncome, archiveIncome } from './actions'
-import { DeleteIncome } from './delete'
-import { EditIncome } from './edit'
-import { TransactionItem } from '#/components/transactions/item'
-import { buildDuplicateTransactionDates } from '#/components/transactions/duplicate'
-import type { Income } from '#/types'
+import type { Invoice } from '#/types'
 
-export const IncomeItem = ({
+import { addInvoice, archiveInvoice } from './actions.server'
+import { DeleteInvoice } from './delete'
+import { buildDuplicateInvoiceDates } from './duplicate'
+import { EditInvoice } from './edit'
+import { InvoiceListItem } from './list-item'
+
+export function InvoiceItem({
   item,
   sharedAccountIds,
   togglePaid,
@@ -15,37 +16,45 @@ export const IncomeItem = ({
   accounts,
   counterparties = [],
 }: {
-  item: Income
+  item: Invoice
   sharedAccountIds: Set<string>
   togglePaid: any
-  categories: { id: string; name: string; useForIncome: boolean }[]
+  categories: {
+    id: string
+    name: string
+    useForExpenses: boolean
+    useForIncome: boolean
+    isShared: boolean
+  }[]
   accounts: { id: string; name: string }[]
-  counterparties?: { id: string; name: string }[]
-}) => {
+  counterparties?: { id: string; name: string; linkedUserId?: string | null }[]
+}) {
   const { data: session } = authClient.useSession()
-  const canEditDelete = item.createdBy === session?.user?.id
+  const canEditDelete =
+    item.kind === 'payable' || item.createdBy === session?.user?.id
 
   return (
-    <TransactionItem
+    <InvoiceListItem
       item={item}
       sharedAccountIds={sharedAccountIds}
       togglePaid={togglePaid}
-      archiveFn={archiveIncome}
+      archiveFn={archiveInvoice}
       duplicateFn={() =>
-        addIncome({
+        addInvoice({
           data: {
+            kind: item.kind,
             amount: Number(item.amount),
             description: item.description,
             categoryId: item.category.id,
             currentAccountId: item.currentAccount.id,
             counterpartyId: item.counterparty?.id ?? undefined,
-            ...buildDuplicateTransactionDates(item),
+            ...buildDuplicateInvoiceDates(item),
           },
         })
       }
       canEditDelete={canEditDelete}
       renderEdit={(open, onOpenChange) => (
-        <EditIncome
+        <EditInvoice
           item={item}
           categories={categories}
           accounts={accounts}
@@ -55,8 +64,9 @@ export const IncomeItem = ({
         />
       )}
       renderDelete={(open, onOpenChange) => (
-        <DeleteIncome
-          incomeId={item.id}
+        <DeleteInvoice
+          entityId={item.id}
+          kind={item.kind}
           open={open}
           onOpenChange={onOpenChange}
         />

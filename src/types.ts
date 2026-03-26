@@ -1,7 +1,6 @@
 import type {
   Category as DBCategory,
-  Expense as DBExpense,
-  Income as DBIncome,
+  Invoice as DBInvoice,
   Counterparty as DBCounterparty,
   CurrentAccount,
   CurrentAccountUser,
@@ -11,41 +10,27 @@ import type {
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
-export type Expense = Pick<
-  DBExpense,
+export type Invoice = Pick<
+  DBInvoice,
   | 'id'
-  | 'description'
-  | 'amount'
-  | 'dueDate'
-  | 'paidAt'
-  | 'createdAt'
-  | 'archivedAt'
-> & {
-  category: Pick<DBCategory, 'id' | 'name'>
-  currentAccount: Pick<CurrentAccount, 'id' | 'name'>
-  counterparty: Pick<DBCounterparty, 'id' | 'name'> | null
-  createdByUser: { id: string; name: string }
-  type: string
-}
-
-export type Income = Pick<
-  DBIncome,
-  | 'id'
+  | 'kind'
   | 'description'
   | 'amount'
   | 'dueDate'
   | 'paidAt'
   | 'createdAt'
   | 'createdBy'
-  | 'linkedExpenseId'
+  | 'linkedInvoiceId'
   | 'archivedAt'
 > & {
   category: Pick<DBCategory, 'id' | 'name'>
   currentAccount: Pick<CurrentAccount, 'id' | 'name'>
   counterparty: Pick<DBCounterparty, 'id' | 'name'> | null
   createdByUser: { id: string; name: string }
-  type: string
 }
+
+export type Expense = Invoice
+export type Income = Invoice
 
 export type Member = Pick<CurrentAccountUser, 'id' | 'role'> & {
   user: Pick<User, 'id' | 'name' | 'email'>

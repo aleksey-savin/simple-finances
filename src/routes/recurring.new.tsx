@@ -25,7 +25,7 @@ function NewRulePage() {
   const handleClose = () => router.navigate({ to: '/recurring' })
 
   const defaultValues: RuleFormValues = {
-    type: 'expense',
+    type: 'payable',
     amount: '',
     description: '',
     categoryId: '',

@@ -40,9 +40,9 @@ function RecurringPage() {
   const router = useRouter()
   const navigate = useNavigate()
   const { rules, categories, accounts, counterparties } = Route.useLoaderData()
-  const [typeFilter, setTypeFilter] = useState<'all' | 'expense' | 'income'>(
-    'all',
-  )
+  const [typeFilter, setTypeFilter] = useState<
+    'all' | 'payable' | 'receivable'
+  >('all')
   const [categoryFilter, setCategoryFilter] = useState<string[]>([])
   const [accountFilter, setAccountFilter] = useState<string[]>([])
   const [counterpartyFilter, setCounterpartyFilter] = useState<string[]>([])
@@ -78,7 +78,7 @@ function RecurringPage() {
     try {
       await createRecurringNow({ data: { id: rule.id } })
       await router.invalidate()
-      toast.success(rule.type === 'expense' ? 'Расход создан' : 'Доход создан')
+      toast.success(rule.type === 'payable' ? 'Расход создан' : 'Доход создан')
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Произошла ошибка')
     }
@@ -141,13 +141,17 @@ function RecurringPage() {
         <>
           <div className="flex flex-wrap w-full lg:justify-between items-center gap-2">
             <ToggleGroup variant="outline" type="single" value={typeFilter}>
-              {(['all', 'income', 'expense'] as const).map((t) => (
+              {(['all', 'receivable', 'payable'] as const).map((t) => (
                 <ToggleGroupItem
                   value={t}
                   key={t}
                   onClick={() => setTypeFilter(t)}
                 >
-                  {t === 'all' ? 'Все' : t === 'income' ? 'Доходы' : 'Расходы'}
+                  {t === 'all'
+                    ? 'Все'
+                    : t === 'receivable'
+                      ? 'Доходы'
+                      : 'Расходы'}
                 </ToggleGroupItem>
               ))}
             </ToggleGroup>

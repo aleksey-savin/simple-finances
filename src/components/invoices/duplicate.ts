@@ -1,8 +1,8 @@
-import type { Expense, Income } from '#/types'
+import type { Invoice } from '#/types'
 
-type DuplicableTransaction = Pick<Expense | Income, 'createdAt' | 'dueDate'>
+type DuplicableInvoice = Pick<Invoice, 'createdAt' | 'dueDate'>
 
-export function buildDuplicateTransactionDates(item: DuplicableTransaction) {
+export function buildDuplicateInvoiceDates(item: DuplicableInvoice) {
   if (!item.dueDate) return {}
 
   const now = new Date()

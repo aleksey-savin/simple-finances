@@ -1,5 +1,9 @@
 import { useState } from 'react'
-import { Pencil } from 'lucide-react'
+
+import type { Invoice as DBInvoice } from '@/db/types'
+import type { Invoice } from '#/types'
+
+import { EditInvoiceForm } from './form'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -9,36 +13,40 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { Pencil } from 'lucide-react'
 
-import { EditIncomeForm } from './form'
-import type { Income } from '#/types'
-import type { Income as DBIncome } from '@/db/types'
-
-type EditIncomeProps = {
-  item: Income
-  categories: { id: string; name: string; useForIncome: boolean }[]
+type EditInvoiceProps = {
+  item: Invoice
+  categories: {
+    id: string
+    name: string
+    useForExpenses: boolean
+    useForIncome: boolean
+    isShared: boolean
+  }[]
   accounts: { id: string; name: string }[]
-  counterparties?: { id: string; name: string }[]
+  counterparties?: { id: string; name: string; linkedUserId?: string | null }[]
   open?: boolean
   onOpenChange?: (open: boolean) => void
 }
 
-export const EditIncome = ({
+export function EditInvoice({
   item,
   categories,
   accounts,
   counterparties = [],
   open: controlledOpen,
   onOpenChange,
-}: EditIncomeProps) => {
+}: EditInvoiceProps) {
   const [internalOpen, setInternalOpen] = useState(false)
 
   const isControlled = controlledOpen !== undefined
   const open = isControlled ? controlledOpen : internalOpen
   const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setInternalOpen
 
-  const incomeForForm = {
+  const invoiceForForm = {
     id: item.id,
+    kind: item.kind,
     amount: item.amount,
     description: item.description,
     categoryId: item.category.id,
@@ -47,7 +55,10 @@ export const EditIncome = ({
     dueDate: item.dueDate,
     paidAt: item.paidAt,
     createdAt: item.createdAt,
-  } as unknown as DBIncome
+    archivedAt: item.archivedAt,
+    createdBy: item.createdBy,
+    linkedInvoiceId: item.linkedInvoiceId,
+  } as unknown as DBInvoice
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -65,10 +76,14 @@ export const EditIncome = ({
       )}
       <DialogContent aria-describedby={undefined}>
         <DialogHeader>
-          <DialogTitle>Редактировать доход</DialogTitle>
+          <DialogTitle>
+            {item.kind === 'payable'
+              ? 'Редактировать расход'
+              : 'Редактировать доход'}
+          </DialogTitle>
         </DialogHeader>
-        <EditIncomeForm
-          income={incomeForForm}
+        <EditInvoiceForm
+          invoice={invoiceForForm}
           categories={categories}
           accounts={accounts}
           counterparties={counterparties}

@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { useEffect, useState } from 'react'
 import { ArrowRight, Loader2 } from 'lucide-react'
 import { CRON_PRESETS } from '@/components/reccuring/constants'
-import { fetchPaymentAccounts } from '@/components/expenses/actions'
+import { fetchPaymentAccounts } from '@/components/invoices'
 import { Button } from '@/components/ui/button'
 import { DialogFooter } from '@/components/ui/dialog'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
@@ -22,7 +22,7 @@ import type { CurrentAccount } from '#/db/types'
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
 export const ruleFormSchema = z.object({
-  type: z.enum(['expense', 'income']),
+  type: z.enum(['payable', 'receivable']),
   amount: z.string().refine((v) => !isNaN(+v) && +v >= 0.01, 'Минимум 0.01'),
   description: z.string().min(2, 'Минимум 2 символа'),
   categoryId: z.string().min(1, 'Выберите категорию'),
@@ -133,7 +133,7 @@ export const RecurringForm = ({
           <Field>
             <FieldLabel>Тип</FieldLabel>
             <div className="flex rounded-md border overflow-hidden divide-x text-sm">
-              {(['expense', 'income'] as const).map((t) => (
+              {(['payable', 'receivable'] as const).map((t) => (
                 <button
                   key={t}
                   type="button"
@@ -150,7 +150,7 @@ export const RecurringForm = ({
                       : 'hover:bg-muted'
                   }`}
                 >
-                  {t === 'expense' ? 'Расход' : 'Доход'}
+                  {t === 'payable' ? 'Расход' : 'Доход'}
                 </button>
               ))}
             </div>
@@ -215,7 +215,7 @@ export const RecurringForm = ({
               const isInvalid =
                 field.state.meta.isTouched && !field.state.meta.isValid
               const filtered = categories.filter((c) =>
-                type === 'expense' ? c.useForExpenses : c.useForIncome,
+                type === 'payable' ? c.useForExpenses : c.useForIncome,
               )
               return (
                 <Field data-invalid={isInvalid}>
@@ -262,7 +262,7 @@ export const RecurringForm = ({
                           value={field.state.value || '__none__'}
                           onValueChange={(v) => {
                             const val = v === '__none__' ? '' : v
-                            if (type === 'expense') {
+                            if (type === 'payable') {
                               handleCounterpartyChange(
                                 val,
                                 field.handleChange,
@@ -296,10 +296,10 @@ export const RecurringForm = ({
         )}
       </form.Subscribe>
 
-      {/* Payment section — expense rules only, shown when counterparty has linked accounts */}
+      {/* Payment section — payable rules only, shown when counterparty has linked accounts */}
       <form.Subscribe selector={(s) => s.values.type}>
         {(type) =>
-          type === 'expense' ? (
+          type === 'payable' ? (
             <>
               {isFetchingPayments && (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">

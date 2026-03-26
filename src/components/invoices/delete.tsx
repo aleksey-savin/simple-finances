@@ -3,6 +3,8 @@ import { Trash2 } from 'lucide-react'
 import { useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
 
+import { deleteInvoice } from './actions.server'
+
 import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
@@ -16,19 +18,19 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 
-import { deleteIncome } from './actions'
-
-type DeleteIncomeProps = {
-  incomeId: string
+type DeleteInvoiceProps = {
+  entityId: string
+  kind: 'payable' | 'receivable'
   open?: boolean
   onOpenChange?: (open: boolean) => void
 }
 
-export const DeleteIncome = ({
-  incomeId,
+export function DeleteInvoice({
+  entityId,
+  kind,
   open: controlledOpen,
   onOpenChange,
-}: DeleteIncomeProps) => {
+}: DeleteInvoiceProps) {
   const router = useRouter()
   const [internalOpen, setInternalOpen] = useState(false)
 
@@ -38,11 +40,11 @@ export const DeleteIncome = ({
 
   const handleDelete = async () => {
     try {
-      await deleteIncome({ data: { id: incomeId } })
+      await deleteInvoice({ data: { id: entityId } })
       await router.invalidate()
-      toast.success('Доход удалён')
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Произошла ошибка')
+      toast.success(kind === 'payable' ? 'Расход удалён' : 'Доход удалён')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Произошла ошибка')
     }
   }
 
@@ -62,7 +64,9 @@ export const DeleteIncome = ({
       )}
       <AlertDialogContent size="sm">
         <AlertDialogHeader>
-          <AlertDialogTitle>Удалить доход?</AlertDialogTitle>
+          <AlertDialogTitle>
+            Удалить {kind === 'payable' ? 'расход' : 'доход'}?
+          </AlertDialogTitle>
           <AlertDialogDescription>
             Это действие нельзя отменить.
           </AlertDialogDescription>

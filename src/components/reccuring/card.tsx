@@ -57,7 +57,7 @@ export const RuleCard = ({
   onCreateNow: () => Promise<void>
   onToggle: (v: boolean) => void
 }) => {
-  const isExpense = rule.type === 'expense'
+  const isExpense = rule.type === 'payable'
   const [createNowOpen, setCreateNowOpen] = useState(false)
 
   return (

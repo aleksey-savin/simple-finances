@@ -37,7 +37,7 @@ function EditRulePage() {
     : 'custom'
 
   const defaultValues: RuleFormValues = {
-    type: rule.type as 'expense' | 'income',
+    type: rule.type as 'payable' | 'receivable',
     amount: Number(rule.amount).toString(),
     description: rule.description,
     categoryId: rule.categoryId,

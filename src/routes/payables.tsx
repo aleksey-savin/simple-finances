@@ -4,8 +4,8 @@ import { getRequest } from '@tanstack/react-start/server'
 import { auth } from 'utils/auth'
 import { db } from '#/db'
 import {
-  expense,
-  expenseTag,
+  invoice,
+  invoiceTag,
   recurringRule,
   currentAccountUser,
   currentAccount,
@@ -148,33 +148,35 @@ const fetchPayables = createServerFn().handler(async () => {
     counterparties,
   ] = await Promise.all([
     // All expenses this month (paid + unpaid), excluding archived
-    db.query.expense.findMany({
+    db.query.invoice.findMany({
       where: and(
-        inArray(expense.currentAccountId, accountIds),
-        gte(expense.createdAt, monthStart),
-        lte(expense.createdAt, monthEnd),
-        isNull(expense.archivedAt),
+        inArray(invoice.currentAccountId, accountIds),
+        eq(invoice.kind, 'payable'),
+        gte(invoice.createdAt, monthStart),
+        lte(invoice.createdAt, monthEnd),
+        isNull(invoice.archivedAt),
       ),
       with: withRelations,
       orderBy: (t, { asc }) => asc(t.createdAt),
     }),
 
     // All non-archived expenses from months before the current one
-    db.query.expense.findMany({
+    db.query.invoice.findMany({
       where: and(
-        inArray(expense.currentAccountId, accountIds),
-        lt(expense.createdAt, monthStart),
-        isNull(expense.archivedAt),
+        inArray(invoice.currentAccountId, accountIds),
+        eq(invoice.kind, 'payable'),
+        lt(invoice.createdAt, monthStart),
+        isNull(invoice.archivedAt),
       ),
       with: withRelations,
       orderBy: (t, { asc }) => asc(t.createdAt),
     }),
 
-    // Active expense recurring rules
+    // Active payable recurring rules
     db.query.recurringRule.findMany({
       where: and(
         inArray(recurringRule.currentAccountId, accountIds),
-        eq(recurringRule.type, 'expense'),
+        eq(recurringRule.type, 'payable'),
         eq(recurringRule.isActive, true),
       ),
       with: withRelations,
@@ -284,16 +286,16 @@ const fetchPayables = createServerFn().handler(async () => {
 
   const expenseTagRows =
     realIds.length > 0
-      ? await db.query.expenseTag.findMany({
-          where: inArray(expenseTag.expenseId, realIds),
+      ? await db.query.invoiceTag.findMany({
+          where: inArray(invoiceTag.invoiceId, realIds),
           with: { tag: true },
         })
       : []
 
   const tagsMap: TagsMap = {}
   for (const et of expenseTagRows) {
-    if (!tagsMap[et.expenseId]) tagsMap[et.expenseId] = []
-    tagsMap[et.expenseId].push({
+    if (!tagsMap[et.invoiceId]) tagsMap[et.invoiceId] = []
+    tagsMap[et.invoiceId].push({
       id: et.tag.id,
       name: et.tag.name,
       color: et.tag.color,
@@ -306,15 +308,20 @@ const fetchPayables = createServerFn().handler(async () => {
 
   const accountIdSet = new Set(accountIds)
 
-  // Build a lookup from expenseId -> expense record for amount lookups
+  // Build a lookup from invoiceId -> invoice record for amount lookups
   const expenseById = new Map(
     [...realCurrentMonth, ...previousUnpaidRaw].map((r) => [r.id, r]),
   )
 
-  const allIncomeTags = await db.query.incomeTag.findMany({
+  const allIncomeTags = await db.query.invoiceTag.findMany({
     with: {
-      income: {
-        columns: { amount: true, currentAccountId: true, paidAt: true },
+      invoice: {
+        columns: {
+          amount: true,
+          currentAccountId: true,
+          paidAt: true,
+          kind: true,
+        },
       },
       tag: { columns: { id: true } },
     },
@@ -323,7 +330,7 @@ const fetchPayables = createServerFn().handler(async () => {
   const tagTotalsRaw = allTags.map((t) => {
     const expenseTotal = expenseTagRows
       .filter((et) => {
-        const exp = expenseById.get(et.expenseId)
+        const exp = expenseById.get(et.invoiceId)
         return (
           et.tag.id === t.id &&
           exp !== undefined &&
@@ -331,7 +338,7 @@ const fetchPayables = createServerFn().handler(async () => {
         )
       })
       .reduce((s, et) => {
-        const exp = expenseById.get(et.expenseId)
+        const exp = expenseById.get(et.invoiceId)
         return s + Number(exp?.amount ?? 0)
       }, 0)
 
@@ -339,10 +346,11 @@ const fetchPayables = createServerFn().handler(async () => {
       .filter(
         (it) =>
           it.tag.id === t.id &&
-          accountIdSet.has(it.income.currentAccountId) &&
-          !it.income.paidAt,
+          it.invoice.kind === 'receivable' &&
+          accountIdSet.has(it.invoice.currentAccountId) &&
+          !it.invoice.paidAt,
       )
-      .reduce((s, it) => s + Number(it.income.amount), 0)
+      .reduce((s, it) => s + Number(it.invoice.amount), 0)
 
     return {
       tag: { id: t.id, name: t.name, color: t.color },
@@ -384,9 +392,9 @@ const markPaid = createServerFn({ method: 'POST' })
     const session = await auth.api.getSession({ headers: request.headers })
     if (!session?.user?.id) throw new Error('Не авторизован')
     await db
-      .update(expense)
+      .update(invoice)
       .set({ paidAt: data.paid ? new Date() : null })
-      .where(eq(expense.id, data.id))
+      .where(eq(invoice.id, data.id))
   })
 
 // ── Archive ────────────────────────────────────────────────────────────────────
@@ -400,9 +408,9 @@ const archiveExpense = createServerFn({ method: 'POST' })
     const session = await auth.api.getSession({ headers: request.headers })
     if (!session?.user?.id) throw new Error('Не авторизован')
     await db
-      .update(expense)
+      .update(invoice)
       .set({ archivedAt: data.archive ? new Date() : null })
-      .where(eq(expense.id, data.id))
+      .where(eq(invoice.id, data.id))
   })
 
 // ── Delete ─────────────────────────────────────────────────────────────────────
@@ -415,7 +423,7 @@ const deleteExpense = createServerFn({ method: 'POST' })
     const request = getRequest()
     const session = await auth.api.getSession({ headers: request.headers })
     if (!session?.user?.id) throw new Error('Не авторизован')
-    await db.delete(expense).where(eq(expense.id, data.id))
+    await db.delete(invoice).where(eq(invoice.id, data.id))
   })
 
 // ─── Route ────────────────────────────────────────────────────────────────────

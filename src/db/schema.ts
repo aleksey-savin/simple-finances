@@ -1,6 +1,7 @@
 import { relations } from 'drizzle-orm'
 import {
   boolean,
+  foreignKey,
   index,
   integer,
   numeric,
@@ -30,6 +31,13 @@ export const tag = pgTable('tag', {
     .references(() => user.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
+
+export const invoiceKindEnum = pgEnum('invoice_kind', ['payable', 'receivable'])
+
+export const bankTransactionDirectionEnum = pgEnum(
+  'bank_transaction_direction',
+  ['debit', 'credit'],
+)
 
 export const expenseTag = pgTable(
   'expense_tag',
@@ -68,6 +76,26 @@ export const incomeTag = pgTable(
     unique('income_tag_unique').on(table.incomeId, table.tagId),
     index('income_tag_income_idx').on(table.incomeId),
     index('income_tag_tag_idx').on(table.tagId),
+  ],
+)
+
+export const invoiceTag = pgTable(
+  'invoice_tag',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    invoiceId: text('invoice_id')
+      .notNull()
+      .references(() => invoice.id, { onDelete: 'cascade' }),
+    tagId: text('tag_id')
+      .notNull()
+      .references(() => tag.id, { onDelete: 'cascade' }),
+  },
+  (table) => [
+    unique('invoice_tag_unique').on(table.invoiceId, table.tagId),
+    index('invoice_tag_invoice_idx').on(table.invoiceId),
+    index('invoice_tag_tag_idx').on(table.tagId),
   ],
 )
 
@@ -169,7 +197,7 @@ export const currentAccount = pgTable('current_account', {
  *
  * Roles:
  *   - owner  : full control (edit, delete, share)
- *   - editor : can add/edit expenses & incomes
+ *   - editor : can add/edit invoices
  *   - viewer : read-only access
  */
 export const currentAccountUser = pgTable(
@@ -332,7 +360,7 @@ export const recurringRule = pgTable('recurring_rule', {
   id: text('id')
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
-  /** 'expense' | 'income' */
+  /** 'payable' | 'receivable' */
   type: text('type').notNull(),
   amount: numeric('amount').notNull(),
   description: text('description').notNull(),
@@ -340,12 +368,12 @@ export const recurringRule = pgTable('recurring_rule', {
     .notNull()
     .references(() => category.id),
   counterpartyId: text('counterparty_id').references(() => counterparty.id),
-  /** Account in the counterparty's system that receives the mirrored income (expense rules only) */
+  /** Account in the counterparty's system that receives the mirrored receivable (payable rules only) */
   paymentAccountId: text('payment_account_id').references(
     () => currentAccount.id,
     { onDelete: 'set null' },
   ),
-  /** Category used for the mirrored income entry (expense rules only) */
+  /** Category used for the mirrored receivable entry (payable rules only) */
   paymentCategoryId: text('payment_category_id').references(() => category.id, {
     onDelete: 'set null',
   }),
@@ -377,11 +405,124 @@ export const recurringRule = pgTable('recurring_rule', {
     .notNull(),
 })
 
+export const invoice = pgTable(
+  'invoice',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    kind: invoiceKindEnum('kind').notNull(),
+    amount: numeric('value').notNull(),
+    description: text().notNull(),
+    categoryId: text('category_id')
+      .notNull()
+      .references(() => category.id),
+    counterpartyId: text('counterparty_id').references(() => counterparty.id),
+    currentAccountId: text('current_account_id')
+      .notNull()
+      .references(() => currentAccount.id),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    dueDate: timestamp('due_date'),
+    paidAt: timestamp('paid_at'),
+    archivedAt: timestamp('archived_at'),
+    recurringRuleId: text('recurring_rule_id').references(
+      () => recurringRule.id,
+      {
+        onDelete: 'set null',
+      },
+    ),
+    recurringOccurrenceAt: timestamp('recurring_occurrence_at'),
+    linkedInvoiceId: text('linked_invoice_id'),
+    createdBy: text('created_by')
+      .notNull()
+      .references(() => user.id),
+    updatedBy: text('updated_by')
+      .notNull()
+      .references(() => user.id),
+  },
+  (table) => [
+    unique('invoice_recurring_occurrence_unique').on(
+      table.recurringRuleId,
+      table.recurringOccurrenceAt,
+      table.kind,
+    ),
+    foreignKey({
+      columns: [table.linkedInvoiceId],
+      foreignColumns: [table.id],
+      name: 'invoice_linked_invoice_fk',
+    }).onDelete('set null'),
+  ],
+)
+
+export const bankTransaction = pgTable(
+  'bank_transaction',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    currentAccountId: text('current_account_id')
+      .notNull()
+      .references(() => currentAccount.id),
+    direction: bankTransactionDirectionEnum('direction').notNull(),
+    amount: numeric('amount').notNull(),
+    currency: text('currency').notNull().default('RUB'),
+    bookedAt: timestamp('booked_at').notNull(),
+    valueDate: timestamp('value_date'),
+    description: text('description'),
+    counterpartyNameRaw: text('counterparty_name_raw'),
+    externalId: text('external_id'),
+    rawPayload: text('raw_payload'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index('bank_transaction_account_idx').on(table.currentAccountId),
+    unique('bank_transaction_account_external_unique').on(
+      table.currentAccountId,
+      table.externalId,
+    ),
+  ],
+)
+
+export const settlement = pgTable(
+  'settlement',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    invoiceId: text('invoice_id')
+      .notNull()
+      .references(() => invoice.id, { onDelete: 'cascade' }),
+    bankTransactionId: text('bank_transaction_id')
+      .notNull()
+      .references(() => bankTransaction.id, { onDelete: 'cascade' }),
+    amount: numeric('amount').notNull(),
+    settledAt: timestamp('settled_at').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    unique('settlement_invoice_bank_transaction_unique').on(
+      table.invoiceId,
+      table.bankTransactionId,
+    ),
+    index('settlement_invoice_idx').on(table.invoiceId),
+    index('settlement_bank_transaction_idx').on(table.bankTransactionId),
+  ],
+)
+
 // ─── Relations ────────────────────────────────────────────────────────────────
 
 export const tagRelations = relations(tag, ({ many }) => ({
   expenseTags: many(expenseTag),
   incomeTags: many(incomeTag),
+  invoiceTags: many(invoiceTag),
 }))
 
 export const expenseTagRelations = relations(expenseTag, ({ one }) => ({
@@ -406,6 +547,17 @@ export const incomeTagRelations = relations(incomeTag, ({ one }) => ({
   }),
 }))
 
+export const invoiceTagRelations = relations(invoiceTag, ({ one }) => ({
+  invoice: one(invoice, {
+    fields: [invoiceTag.invoiceId],
+    references: [invoice.id],
+  }),
+  tag: one(tag, {
+    fields: [invoiceTag.tagId],
+    references: [tag.id],
+  }),
+}))
+
 export const userRelations = relations(user, ({ many }) => ({
   currentAccountUsers: many(currentAccountUser),
 }))
@@ -415,6 +567,8 @@ export const currentAccountRelations = relations(
   ({ many }) => ({
     expenses: many(expense),
     incomes: many(income),
+    invoices: many(invoice),
+    bankTransactions: many(bankTransaction),
     members: many(currentAccountUser),
     recurringRules: many(recurringRule),
   }),
@@ -482,11 +636,59 @@ export const incomeRelations = relations(income, ({ one, many }) => ({
   }),
 }))
 
+export const invoiceRelations = relations(invoice, ({ one, many }) => ({
+  tags: many(invoiceTag),
+  settlements: many(settlement),
+  category: one(category, {
+    fields: [invoice.categoryId],
+    references: [category.id],
+  }),
+  counterparty: one(counterparty, {
+    fields: [invoice.counterpartyId],
+    references: [counterparty.id],
+  }),
+  currentAccount: one(currentAccount, {
+    fields: [invoice.currentAccountId],
+    references: [currentAccount.id],
+  }),
+  createdByUser: one(user, {
+    fields: [invoice.createdBy],
+    references: [user.id],
+  }),
+  linkedInvoice: one(invoice, {
+    fields: [invoice.linkedInvoiceId],
+    references: [invoice.id],
+  }),
+}))
+
+export const bankTransactionRelations = relations(
+  bankTransaction,
+  ({ one, many }) => ({
+    currentAccount: one(currentAccount, {
+      fields: [bankTransaction.currentAccountId],
+      references: [currentAccount.id],
+    }),
+    settlements: many(settlement),
+  }),
+)
+
+export const settlementRelations = relations(settlement, ({ one }) => ({
+  invoice: one(invoice, {
+    fields: [settlement.invoiceId],
+    references: [invoice.id],
+  }),
+  bankTransaction: one(bankTransaction, {
+    fields: [settlement.bankTransactionId],
+    references: [bankTransaction.id],
+  }),
+}))
+
 export const counterpartyRelations = relations(
   counterparty,
   ({ one, many }) => ({
     expenses: many(expense),
     incomes: many(income),
+    invoices: many(invoice),
     recurringRules: many(recurringRule),
     linkedUser: one(user, {
       fields: [counterparty.linkedUserId],
@@ -498,6 +700,7 @@ export const counterpartyRelations = relations(
 export const categoryRelations = relations(category, ({ many }) => ({
   expenses: many(expense),
   incomes: many(income),
+  invoices: many(invoice),
   recurringRules: many(recurringRule),
 }))
 

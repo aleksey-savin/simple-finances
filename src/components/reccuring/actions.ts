@@ -133,7 +133,7 @@ export const toggleRecurringRule = createServerFn({ method: 'POST' })
 // ─── Create ───────────────────────────────────────────────────────────────────
 
 const createRuleSchema = z.object({
-  type: z.enum(['expense', 'income']),
+  type: z.enum(['payable', 'receivable']),
   amount: z.number().min(0.01, 'Минимум 0.01'),
   description: z.string().min(2, 'Минимум 2 символа'),
   categoryId: z.string().min(1, 'Выберите категорию'),
@@ -176,7 +176,7 @@ export const createRecurringRule = createServerFn({ method: 'POST' })
 
 const updateRuleSchema = z.object({
   id: z.string(),
-  type: z.enum(['expense', 'income']),
+  type: z.enum(['payable', 'receivable']),
   amount: z.number().min(0.01, 'Минимум 0.01'),
   description: z.string().min(2, 'Минимум 2 символа'),
   categoryId: z.string().min(1, 'Выберите категорию'),

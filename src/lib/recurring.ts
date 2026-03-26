@@ -1,7 +1,7 @@
 import { and, eq, inArray, lte } from 'drizzle-orm'
 import { Cron } from 'croner'
 import { db } from '#/db'
-import { expense, income, recurringRule } from '#/db/schema'
+import { invoice, recurringRule } from '#/db/schema'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const MAX_OCCURRENCES_PER_SYNC = 500
@@ -34,10 +34,11 @@ export async function createRecurringEntry(
   const dueDate = buildDueDate(occurrenceAt, rule.dueDaysFromCreation)
 
   await db.transaction(async (tx) => {
-    if (rule.type === 'expense') {
-      const [insertedExpense] = await tx
-        .insert(expense)
+    if (rule.type === 'payable') {
+      const [insertedInvoice] = await tx
+        .insert(invoice)
         .values({
+          kind: 'payable',
           amount: rule.amount,
           description: rule.description,
           categoryId: rule.categoryId,
@@ -51,27 +52,32 @@ export async function createRecurringEntry(
           updatedBy: actorUserId,
         })
         .onConflictDoNothing({
-          target: [expense.recurringRuleId, expense.recurringOccurrenceAt],
+          target: [
+            invoice.recurringRuleId,
+            invoice.recurringOccurrenceAt,
+            invoice.kind,
+          ],
         })
-        .returning({ id: expense.id })
+        .returning({ id: invoice.id })
 
-      let expenseId: string | null = insertedExpense?.id ?? null
+      let invoiceId: string | null = insertedInvoice?.id ?? null
 
-      if (!expenseId) {
-        const existingExpense = await tx.query.expense.findFirst({
+      if (!invoiceId) {
+        const existingInvoice = await tx.query.invoice.findFirst({
           where: and(
-            eq(expense.recurringRuleId, rule.id),
-            eq(expense.recurringOccurrenceAt, occurrenceAt),
+            eq(invoice.recurringRuleId, rule.id),
+            eq(invoice.recurringOccurrenceAt, occurrenceAt),
           ),
           columns: { id: true },
         })
-        expenseId = existingExpense?.id ?? null
+        invoiceId = existingInvoice?.id ?? null
       }
 
-      if (rule.paymentAccountId && rule.paymentCategoryId && expenseId) {
+      if (rule.paymentAccountId && rule.paymentCategoryId && invoiceId) {
         await tx
-          .insert(income)
+          .insert(invoice)
           .values({
+            kind: 'receivable',
             amount: rule.amount,
             description: rule.description,
             categoryId: rule.paymentCategoryId,
@@ -79,14 +85,18 @@ export async function createRecurringEntry(
             counterpartyId: rule.counterpartyId,
             createdAt: occurrenceAt,
             dueDate,
-            linkedExpenseId: expenseId,
+            linkedInvoiceId: invoiceId,
             recurringRuleId: rule.id,
             recurringOccurrenceAt: occurrenceAt,
             createdBy: actorUserId,
             updatedBy: actorUserId,
           })
           .onConflictDoNothing({
-            target: [income.recurringRuleId, income.recurringOccurrenceAt],
+            target: [
+              invoice.recurringRuleId,
+              invoice.recurringOccurrenceAt,
+              invoice.kind,
+            ],
           })
       }
 
@@ -94,8 +104,9 @@ export async function createRecurringEntry(
     }
 
     await tx
-      .insert(income)
+      .insert(invoice)
       .values({
+        kind: 'receivable',
         amount: rule.amount,
         description: rule.description,
         categoryId: rule.categoryId,
@@ -109,7 +120,11 @@ export async function createRecurringEntry(
         updatedBy: actorUserId,
       })
       .onConflictDoNothing({
-        target: [income.recurringRuleId, income.recurringOccurrenceAt],
+        target: [
+          invoice.recurringRuleId,
+          invoice.recurringOccurrenceAt,
+          invoice.kind,
+        ],
       })
   })
 }

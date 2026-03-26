@@ -183,6 +183,13 @@
       "when": 1774448323966,
       "tag": "0025_shiny_hex",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1774486601070,
+      "tag": "0026_tiresome_leader",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,4 @@
-import { TransactionSummary } from '#/components/transactions/summary'
+import { InvoiceItem, InvoiceSummary } from '#/components/invoices'
 import { Button } from '#/components/ui/button'
 import { Calendar } from '#/components/ui/calendar'
 import {
@@ -23,8 +23,7 @@ import {
   category,
   currentAccount,
   currentAccountUser,
-  expense,
-  income,
+  invoice,
 } from '#/db/schema'
 
 import { createFileRoute, Outlet } from '@tanstack/react-router'
@@ -38,8 +37,6 @@ import { useMemo, useState } from 'react'
 import type { DateRange } from 'react-day-picker'
 
 import z from 'zod'
-import { ExpenseItem } from '#/components/expenses/item'
-import { IncomeItem } from '#/components/income/item'
 import { ToggleGroup, ToggleGroupItem } from '#/components/ui/toggle-group'
 import { useIsMobile } from '#/hooks/use-mobile'
 import { syncRecurringRulesForAccounts } from '#/lib/recurring'
@@ -71,26 +68,18 @@ const fetchData = createServerFn().handler(async () => {
     const categories = await db.query.category.findMany({
       where: or(eq(category.createdBy, userId), eq(category.isShared, true)),
     })
-    return { expenses: [], incomes: [], categories, accounts: [] }
+    return { invoices: [], categories, accounts: [], counterparties: [] }
   }
 
   await syncRecurringRulesForAccounts(accountIds)
 
-  const [expenses, incomes, categories, counterparties, accountsData] =
+  const [invoices, categories, counterparties, accountsData] =
     await Promise.all([
-      db.query.expense.findMany({
-        where: inArray(expense.currentAccountId, accountIds),
-        with: {
-          category: { columns: { id: true, name: true } },
-          counterparty: { columns: { id: true, name: true } },
-          currentAccount: { columns: { id: true, name: true } },
-          createdByUser: { columns: { id: true, name: true } },
-        },
-      }),
-      db.query.income.findMany({
-        where: inArray(income.currentAccountId, accountIds),
+      db.query.invoice.findMany({
+        where: inArray(invoice.currentAccountId, accountIds),
         columns: {
           id: true,
+          kind: true,
           amount: true,
           description: true,
           categoryId: true,
@@ -101,7 +90,7 @@ const fetchData = createServerFn().handler(async () => {
           paidAt: true,
           archivedAt: true,
           createdBy: true,
-          linkedExpenseId: true,
+          linkedInvoiceId: true,
         },
         with: {
           category: { columns: { id: true, name: true } },
@@ -131,23 +120,22 @@ const fetchData = createServerFn().handler(async () => {
     role: roleByAccountId.get(a.id) ?? 'viewer',
   }))
 
-  return { expenses, incomes, categories, counterparties, accounts }
+  return { invoices, categories, counterparties, accounts }
 })
 
 const togglePaidSchema = z.object({
   id: z.string(),
-  type: z.enum(['expense', 'income']),
+  kind: z.enum(['payable', 'receivable']),
   paid: z.boolean(),
 })
 
 const togglePaid = createServerFn({ method: 'POST' })
   .inputValidator(togglePaidSchema)
   .handler(async ({ data }) => {
-    const table = data.type === 'expense' ? expense : income
     await db
-      .update(table)
+      .update(invoice)
       .set({ paidAt: data.paid ? new Date() : null })
-      .where(eq(table.id, data.id))
+      .where(eq(invoice.id, data.id))
   })
 
 export const Route = createFileRoute('/transactions')({
@@ -156,14 +144,11 @@ export const Route = createFileRoute('/transactions')({
 })
 
 function App() {
-  const { expenses, incomes, categories, counterparties, accounts } =
+  const { invoices, categories, counterparties, accounts } =
     Route.useLoaderData()
   const isMobile = useIsMobile()
 
-  const feed = [
-    ...expenses.map((e) => ({ ...e, type: 'expense' as const })),
-    ...incomes.map((i) => ({ ...i, type: 'income' as const })),
-  ].sort(
+  const feed = [...invoices].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   )
 
@@ -174,9 +159,9 @@ function App() {
 
   // ── Filters ────────────────────────────────────────────────────────────────
   const [search, setSearch] = useState('')
-  const [typeFilter, setTypeFilter] = useState<'all' | 'expense' | 'income'>(
-    'all',
-  )
+  const [typeFilter, setTypeFilter] = useState<
+    'all' | 'payable' | 'receivable'
+  >('all')
   const [statusFilter, setStatusFilter] = useState<
     'all' | 'paid' | 'unpaid' | 'overdue'
   >('all')
@@ -243,7 +228,7 @@ function App() {
       const isOverdue =
         !isPaid && item.dueDate !== null && new Date(item.dueDate) < now
 
-      if (typeFilter !== 'all' && item.type !== typeFilter) return false
+      if (typeFilter !== 'all' && item.kind !== typeFilter) return false
       if (statusFilter === 'paid' && !isPaid) return false
       if (statusFilter === 'unpaid' && isPaid) return false
       if (statusFilter === 'overdue' && !isOverdue) return false
@@ -304,7 +289,7 @@ function App() {
   return (
     <>
       {/* ── Summary cards ──────────────────────────────────────────────────── */}
-      <TransactionSummary feed={filteredFeed} />
+      <InvoiceSummary feed={filteredFeed} />
 
       {/* ── Filter bar ─────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-8">
@@ -321,7 +306,7 @@ function App() {
         <div className="flex flex-wrap w-full lg:justify-between items-center gap-2">
           {/* Type */}
           <ToggleGroup variant="outline" type="single" defaultValue="all">
-            {(['all', 'income', 'expense'] as const).map((t) => (
+            {(['all', 'receivable', 'payable'] as const).map((t) => (
               <ToggleGroupItem
                 value={t}
                 key={t}
@@ -329,7 +314,7 @@ function App() {
               >
                 {t === 'all'
                   ? 'Все'
-                  : t === 'income'
+                  : t === 'receivable'
                     ? 'Поступления'
                     : 'Списания'}
               </ToggleGroupItem>
@@ -497,29 +482,17 @@ function App() {
             Ничего не найдено
           </p>
         )}
-        {filteredFeed.map((item) =>
-          item.type === 'expense' ? (
-            <ExpenseItem
-              key={item.id}
-              item={item}
-              sharedAccountIds={sharedAccountIds}
-              togglePaid={togglePaid}
-              categories={categories}
-              accounts={accounts}
-              counterparties={counterparties ?? []}
-            />
-          ) : (
-            <IncomeItem
-              key={item.id}
-              item={item}
-              sharedAccountIds={sharedAccountIds}
-              togglePaid={togglePaid}
-              categories={categories}
-              accounts={accounts}
-              counterparties={counterparties ?? []}
-            />
-          ),
-        )}
+        {filteredFeed.map((item) => (
+          <InvoiceItem
+            key={item.id}
+            item={item}
+            sharedAccountIds={sharedAccountIds}
+            togglePaid={togglePaid}
+            categories={categories}
+            accounts={accounts}
+            counterparties={counterparties ?? []}
+          />
+        ))}
       </div>
       <Outlet />
     </>

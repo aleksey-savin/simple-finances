@@ -4,10 +4,10 @@ import { getRequest } from '@tanstack/react-start/server'
 import { auth } from 'utils/auth'
 import { db } from '#/db'
 import {
-  income,
+  invoice,
   currentAccountUser,
   currentAccount,
-  incomeTag,
+  invoiceTag,
 } from '#/db/schema'
 import { eq, inArray, isNull } from 'drizzle-orm'
 import { useMemo, useState } from 'react'
@@ -88,9 +88,13 @@ const fetchReceivables = createServerFn().handler(async () => {
   await syncRecurringRulesForAccounts(accountIds)
 
   const [rows, accounts, counterparties] = await Promise.all([
-    db.query.income.findMany({
+    db.query.invoice.findMany({
       where: (t, { and }) =>
-        and(inArray(t.currentAccountId, accountIds), isNull(t.paidAt)),
+        and(
+          inArray(t.currentAccountId, accountIds),
+          eq(t.kind, 'receivable'),
+          isNull(t.paidAt),
+        ),
       with: {
         category: { columns: { id: true, name: true } },
         currentAccount: { columns: { id: true, name: true } },
@@ -118,16 +122,16 @@ const fetchReceivables = createServerFn().handler(async () => {
   const incomeIds = rows.map((r) => r.id)
   const incomeTagRows =
     incomeIds.length > 0
-      ? await db.query.incomeTag.findMany({
-          where: inArray(incomeTag.incomeId, incomeIds),
+      ? await db.query.invoiceTag.findMany({
+          where: inArray(invoiceTag.invoiceId, incomeIds),
           with: { tag: true },
         })
       : []
 
   const tagsMap: TagsMap = {}
   for (const it of incomeTagRows) {
-    if (!tagsMap[it.incomeId]) tagsMap[it.incomeId] = []
-    tagsMap[it.incomeId].push({
+    if (!tagsMap[it.invoiceId]) tagsMap[it.invoiceId] = []
+    tagsMap[it.invoiceId].push({
       id: it.tag.id,
       name: it.tag.name,
       color: it.tag.color,
@@ -140,10 +144,15 @@ const fetchReceivables = createServerFn().handler(async () => {
 
   // Tag totals: income only (expenses handled on payables page)
   const accountIdSet = new Set(accountIds)
-  const allExpenseTags = await db.query.expenseTag.findMany({
+  const allExpenseTags = await db.query.invoiceTag.findMany({
     with: {
-      expense: {
-        columns: { amount: true, currentAccountId: true, paidAt: true },
+      invoice: {
+        columns: {
+          amount: true,
+          currentAccountId: true,
+          paidAt: true,
+          kind: true,
+        },
       },
       tag: { columns: { id: true } },
     },
@@ -154,17 +163,18 @@ const fetchReceivables = createServerFn().handler(async () => {
         .filter((it) => it.tag.id === t.id)
         .reduce(
           (s, it) =>
-            s + Number(rows.find((r) => r.id === it.incomeId)?.amount ?? 0),
+            s + Number(rows.find((r) => r.id === it.invoiceId)?.amount ?? 0),
           0,
         )
       const expenseTotal = allExpenseTags
         .filter(
           (et) =>
             et.tag.id === t.id &&
-            accountIdSet.has(et.expense.currentAccountId) &&
-            !et.expense.paidAt,
+            et.invoice.kind === 'payable' &&
+            accountIdSet.has(et.invoice.currentAccountId) &&
+            !et.invoice.paidAt,
         )
-        .reduce((s, et) => s + Number(et.expense.amount), 0)
+        .reduce((s, et) => s + Number(et.invoice.amount), 0)
       return {
         tag: { id: t.id, name: t.name, color: t.color },
         expenseTotal,
@@ -194,9 +204,9 @@ const markPaid = createServerFn({ method: 'POST' })
     const session = await auth.api.getSession({ headers: request.headers })
     if (!session?.user?.id) throw new Error('Не авторизован')
     await db
-      .update(income)
+      .update(invoice)
       .set({ paidAt: data.paid ? new Date() : null })
-      .where(eq(income.id, data.id))
+      .where(eq(invoice.id, data.id))
   })
 
 const deleteIncomeSchema = z.object({ id: z.string() })
@@ -207,7 +217,7 @@ const deleteIncome = createServerFn({ method: 'POST' })
     const request = getRequest()
     const session = await auth.api.getSession({ headers: request.headers })
     if (!session?.user?.id) throw new Error('Не авторизован')
-    await db.delete(income).where(eq(income.id, data.id))
+    await db.delete(invoice).where(eq(invoice.id, data.id))
   })
 
 // ── Archive ────────────────────────────────────────────────────────────────────
@@ -221,9 +231,9 @@ const archiveIncome = createServerFn({ method: 'POST' })
     const session = await auth.api.getSession({ headers: request.headers })
     if (!session?.user?.id) throw new Error('Не авторизован')
     await db
-      .update(income)
+      .update(invoice)
       .set({ archivedAt: data.archive ? new Date() : null })
-      .where(eq(income.id, data.id))
+      .where(eq(invoice.id, data.id))
   })
 
 // ─── Route ────────────────────────────────────────────────────────────────────

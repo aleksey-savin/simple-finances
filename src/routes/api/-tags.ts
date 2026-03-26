@@ -2,14 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
 import { auth } from 'utils/auth'
 import { db } from '#/db'
-import {
-  tag,
-  expenseTag,
-  incomeTag,
-  currentAccountUser,
-  expense,
-  income,
-} from '#/db/schema'
+import { tag, invoiceTag, currentAccountUser, invoice } from '#/db/schema'
 import { and, eq, inArray } from 'drizzle-orm'
 import z from 'zod'
 
@@ -38,12 +31,12 @@ export const fetchExpenseTags = createServerFn()
 
     if (data.expenseIds.length === 0) return []
 
-    const rows = await db.query.expenseTag.findMany({
-      where: inArray(expenseTag.expenseId, data.expenseIds),
+    const rows = await db.query.invoiceTag.findMany({
+      where: inArray(invoiceTag.invoiceId, data.expenseIds),
       with: { tag: true },
     })
 
-    return rows.map((r) => ({ expenseId: r.expenseId, tag: r.tag }))
+    return rows.map((r) => ({ expenseId: r.invoiceId, tag: r.tag }))
   })
 
 // ─── Fetch tags for a set of incomes ──────────────────────────────────────────
@@ -57,12 +50,12 @@ export const fetchIncomeTags = createServerFn()
 
     if (data.incomeIds.length === 0) return []
 
-    const rows = await db.query.incomeTag.findMany({
-      where: inArray(incomeTag.incomeId, data.incomeIds),
+    const rows = await db.query.invoiceTag.findMany({
+      where: inArray(invoiceTag.invoiceId, data.incomeIds),
       with: { tag: true },
     })
 
-    return rows.map((r) => ({ incomeId: r.incomeId, tag: r.tag }))
+    return rows.map((r) => ({ incomeId: r.invoiceId, tag: r.tag }))
   })
 
 // ─── Create tag ────────────────────────────────────────────────────────────────
@@ -118,8 +111,8 @@ export const addExpenseTag = createServerFn({ method: 'POST' })
     if (!session?.user?.id) throw new Error('Не авторизован')
 
     // Verify user has access to this expense's account
-    const exp = await db.query.expense.findFirst({
-      where: eq(expense.id, data.expenseId),
+    const exp = await db.query.invoice.findFirst({
+      where: eq(invoice.id, data.expenseId),
       columns: { currentAccountId: true },
     })
     if (!exp) throw new Error('Расход не найден')
@@ -133,8 +126,8 @@ export const addExpenseTag = createServerFn({ method: 'POST' })
     if (!membership) throw new Error('Нет доступа')
 
     await db
-      .insert(expenseTag)
-      .values({ expenseId: data.expenseId, tagId: data.tagId })
+      .insert(invoiceTag)
+      .values({ invoiceId: data.expenseId, tagId: data.tagId })
       .onConflictDoNothing()
   })
 
@@ -153,11 +146,11 @@ export const removeExpenseTag = createServerFn({ method: 'POST' })
     if (!session?.user?.id) throw new Error('Не авторизован')
 
     await db
-      .delete(expenseTag)
+      .delete(invoiceTag)
       .where(
         and(
-          eq(expenseTag.expenseId, data.expenseId),
-          eq(expenseTag.tagId, data.tagId),
+          eq(invoiceTag.invoiceId, data.expenseId),
+          eq(invoiceTag.tagId, data.tagId),
         ),
       )
   })
@@ -177,8 +170,8 @@ export const addIncomeTag = createServerFn({ method: 'POST' })
     if (!session?.user?.id) throw new Error('Не авторизован')
 
     // Verify access
-    const inc = await db.query.income.findFirst({
-      where: eq(income.id, data.incomeId),
+    const inc = await db.query.invoice.findFirst({
+      where: eq(invoice.id, data.incomeId),
       columns: { currentAccountId: true },
     })
     if (!inc) throw new Error('Доход не найден')
@@ -192,8 +185,8 @@ export const addIncomeTag = createServerFn({ method: 'POST' })
     if (!membership) throw new Error('Нет доступа')
 
     await db
-      .insert(incomeTag)
-      .values({ incomeId: data.incomeId, tagId: data.tagId })
+      .insert(invoiceTag)
+      .values({ invoiceId: data.incomeId, tagId: data.tagId })
       .onConflictDoNothing()
   })
 
@@ -212,11 +205,11 @@ export const removeIncomeTag = createServerFn({ method: 'POST' })
     if (!session?.user?.id) throw new Error('Не авторизован')
 
     await db
-      .delete(incomeTag)
+      .delete(invoiceTag)
       .where(
         and(
-          eq(incomeTag.incomeId, data.incomeId),
-          eq(incomeTag.tagId, data.tagId),
+          eq(invoiceTag.invoiceId, data.incomeId),
+          eq(invoiceTag.tagId, data.tagId),
         ),
       )
   })
@@ -242,17 +235,16 @@ export const fetchTagTotals = createServerFn().handler(async () => {
   })
 
   // Expense tags with amounts (unpaid only)
-  const expenseTags = await db.query.expenseTag.findMany({
+  const invoiceTags = await db.query.invoiceTag.findMany({
     with: {
-      expense: { columns: { amount: true, currentAccountId: true, paidAt: true } },
-      tag: { columns: { id: true } },
-    },
-  })
-
-  // Income tags with amounts (unpaid only)
-  const incomeTags = await db.query.incomeTag.findMany({
-    with: {
-      income: { columns: { amount: true, currentAccountId: true, paidAt: true } },
+      invoice: {
+        columns: {
+          amount: true,
+          currentAccountId: true,
+          paidAt: true,
+          kind: true,
+        },
+      },
       tag: { columns: { id: true } },
     },
   })
@@ -261,23 +253,25 @@ export const fetchTagTotals = createServerFn().handler(async () => {
 
   // Aggregate per tag
   const totals = allTags.map((t) => {
-    const expenseTotal = expenseTags
+    const expenseTotal = invoiceTags
       .filter(
-        (et) =>
-          et.tag.id === t.id &&
-          accountIdSet.has(et.expense.currentAccountId) &&
-          !et.expense.paidAt,
+        (entry) =>
+          entry.tag.id === t.id &&
+          entry.invoice.kind === 'payable' &&
+          accountIdSet.has(entry.invoice.currentAccountId) &&
+          !entry.invoice.paidAt,
       )
-      .reduce((s, et) => s + Number(et.expense.amount), 0)
+      .reduce((s, entry) => s + Number(entry.invoice.amount), 0)
 
-    const incomeTotal = incomeTags
+    const incomeTotal = invoiceTags
       .filter(
-        (it) =>
-          it.tag.id === t.id &&
-          accountIdSet.has(it.income.currentAccountId) &&
-          !it.income.paidAt,
+        (entry) =>
+          entry.tag.id === t.id &&
+          entry.invoice.kind === 'receivable' &&
+          accountIdSet.has(entry.invoice.currentAccountId) &&
+          !entry.invoice.paidAt,
       )
-      .reduce((s, it) => s + Number(it.income.amount), 0)
+      .reduce((s, entry) => s + Number(entry.invoice.amount), 0)
 
     return {
       tag: t,
