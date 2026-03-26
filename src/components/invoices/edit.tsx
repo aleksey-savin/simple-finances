@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -74,13 +75,16 @@ export function EditInvoice({
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent aria-describedby={undefined}>
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>
             {item.kind === 'payable'
               ? 'Редактировать расход'
               : 'Редактировать доход'}
           </DialogTitle>
+          <DialogDescription>
+            Измените данные записи и сохраните обновления.
+          </DialogDescription>
         </DialogHeader>
         <EditInvoiceForm
           invoice={invoiceForForm}

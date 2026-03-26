@@ -59,7 +59,7 @@ function RouteComponent() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {users?.users.map((user) => (
+          {users.users.map((user) => (
             <TableRow key={user.id}>
               <TableCell className="font-medium">{user.name}</TableCell>
               <TableCell>{user.email}</TableCell>

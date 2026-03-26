@@ -6,8 +6,8 @@ import { ru } from 'date-fns/locale'
 import {
   Archive,
   ArchiveRestore,
-  CalendarDays,
   CheckCircle2,
+  Clock,
   Copy,
   Link2,
   MoreHorizontal,
@@ -22,6 +22,7 @@ import type { Invoice } from '#/types'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import { Item, ItemContent } from '../ui/item'
+import { TableCell, TableRow } from '../ui/table'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,6 +40,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu'
+import { cn } from '#/lib/utils'
 
 function formatDate(date: Date): string {
   if (isToday(date)) return 'Сегодня'
@@ -54,6 +56,7 @@ type DialogRenderProp = (
 
 type InvoiceListItemProps = {
   item: Invoice
+  layout: 'mobile' | 'desktop'
   sharedAccountIds: Set<string>
   togglePaid: any
   renderEdit: DialogRenderProp
@@ -65,6 +68,7 @@ type InvoiceListItemProps = {
 
 export function InvoiceListItem({
   item,
+  layout,
   sharedAccountIds,
   togglePaid,
   renderEdit,
@@ -85,23 +89,45 @@ export function InvoiceListItem({
   const isOverdue =
     !isPaid && item.dueDate !== null && new Date(item.dueDate) < new Date()
 
-  const createdDate = formatDate(new Date(item.createdAt))
   const paidDate = isPaid ? formatDate(new Date(item.paidAt!)) : null
   const dueDateFormatted = item.dueDate
     ? formatDate(new Date(item.dueDate))
     : null
+  const dueDateLabel = dueDateFormatted
+    ? `Ожидает оплаты до ${dueDateFormatted}`
+    : 'Ожидает оплаты'
 
   const cfg = isPayable
     ? {
         amountPrefix: '−',
-        amountColor: isPaid ? 'text-amber-600' : 'text-muted-foreground',
-        paidLabel: 'Оплачено',
+        amountColor: '',
+        status: isPaid ? (
+          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-emerald-500">
+            <CheckCircle2 className="w-4 h-4 inline-block" />{' '}
+            {`Оплачено ${paidDate}`}
+          </div>
+        ) : (
+          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-amber-500">
+            <Clock className="w-4 h-4 inline-block" />{' '}
+            {dueDateLabel ?? 'Ожидает оплаты'}
+          </div>
+        ),
         entityName: 'Расход',
       }
     : {
         amountPrefix: '+',
-        amountColor: isPaid ? 'text-emerald-700' : 'text-muted-foreground',
-        paidLabel: 'Получено',
+        amountColor: 'text-emerald-600',
+        status: isPaid ? (
+          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-emerald-500">
+            <CheckCircle2 className="w-4 h-4 inline-block" />{' '}
+            {`Оплачено ${paidDate}`}
+          </div>
+        ) : (
+          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-amber-500">
+            <Clock className="w-4 h-4 inline-block" />{' '}
+            {dueDateLabel ?? 'Ожидает оплаты'}
+          </div>
+        ),
         entityName: 'Доход',
       }
 
@@ -257,161 +283,170 @@ export function InvoiceListItem({
     </div>
   )
 
-  return (
-    <Item
-      variant={isPaid ? 'outline' : 'muted'}
-      className={[
-        isOverdue ? 'border-destructive/30 bg-destructive/5' : '',
-        isArchived ? 'opacity-60' : '',
-        !isPaid ? 'border border-muted' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')}
-    >
-      <ItemContent className="relative gap-0">
-        {canEditDelete && renderEdit(editOpen, setEditOpen)}
-        {canEditDelete && !isPaid && renderDelete?.(deleteOpen, setDeleteOpen)}
-        <AlertDialog open={archiveOpen} onOpenChange={setArchiveOpen}>
-          <AlertDialogContent size="sm">
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                Архивировать {isPayable ? 'расход' : 'доход'}?
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                Запись будет перемещена в архив.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Отмена</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={async () => {
-                  try {
-                    await archiveFn({ data: { id: item.id, archive: true } })
-                    await router.invalidate()
-                    toast.success(`${cfg.entityName} архивирован`)
-                  } catch (error) {
-                    toast.error(
-                      error instanceof Error
-                        ? error.message
-                        : 'Произошла ошибка',
-                    )
-                  }
-                }}
-              >
-                Архивировать
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-
-        <div className="flex flex-col gap-2 sm:hidden">
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <CalendarDays className="size-3 shrink-0" />
-              {createdDate}
-            </span>
-            {menuDropdown}
-          </div>
-
-          {item.counterparty && (
-            <p
-              className={`text-base font-bold leading-snug ${
-                !isPaid ? 'text-muted-foreground' : ''
-              }`}
+  const dialogs = (
+    <>
+      {canEditDelete && renderEdit(editOpen, setEditOpen)}
+      {canEditDelete && !isPaid && renderDelete?.(deleteOpen, setDeleteOpen)}
+      <AlertDialog open={archiveOpen} onOpenChange={setArchiveOpen}>
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Архивировать {isPayable ? 'расход' : 'доход'}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Запись будет перемещена в архив.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                try {
+                  await archiveFn({ data: { id: item.id, archive: true } })
+                  await router.invalidate()
+                  toast.success(`${cfg.entityName} архивирован`)
+                } catch (error) {
+                  toast.error(
+                    error instanceof Error ? error.message : 'Произошла ошибка',
+                  )
+                }
+              }}
             >
-              {item.counterparty.name}
-            </p>
-          )}
+              Архивировать
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  )
 
-          <p
-            className={`whitespace-normal text-sm ${
-              !isPaid ? 'text-muted-foreground' : ''
-            }`}
+  if (layout === 'desktop') {
+    return (
+      <>
+        {dialogs}
+        <TableRow className={cn(isOverdue && 'bg-destructive/10')}>
+          <TableCell className="max-w-0 align-top whitespace-normal">
+            <div className="py-4">
+              {item.counterparty && (
+                <div
+                  className={cn(
+                    'wrap-break-word font-semibold leading-snug',
+                    !isPaid && 'text-muted-foreground',
+                  )}
+                >
+                  {item.counterparty.name}
+                </div>
+              )}
+              <div
+                className={cn(
+                  'wrap-break-word text-sm',
+                  !isPaid && 'text-muted-foreground',
+                )}
+              >
+                {item.description}
+              </div>
+            </div>
+          </TableCell>
+          <TableCell
+            className={cn('text-center', !isPaid && 'text-muted-foreground')}
           >
-            {item.description}
-          </p>
-
-          {badgesRow}
-
-          <div className="flex items-center justify-end pt-1">
+            {item.currentAccount.name}
+          </TableCell>
+          <TableCell
+            className={cn('text-center', !isPaid && 'text-muted-foreground')}
+          >
+            {item.category.name}
+          </TableCell>
+          <TableCell className="w-56 text-center">
+            <div className="flex flex-col gap-2">
+              {cfg.status}
+              {item.archivedAt && (
+                <div className="flex gap-1 items-center justify-center text-sm font-semibold text-muted-foreground">
+                  <Archive className="w-4 h-4 inline-block" /> В архиве
+                </div>
+              )}
+            </div>
+          </TableCell>
+          <TableCell className="w-40 text-right">
             <div className="flex flex-col items-end gap-0.5">
               <span
-                className={`text-2xl font-bold tabular-nums ${cfg.amountColor}`}
+                className={cn(
+                  'text-base font-semibold tabular-nums',
+                  cfg.amountColor,
+                  !isPaid && 'text-muted-foreground',
+                )}
               >
                 {cfg.amountPrefix}
                 {amountFormatted}
               </span>
-              {paidDate && (
-                <span className="text-xs text-muted-foreground">
-                  {cfg.paidLabel} {paidDate}
-                </span>
-              )}
-              {dueDateFormatted && !isPaid && (
-                <span
-                  className={`text-xs font-medium ${
-                    isOverdue ? 'text-destructive' : 'text-muted-foreground'
-                  }`}
-                >
-                  До {dueDateFormatted}
-                </span>
-              )}
             </div>
-          </div>
-        </div>
+          </TableCell>
+          <TableCell className="w-14  text-right">
+            <div className="flex justify-end">{menuDropdown}</div>
+          </TableCell>
+        </TableRow>
+      </>
+    )
+  }
 
-        <div className="hidden items-center gap-3 sm:flex">
-          <span className="flex w-16 shrink-0 items-center gap-1 pt-0.5 text-xs text-muted-foreground">
-            <CalendarDays className="size-3 shrink-0" />
-            {createdDate}
-          </span>
+  return (
+    <>
+      {dialogs}
+      <Item variant="outline" className="sm:hidden">
+        <ItemContent className="relative gap-0">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">
+                {formatDate(new Date(item.createdAt))}
+              </span>
+              {menuDropdown}
+            </div>
 
-          <div className="min-w-0 flex-1">
             {item.counterparty && (
-              <div
-                className={`wrap-break-word font-semibold leading-snug ${
+              <p
+                className={`text-base font-bold leading-snug ${
                   !isPaid ? 'text-muted-foreground' : ''
                 }`}
               >
                 {item.counterparty.name}
-              </div>
+              </p>
             )}
-            <div
-              className={`wrap-break-word whitespace-normal text-sm ${
+
+            <p
+              className={`whitespace-normal text-sm ${
                 !isPaid ? 'text-muted-foreground' : ''
               }`}
             >
               {item.description}
-            </div>
-            <div className="mt-1.5">{badgesRow}</div>
-          </div>
+            </p>
 
-          <div className="flex shrink-0 items-start gap-0.5">
-            <div className="mr-1 flex flex-col items-end gap-0.5">
-              <span
-                className={`text-base font-semibold tabular-nums ${cfg.amountColor}`}
-              >
-                {cfg.amountPrefix}
-                {amountFormatted}
-              </span>
-              {dueDateFormatted && !isPaid && (
+            {badgesRow}
+
+            <div className="flex items-center justify-end pt-1">
+              <div className="flex flex-col items-end gap-0.5">
                 <span
-                  className={`text-xs font-medium ${
-                    isOverdue ? 'text-warning' : 'text-muted-foreground'
-                  }`}
+                  className={`text-2xl font-bold tabular-nums ${cfg.amountColor}`}
                 >
-                  До {dueDateFormatted}
+                  {cfg.amountPrefix}
+                  {amountFormatted}
                 </span>
-              )}
-              {paidDate && (
-                <span className="text-xs text-muted-foreground">
-                  {cfg.paidLabel} {paidDate}
-                </span>
-              )}
+                {dueDateLabel && !isPaid && (
+                  <span
+                    className={cn(
+                      'text-xs',
+                      isOverdue
+                        ? 'font-medium text-destructive'
+                        : 'text-muted-foreground',
+                    )}
+                  >
+                    {dueDateLabel}
+                  </span>
+                )}
+              </div>
             </div>
-            {menuDropdown}
           </div>
-        </div>
-      </ItemContent>
-    </Item>
+        </ItemContent>
+      </Item>
+    </>
   )
 }

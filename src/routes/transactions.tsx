@@ -4,6 +4,7 @@ import { Calendar } from '#/components/ui/calendar'
 import {
   Drawer,
   DrawerContent,
+  DrawerFooter,
   DrawerHeader,
   DrawerTitle,
 } from '#/components/ui/drawer'
@@ -17,6 +18,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '#/components/ui/popover'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '#/components/ui/table'
 
 import { db } from '#/db'
 import {
@@ -31,15 +40,17 @@ import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
 import { auth } from 'utils/auth'
 import { eq, inArray, or } from 'drizzle-orm'
-import { format } from 'date-fns'
+import { format, isSameYear, isToday, isYesterday } from 'date-fns'
+import { ru } from 'date-fns/locale'
 import { CalendarIcon, Search, X } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import type { DateRange } from 'react-day-picker'
 
 import z from 'zod'
 import { ToggleGroup, ToggleGroupItem } from '#/components/ui/toggle-group'
 import { useIsMobile } from '#/hooks/use-mobile'
 import { syncRecurringRulesForAccounts } from '#/lib/recurring'
+import { Card } from '#/components/ui/card'
 
 const fetchData = createServerFn().handler(async () => {
   const request = getRequest()
@@ -169,6 +180,9 @@ function App() {
   const [categoryFilter, setCategoryFilter] = useState<string[]>([])
   const [counterpartyFilter, setCounterpartyFilter] = useState<string[]>([])
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
+  const [draftDateRange, setDraftDateRange] = useState<DateRange | undefined>(
+    undefined,
+  )
   const [dateField, setDateField] = useState<'createdAt' | 'paidAt'>(
     'createdAt',
   )
@@ -211,9 +225,6 @@ function App() {
 
   const handleDateRangeChange = (nextRange: DateRange | undefined) => {
     setDateRange(nextRange)
-    if (isMobile && nextRange?.from && nextRange?.to) {
-      setDatePickerOpen(false)
-    }
   }
 
   const filteredFeed = useMemo(() => {
@@ -286,13 +297,34 @@ function App() {
     dateField,
   ])
 
+  const desktopGroups = useMemo(() => {
+    const groups = new Map<string, typeof filteredFeed>()
+
+    for (const item of filteredFeed) {
+      const key = format(new Date(item.createdAt), 'yyyy-MM-dd')
+      const group = groups.get(key)
+
+      if (group) {
+        group.push(item)
+      } else {
+        groups.set(key, [item])
+      }
+    }
+
+    return Array.from(groups.entries()).map(([dateKey, items]) => ({
+      dateKey,
+      label: formatGroupDateLabel(dateKey),
+      items,
+    }))
+  }, [filteredFeed])
+
   return (
     <>
       {/* ── Summary cards ──────────────────────────────────────────────────── */}
       <InvoiceSummary feed={filteredFeed} />
 
       {/* ── Filter bar ─────────────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-8">
+      <Card className="flex flex-col gap-8 p-4">
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
@@ -303,7 +335,7 @@ function App() {
             className="pl-9"
           />
         </div>
-        <div className="flex flex-wrap w-full lg:justify-between items-center gap-2">
+        <div className="flex flex-wrap w-full lg:justify-between items-center gap-4">
           {/* Type */}
           <ToggleGroup variant="outline" type="single" defaultValue="all">
             {(['all', 'receivable', 'payable'] as const).map((t) => (
@@ -329,7 +361,10 @@ function App() {
                   variant="outline"
                   size="sm"
                   className="h-9 gap-2 font-normal text-sm min-w-40"
-                  onClick={() => setDatePickerOpen(true)}
+                  onClick={() => {
+                    setDraftDateRange(dateRange)
+                    setDatePickerOpen(true)
+                  }}
                 >
                   <CalendarIcon className="size-3.5 text-muted-foreground" />
                   {dateRange?.from ? (
@@ -354,12 +389,30 @@ function App() {
                     <div className="overflow-y-auto px-2 pb-6">
                       <Calendar
                         mode="range"
-                        selected={dateRange}
-                        onSelect={handleDateRangeChange}
-                        numberOfMonths={1}
+                        selected={draftDateRange}
+                        onSelect={setDraftDateRange}
+                        numberOfMonths={2}
                         className="mx-auto"
                       />
                     </div>
+                    <DrawerFooter>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setDraftDateRange(undefined)
+                        }}
+                      >
+                        Сбросить
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setDateRange(draftDateRange)
+                          setDatePickerOpen(false)
+                        }}
+                      >
+                        Применить
+                      </Button>
+                    </DrawerFooter>
                   </DrawerContent>
                 </Drawer>
               </>
@@ -474,27 +527,93 @@ function App() {
             {filteredFeed.length} из {feed.length}
           </span>
         </div>
-      </div>
+      </Card>
 
-      <div className="flex flex-col gap-2 mt-4">
-        {filteredFeed.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-10">
-            Ничего не найдено
-          </p>
-        )}
-        {filteredFeed.map((item) => (
-          <InvoiceItem
-            key={item.id}
-            item={item}
-            sharedAccountIds={sharedAccountIds}
-            togglePaid={togglePaid}
-            categories={categories}
-            accounts={accounts}
-            counterparties={counterparties ?? []}
-          />
-        ))}
-      </div>
+      {filteredFeed.length === 0 ? (
+        <p className="py-10 text-center text-sm text-muted-foreground">
+          Ничего не найдено
+        </p>
+      ) : (
+        <>
+          <div className="mt-4 flex flex-col gap-2 sm:hidden">
+            {filteredFeed.map((item) => (
+              <InvoiceItem
+                key={item.id}
+                layout="mobile"
+                item={item}
+                sharedAccountIds={sharedAccountIds}
+                togglePaid={togglePaid}
+                categories={categories}
+                accounts={accounts}
+                counterparties={counterparties ?? []}
+              />
+            ))}
+          </div>
+
+          <Card className="mt-4 hidden sm:block p-4">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="font-bold">Документ</TableHead>
+                  <TableHead className="w-56 text-center font-bold">
+                    Cчёт
+                  </TableHead>
+                  <TableHead className="w-56 text-center font-bold">
+                    Категория
+                  </TableHead>
+                  <TableHead className="w-56 font-bold text-center">
+                    Статус
+                  </TableHead>
+                  <TableHead className="w-40 text-right font-bold">
+                    Сумма
+                  </TableHead>
+                  <TableHead className="w-14 text-right font-bold" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {desktopGroups.map((group) => (
+                  <Fragment key={group.dateKey}>
+                    <TableRow className="hover:bg-transparent">
+                      <TableCell
+                        colSpan={4}
+                        className="bg-muted/30 py-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase text-center"
+                      >
+                        {group.label}
+                      </TableCell>
+                    </TableRow>
+                    {group.items.map((item) => (
+                      <InvoiceItem
+                        key={item.id}
+                        layout="desktop"
+                        item={item}
+                        sharedAccountIds={sharedAccountIds}
+                        togglePaid={togglePaid}
+                        categories={categories}
+                        accounts={accounts}
+                        counterparties={counterparties ?? []}
+                      />
+                    ))}
+                  </Fragment>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        </>
+      )}
       <Outlet />
     </>
   )
+}
+
+function formatGroupDateLabel(dateKey: string) {
+  const [year, month, day] = dateKey.split('-').map(Number)
+  const date = new Date(year, month - 1, day)
+
+  if (Number.isNaN(date.getTime())) return dateKey
+  if (isToday(date)) return 'Сегодня'
+  if (isYesterday(date)) return 'Вчера'
+  if (isSameYear(date, new Date())) {
+    return format(date, 'd MMMM, EEEE', { locale: ru })
+  }
+  return format(date, 'd MMMM yyyy, EEEE', { locale: ru })
 }

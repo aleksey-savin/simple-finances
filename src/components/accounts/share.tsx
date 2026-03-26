@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -92,9 +93,12 @@ export function ShareAccount({
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-md" aria-describedby={undefined}>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Поделиться — {accountName}</DialogTitle>
+          <DialogDescription>
+            Управляйте доступом к счёту и приглашайте участников.
+          </DialogDescription>
         </DialogHeader>
 
         {/* Members list */}

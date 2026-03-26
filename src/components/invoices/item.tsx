@@ -10,6 +10,7 @@ import { InvoiceListItem } from './list-item'
 
 export function InvoiceItem({
   item,
+  layout = 'mobile',
   sharedAccountIds,
   togglePaid,
   categories,
@@ -17,6 +18,7 @@ export function InvoiceItem({
   counterparties = [],
 }: {
   item: Invoice
+  layout?: 'mobile' | 'desktop'
   sharedAccountIds: Set<string>
   togglePaid: any
   categories: {
@@ -36,6 +38,7 @@ export function InvoiceItem({
   return (
     <InvoiceListItem
       item={item}
+      layout={layout}
       sharedAccountIds={sharedAccountIds}
       togglePaid={togglePaid}
       archiveFn={archiveInvoice}

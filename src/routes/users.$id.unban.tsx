@@ -43,7 +43,6 @@ function RouteComponent() {
   }
 
   const handleConfirm = async () => {
-    if (!user) return
     setIsLoading(true)
     try {
       await authClient.admin.unbanUser(
@@ -75,7 +74,7 @@ function RouteComponent() {
         <AlertDialogHeader>
           <AlertDialogTitle>Разблокировать пользователя?</AlertDialogTitle>
           <AlertDialogDescription>
-            Пользователь «{user?.name}» будет разблокирован и сможет снова войти
+            Пользователь «{user.name}» будет разблокирован и сможет снова войти
             в систему.
           </AlertDialogDescription>
         </AlertDialogHeader>

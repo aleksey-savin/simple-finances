@@ -43,10 +43,10 @@ function RouteComponent() {
       onOpenChange={(open) => {
         if (!open) handleClose()
       }}
-      title={user?.name ?? 'Изменить пользователя'}
+      title="Изменить пользователя"
       description="Редактирование параметров пользователя"
     >
-      {user && <UserForm user={user} onSuccess={handleSuccess} />}
+      <UserForm user={user} onSuccess={handleSuccess} />
     </ResponsiveDialog>
   )
 }
