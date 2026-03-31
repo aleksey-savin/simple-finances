@@ -82,6 +82,7 @@ export const deleteAccount = createServerFn({ method: 'POST' })
 
 export const addAccountFormSchema = z.object({
   name: z.string().min(2, 'Минимум 2 символа'),
+  accountNumber: z.string().trim(),
   acceptPayments: z.boolean(),
 })
 
@@ -99,6 +100,7 @@ export const addAccount = createServerFn({ method: 'POST' })
       .insert(currentAccount)
       .values({
         name: data.name,
+        accountNumber: normalizeAccountNumber(data.accountNumber),
         acceptPayments: data.acceptPayments,
         createdBy: session.user.id,
         updatedBy: session.user.id,
@@ -117,6 +119,7 @@ export const addAccount = createServerFn({ method: 'POST' })
 export const updateAccountSchema = z.object({
   id: z.string(),
   name: z.string().min(2, 'Минимум 2 символа'),
+  accountNumber: z.string().trim(),
   acceptPayments: z.boolean(),
 })
 
@@ -125,9 +128,18 @@ export const updateAccount = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     await db
       .update(currentAccount)
-      .set({ name: data.name, acceptPayments: data.acceptPayments })
+      .set({
+        name: data.name,
+        accountNumber: normalizeAccountNumber(data.accountNumber),
+        acceptPayments: data.acceptPayments,
+      })
       .where(eq(currentAccount.id, data.id))
   })
+
+function normalizeAccountNumber(value: string) {
+  const normalized = value.trim()
+  return normalized === '' ? null : normalized
+}
 
 // ── Account members ───────────────────────────────────────────────────────────
 

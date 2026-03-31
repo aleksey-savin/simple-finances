@@ -14,12 +14,16 @@ export const AddAccountForm = () => {
   const router = useRouter()
   const queryClient = useQueryClient()
   const form = useForm({
-    defaultValues: { name: '', acceptPayments: false },
+    defaultValues: { name: '', accountNumber: '', acceptPayments: false },
     validators: { onSubmit: addAccountFormSchema },
     onSubmit: async ({ value }) => {
       try {
         await addAccount({
-          data: { name: value.name, acceptPayments: value.acceptPayments },
+          data: {
+            name: value.name,
+            accountNumber: value.accountNumber,
+            acceptPayments: value.acceptPayments,
+          },
         })
         router.invalidate()
         queryClient.invalidateQueries({ queryKey: accountsQueryKey })
@@ -60,6 +64,34 @@ export const AddAccountForm = () => {
                   autoComplete="off"
                   type="text"
                   required
+                />
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            )
+          }}
+        />
+
+        <form.Field
+          name="accountNumber"
+          children={(field) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
+            return (
+              <Field data-invalid={isInvalid}>
+                <FieldLabel htmlFor={field.name}>Номер счёта</FieldLabel>
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) =>
+                    field.handleChange(e.target.value.replace(/\D/g, ''))
+                  }
+                  aria-invalid={isInvalid}
+                  placeholder="Введите номер счёта"
+                  autoComplete="off"
+                  inputMode="numeric"
+                  type="text"
                 />
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>

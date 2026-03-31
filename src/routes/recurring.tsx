@@ -8,20 +8,31 @@ import { useMemo, useState } from 'react'
 
 import { toast } from 'sonner'
 
-import { RefreshCw, X } from 'lucide-react'
+import { RefreshCw, Search, X } from 'lucide-react'
 import { RuleCard } from '#/components/reccuring/card'
+import { RuleTableRow } from '#/components/reccuring/table-row'
 import {
   createRecurringNow,
   fetchRecurringData,
   toggleRecurringRule,
 } from '#/components/reccuring/actions'
 import { Button } from '#/components/ui/button'
+import { Card } from '#/components/ui/card'
+import { Input } from '#/components/ui/input'
 import {
   MultiSelectCombobox,
   type MultiSelectOption,
 } from '#/components/ui/multi-select-combobox'
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '#/components/ui/table'
 import { ToggleGroup, ToggleGroupItem } from '#/components/ui/toggle-group'
 import type { RuleWithRelations } from '@/types'
+import { getCronLabel } from '#/components/reccuring/utils'
 
 // ─── Route ────────────────────────────────────────────────────────────────────
 
@@ -40,6 +51,7 @@ function RecurringPage() {
   const router = useRouter()
   const navigate = useNavigate()
   const { rules, categories, accounts, counterparties } = Route.useLoaderData()
+  const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<
     'all' | 'payable' | 'receivable'
   >('all')
@@ -85,12 +97,14 @@ function RecurringPage() {
   }
 
   const hasActiveFilters =
+    search.trim() !== '' ||
     typeFilter !== 'all' ||
     categoryFilter.length > 0 ||
     accountFilter.length > 0 ||
     counterpartyFilter.length > 0
 
   const clearFilters = () => {
+    setSearch('')
     setTypeFilter('all')
     setCategoryFilter([])
     setAccountFilter([])
@@ -100,6 +114,22 @@ function RecurringPage() {
   const filteredRules = useMemo(() => {
     return rules
       .filter((rule) => {
+        if (search.trim()) {
+          const query = search.trim().toLowerCase()
+          const haystack = [
+            rule.description,
+            rule.category.name,
+            rule.currentAccount.name,
+            rule.counterparty?.name ?? '',
+            getCronLabel(rule.cronExpression),
+            Number(rule.amount).toLocaleString('ru-RU'),
+          ]
+            .join(' ')
+            .toLowerCase()
+
+          if (!haystack.includes(query)) return false
+        }
+
         if (typeFilter !== 'all' && rule.type !== typeFilter) return false
         if (
           categoryFilter.length > 0 &&
@@ -128,7 +158,14 @@ function RecurringPage() {
         if (aTime !== bTime) return aTime - bTime
         return a.description.localeCompare(b.description, 'ru')
       })
-  }, [rules, typeFilter, categoryFilter, accountFilter, counterpartyFilter])
+  }, [
+    rules,
+    search,
+    typeFilter,
+    categoryFilter,
+    accountFilter,
+    counterpartyFilter,
+  ])
 
   return (
     <>
@@ -139,88 +176,142 @@ function RecurringPage() {
         </div>
       ) : (
         <>
-          <div className="flex flex-wrap w-full lg:justify-between items-center gap-2">
-            <ToggleGroup variant="outline" type="single" value={typeFilter}>
-              {(['all', 'receivable', 'payable'] as const).map((t) => (
-                <ToggleGroupItem
-                  value={t}
-                  key={t}
-                  onClick={() => setTypeFilter(t)}
-                >
-                  {t === 'all'
-                    ? 'Все'
-                    : t === 'receivable'
-                      ? 'Доходы'
-                      : 'Расходы'}
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
-
-            <MultiSelectCombobox
-              options={categoryOptions}
-              value={categoryFilter}
-              onValueChange={setCategoryFilter}
-              placeholder="Все категории"
-              searchPlaceholder="Поиск категории…"
-              emptyText="Категории не найдены"
-            />
-
-            <MultiSelectCombobox
-              options={accountOptions}
-              value={accountFilter}
-              onValueChange={setAccountFilter}
-              placeholder="Все счета"
-              searchPlaceholder="Поиск счета…"
-              emptyText="Счета не найдены"
-            />
-
-            <MultiSelectCombobox
-              options={counterpartyOptions}
-              value={counterpartyFilter}
-              onValueChange={setCounterpartyFilter}
-              placeholder="Все контрагенты"
-              searchPlaceholder="Поиск контрагента…"
-              emptyText="Контрагенты не найдены"
-            />
-
-            {hasActiveFilters && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearFilters}
-                className="gap-1.5"
-              >
-                <X className="size-3.5" />
-                Сброс
-              </Button>
-            )}
-
-            <span className="text-xs text-muted-foreground ml-auto">
-              {filteredRules.length} из {rules.length}
-            </span>
-          </div>
-
-          <div className="flex flex-col gap-3 mt-4">
-            {filteredRules.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-10">
-                Ничего не найдено
-              </p>
-            )}
-            {filteredRules.map((rule) => (
-              <RuleCard
-                key={rule.id}
-                rule={rule}
-                onEdit={() =>
-                  navigate({
-                    to: '/recurring/$id/edit',
-                    params: { id: rule.id },
-                  })
-                }
-                onCreateNow={() => handleCreateNow(rule)}
-                onToggle={(v) => handleToggle(rule, v)}
+          <Card className="flex flex-col gap-8 p-4">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Поиск по правилу, категории, счёту..."
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                className="pl-9"
               />
-            ))}
-          </div>
+            </div>
+
+            <div className="flex flex-wrap w-full items-center gap-4 lg:justify-between">
+              <ToggleGroup variant="outline" type="single" value={typeFilter}>
+                {(['all', 'receivable', 'payable'] as const).map((t) => (
+                  <ToggleGroupItem
+                    value={t}
+                    key={t}
+                    onClick={() => setTypeFilter(t)}
+                  >
+                    {t === 'all'
+                      ? 'Все'
+                      : t === 'receivable'
+                        ? 'Доходы'
+                        : 'Расходы'}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+
+              <MultiSelectCombobox
+                options={accountOptions}
+                value={accountFilter}
+                onValueChange={setAccountFilter}
+                placeholder="Все счета"
+                searchPlaceholder="Поиск счета…"
+                emptyText="Счета не найдены"
+              />
+
+              <MultiSelectCombobox
+                options={categoryOptions}
+                value={categoryFilter}
+                onValueChange={setCategoryFilter}
+                placeholder="Все категории"
+                searchPlaceholder="Поиск категории…"
+                emptyText="Категории не найдены"
+              />
+
+              <MultiSelectCombobox
+                options={counterpartyOptions}
+                value={counterpartyFilter}
+                onValueChange={setCounterpartyFilter}
+                placeholder="Все контрагенты"
+                searchPlaceholder="Поиск контрагента…"
+                emptyText="Контрагенты не найдены"
+              />
+
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="gap-1.5"
+                >
+                  <X className="size-3.5" />
+                  Сброс
+                </Button>
+              )}
+
+              <span className="ml-auto text-xs text-muted-foreground">
+                {filteredRules.length} из {rules.length}
+              </span>
+            </div>
+          </Card>
+
+          {filteredRules.length === 0 ? (
+            <Card className="mt-4 p-8 text-center text-sm text-muted-foreground">
+              Ничего не найдено
+            </Card>
+          ) : (
+            <>
+              <div className="mt-4 flex flex-col gap-3 sm:hidden">
+                {filteredRules.map((rule) => (
+                  <RuleCard
+                    key={rule.id}
+                    rule={rule}
+                    onEdit={() =>
+                      navigate({
+                        to: '/recurring/$id/edit',
+                        params: { id: rule.id },
+                      })
+                    }
+                    onCreateNow={() => handleCreateNow(rule)}
+                    onToggle={(value) => handleToggle(rule, value)}
+                  />
+                ))}
+              </div>
+
+              <Card className="mt-4 hidden p-4 sm:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="font-bold">Правило</TableHead>
+                      <TableHead className="w-72 font-bold">
+                        Расписание
+                      </TableHead>
+                      <TableHead className="w-64 font-bold">Запуски</TableHead>
+                      <TableHead className="w-32 text-center font-bold">
+                        Статус
+                      </TableHead>
+                      <TableHead className="text-center font-bold">
+                        Сумма
+                      </TableHead>
+                      <TableHead className="text-right font-bold">
+                        Действия
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredRules.map((rule) => (
+                      <RuleTableRow
+                        key={rule.id}
+                        rule={rule}
+                        onEdit={() =>
+                          navigate({
+                            to: '/recurring/$id/edit',
+                            params: { id: rule.id },
+                          })
+                        }
+                        onCreateNow={() => handleCreateNow(rule)}
+                        onToggle={(value) => handleToggle(rule, value)}
+                      />
+                    ))}
+                  </TableBody>
+                </Table>
+              </Card>
+            </>
+          )}
         </>
       )}
       <Outlet />

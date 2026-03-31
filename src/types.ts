@@ -1,5 +1,6 @@
 import type {
   Category as DBCategory,
+  Client as DBClient,
   Invoice as DBInvoice,
   Counterparty as DBCounterparty,
   CurrentAccount,
@@ -23,6 +24,10 @@ export type Invoice = Pick<
   | 'linkedInvoiceId'
   | 'archivedAt'
 > & {
+  manualPaid: boolean
+  settledAmount: number
+  outstandingAmount: number
+  paymentStatus: 'unpaid' | 'partial' | 'paid'
   category: Pick<DBCategory, 'id' | 'name'>
   currentAccount: Pick<CurrentAccount, 'id' | 'name'>
   counterparty: Pick<DBCounterparty, 'id' | 'name'> | null
@@ -38,7 +43,7 @@ export type Member = Pick<CurrentAccountUser, 'id' | 'role'> & {
 
 export type Account = Pick<
   CurrentAccount,
-  'id' | 'name' | 'createdBy' | 'acceptPayments'
+  'id' | 'name' | 'accountNumber' | 'createdBy' | 'acceptPayments'
 > & {
   role: string
   members: Member[]
@@ -54,6 +59,10 @@ export type Counterparty = Pick<
   'id' | 'name' | 'fullName' | 'type' | 'tin' | 'linkedUserId'
 > & {
   linkedUser: Pick<User, 'id' | 'name' | 'email'> | null
+}
+
+export type Client = Pick<DBClient, 'id' | 'name' | 'createdBy'> & {
+  counterparties: Pick<DBCounterparty, 'id' | 'name'>[]
 }
 
 // ─── Recurring Rule ───────────────────────────────────────────────────────────

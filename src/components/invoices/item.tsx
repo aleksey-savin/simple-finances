@@ -1,6 +1,7 @@
 import { authClient } from 'utils/auth-client'
 
 import type { Invoice } from '#/types'
+import type { TagItem } from '../ui/tag-picker'
 
 import { addInvoice, archiveInvoice } from './actions'
 import { DeleteInvoice } from './delete'
@@ -16,6 +17,11 @@ export function InvoiceItem({
   categories,
   accounts,
   counterparties = [],
+  assignedTags = [],
+  allTags = [],
+  onTagAdd,
+  onTagRemove,
+  onTagCreate,
 }: {
   item: Invoice
   layout?: 'mobile' | 'desktop'
@@ -30,6 +36,11 @@ export function InvoiceItem({
   }[]
   accounts: { id: string; name: string }[]
   counterparties?: { id: string; name: string; linkedUserId?: string | null }[]
+  assignedTags?: TagItem[]
+  allTags?: TagItem[]
+  onTagAdd?: (tag: TagItem) => Promise<void>
+  onTagRemove?: (tag: TagItem) => Promise<void>
+  onTagCreate?: (name: string, color: string) => Promise<TagItem>
 }) {
   const { data: session } = authClient.useSession()
   const canEditDelete =
@@ -56,6 +67,11 @@ export function InvoiceItem({
         })
       }
       canEditDelete={canEditDelete}
+      assignedTags={assignedTags}
+      allTags={allTags}
+      onTagAdd={onTagAdd}
+      onTagRemove={onTagRemove}
+      onTagCreate={onTagCreate}
       renderEdit={(open, onOpenChange) => (
         <EditInvoice
           item={item}

@@ -6,6 +6,9 @@ interface FeedItem {
   kind: 'payable' | 'receivable'
   amount: string | number
   paidAt: string | Date | null
+  settledAmount?: number
+  outstandingAmount?: number
+  paymentStatus?: 'unpaid' | 'partial' | 'paid'
 }
 
 interface Props {
@@ -28,14 +31,37 @@ export function InvoiceSummary({ feed }: Props) {
 
     for (const item of feed) {
       const amount = Number(item.amount)
-      const isPaid = item.paidAt !== null
+      const paymentStatus =
+        item.paymentStatus ?? (item.paidAt !== null ? 'paid' : 'unpaid')
+      const settledAmount =
+        item.settledAmount ??
+        (paymentStatus === 'paid'
+          ? amount
+          : item.outstandingAmount !== undefined
+            ? Math.max(amount - item.outstandingAmount, 0)
+            : 0)
+      const outstandingAmount =
+        item.outstandingAmount ??
+        (paymentStatus === 'paid' ? 0 : Math.max(amount - settledAmount, 0))
 
       if (item.kind === 'payable') {
-        if (isPaid) paidPayables += amount
-        else unpaidPayables += amount
+        if (paymentStatus === 'paid') {
+          paidPayables += amount
+        } else if (paymentStatus === 'partial') {
+          paidPayables += settledAmount
+          unpaidPayables += outstandingAmount
+        } else {
+          unpaidPayables += amount
+        }
       } else {
-        if (isPaid) paidReceivables += amount
-        else unpaidReceivables += amount
+        if (paymentStatus === 'paid') {
+          paidReceivables += amount
+        } else if (paymentStatus === 'partial') {
+          paidReceivables += settledAmount
+          unpaidReceivables += outstandingAmount
+        } else {
+          unpaidReceivables += amount
+        }
       }
     }
 

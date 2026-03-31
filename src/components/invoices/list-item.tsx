@@ -41,6 +41,7 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu'
 import { cn } from '#/lib/utils'
+import { TagChips, TagPicker, type TagItem } from '../ui/tag-picker'
 
 function formatDate(date: Date): string {
   if (isToday(date)) return 'Сегодня'
@@ -64,6 +65,11 @@ type InvoiceListItemProps = {
   archiveFn: (args: { data: { id: string; archive: boolean } }) => Promise<void>
   duplicateFn: () => Promise<unknown>
   canEditDelete?: boolean
+  assignedTags?: TagItem[]
+  allTags?: TagItem[]
+  onTagAdd?: (tag: TagItem) => Promise<void>
+  onTagRemove?: (tag: TagItem) => Promise<void>
+  onTagCreate?: (name: string, color: string) => Promise<TagItem>
 }
 
 export function InvoiceListItem({
@@ -76,6 +82,11 @@ export function InvoiceListItem({
   archiveFn,
   duplicateFn,
   canEditDelete = true,
+  assignedTags = [],
+  allTags = [],
+  onTagAdd,
+  onTagRemove,
+  onTagCreate,
 }: InvoiceListItemProps) {
   const router = useRouter()
   const [editOpen, setEditOpen] = useState(false)
@@ -84,7 +95,8 @@ export function InvoiceListItem({
 
   const isPayable = item.kind === 'payable'
   const isLinkedReceivable = !isPayable && !!item.linkedInvoiceId
-  const isPaid = item.paidAt !== null
+  const isPaid = item.paymentStatus === 'paid'
+  const isPartial = item.paymentStatus === 'partial'
   const isArchived = item.archivedAt !== null
   const isOverdue =
     !isPaid && item.dueDate !== null && new Date(item.dueDate) < new Date()
@@ -96,6 +108,10 @@ export function InvoiceListItem({
   const dueDateLabel = dueDateFormatted
     ? `Ожидает оплаты до ${dueDateFormatted}`
     : 'Ожидает оплаты'
+  const amountFormatted = Number(item.amount).toLocaleString('ru-RU', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
 
   const cfg = isPayable
     ? {
@@ -105,6 +121,17 @@ export function InvoiceListItem({
           <div className="flex gap-1 justify-center items-center text-sm font-semibold text-emerald-500">
             <CheckCircle2 className="w-4 h-4 inline-block" />{' '}
             {`Оплачено ${paidDate}`}
+          </div>
+        ) : isPartial ? (
+          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-amber-500">
+            <Clock className="w-4 h-4 inline-block" />{' '}
+            {`Частично оплачено ${Number(item.settledAmount).toLocaleString(
+              'ru-RU',
+              {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              },
+            )} из ${amountFormatted}`}
           </div>
         ) : (
           <div className="flex gap-1 justify-center items-center text-sm font-semibold text-amber-500">
@@ -122,6 +149,17 @@ export function InvoiceListItem({
             <CheckCircle2 className="w-4 h-4 inline-block" />{' '}
             {`Оплачено ${paidDate}`}
           </div>
+        ) : isPartial ? (
+          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-amber-500">
+            <Clock className="w-4 h-4 inline-block" />{' '}
+            {`Частично оплачено ${Number(item.settledAmount).toLocaleString(
+              'ru-RU',
+              {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              },
+            )} из ${amountFormatted}`}
+          </div>
         ) : (
           <div className="flex gap-1 justify-center items-center text-sm font-semibold text-amber-500">
             <Clock className="w-4 h-4 inline-block" />{' '}
@@ -130,12 +168,6 @@ export function InvoiceListItem({
         ),
         entityName: 'Доход',
       }
-
-  const amountFormatted = Number(item.amount).toLocaleString('ru-RU', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
-
   const menuDropdown = (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
@@ -247,6 +279,17 @@ export function InvoiceListItem({
     </DropdownMenu>
   )
 
+  const tagPicker =
+    onTagAdd && onTagRemove && onTagCreate ? (
+      <TagPicker
+        assignedTags={assignedTags}
+        allTags={allTags}
+        onAdd={onTagAdd}
+        onRemove={onTagRemove}
+        onCreate={onTagCreate}
+      />
+    ) : null
+
   const badgesRow = (
     <div className="flex flex-wrap items-center gap-1.5">
       <Badge variant="outline" className="px-1.5 py-0 text-xs">
@@ -345,6 +388,7 @@ export function InvoiceListItem({
               >
                 {item.description}
               </div>
+              <TagChips tags={assignedTags} />
             </div>
           </TableCell>
           <TableCell
@@ -382,7 +426,10 @@ export function InvoiceListItem({
             </div>
           </TableCell>
           <TableCell className="w-14  text-right">
-            <div className="flex justify-end">{menuDropdown}</div>
+            <div className="flex justify-end gap-1">
+              {tagPicker}
+              {menuDropdown}
+            </div>
           </TableCell>
         </TableRow>
       </>
@@ -399,7 +446,10 @@ export function InvoiceListItem({
               <span className="text-xs text-muted-foreground">
                 {formatDate(new Date(item.createdAt))}
               </span>
-              {menuDropdown}
+              <div className="flex items-center gap-1">
+                {tagPicker}
+                {menuDropdown}
+              </div>
             </div>
 
             {item.counterparty && (
@@ -421,6 +471,7 @@ export function InvoiceListItem({
             </p>
 
             {badgesRow}
+            <TagChips tags={assignedTags} />
 
             <div className="flex items-center justify-end pt-1">
               <div className="flex flex-col items-end gap-0.5">

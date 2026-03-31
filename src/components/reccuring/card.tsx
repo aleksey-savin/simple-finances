@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import type { RuleWithRelations } from '@/types'
 import { DeleteRule } from './delete'
-import { CRON_PRESETS } from '@/components/reccuring/constants'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -18,33 +17,12 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Calendar, Clock, PenLine, Plus } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
-
-function getCronLabel(expr: string): string {
-  const found = CRON_PRESETS.find(
-    (p) => p.value === expr && p.value !== 'custom',
-  )
-  return found ? found.label : expr
-}
-
-function formatDate(d: Date | string | null | undefined): string {
-  if (!d) return '—'
-  const date = new Date(d)
-  return date.toLocaleDateString('ru-RU', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
-function pluralDays(n: number): string {
-  const mod10 = n % 10
-  const mod100 = n % 100
-  if (mod10 === 1 && mod100 !== 11) return 'день'
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return 'дня'
-  return 'дней'
-}
+import {
+  formatRuleAmount,
+  formatRuleDate,
+  getCronLabel,
+  pluralDays,
+} from './utils'
 
 export const RuleCard = ({
   rule,
@@ -62,21 +40,21 @@ export const RuleCard = ({
 
   return (
     <Item variant="outline" className="px-4">
-      <ItemHeader className="flex justify-between items-center gap-4">
-        <div className="flex items-center gap-2">
+      <ItemHeader className="flex flex-col gap-2">
+        <div className="flex w-full justify-between items-center">
           <Badge
             variant={isExpense ? 'destructive' : 'default'}
             className="shrink-0"
           >
             {isExpense ? 'Расход' : 'Доход'}
           </Badge>
-          <span className="font-medium truncate">{rule.description}</span>
+          <Switch
+            checked={rule.isActive}
+            onCheckedChange={onToggle}
+            aria-label="Активность правила"
+          />
         </div>
-        <Switch
-          checked={rule.isActive}
-          onCheckedChange={onToggle}
-          aria-label="Активность правила"
-        />
+        <div className="font-medium wrap-break-word">{rule.description}</div>
       </ItemHeader>
       <Separator />
       <ItemContent className="flex flex-row items-center justify-between">
@@ -108,23 +86,21 @@ export const RuleCard = ({
           {/* Last / next run */}
           <div className="mt-1 grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
             <span className="opacity-60">Последний запуск:</span>
-            <span>{formatDate(rule.lastRunAt)}</span>
+            <span>{formatRuleDate(rule.lastRunAt)}</span>
             <span className="opacity-60">Следующий запуск:</span>
             <span
               className={!rule.isActive ? 'line-through opacity-40' : undefined}
             >
-              {rule.isActive ? formatDate(rule.nextRunAt) : 'Приостановлено'}
+              {rule.isActive
+                ? formatRuleDate(rule.nextRunAt)
+                : 'Приостановлено'}
             </span>
           </div>
         </div>
 
         {/* Amount */}
         <div className="text-xl font-semibold tabular-nums shrink-0">
-          {Number(rule.amount).toLocaleString('ru-RU', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}{' '}
-          ₽
+          {formatRuleAmount(rule.amount)} ₽
         </div>
       </ItemContent>
 

@@ -13,6 +13,7 @@ import { PlusIcon } from 'lucide-react'
 const ROUTE_LABELS: Record<string, { label: string; showAddButton: boolean }> =
   {
     transactions: { label: 'Транзакции', showAddButton: true },
+    'bank-import': { label: 'Импорт выписки', showAddButton: false },
     recurring: { label: 'Запланированные платежи', showAddButton: true },
     receivables: { label: 'Дебиторская задолженность', showAddButton: false },
     payables: { label: 'Платежи и обязательства', showAddButton: false },

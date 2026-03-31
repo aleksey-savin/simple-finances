@@ -190,6 +190,27 @@
       "when": 1774486601070,
       "tag": "0026_tiresome_leader",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1774530944939,
+      "tag": "0027_mysterious_colossus",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1774531566503,
+      "tag": "0028_perpetual_genesis",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1774958576476,
+      "tag": "0029_dapper_squirrel_girl",
+      "breakpoints": true
     }
   ]
 }

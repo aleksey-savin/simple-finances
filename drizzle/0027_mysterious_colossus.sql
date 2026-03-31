@@ -1,0 +1,1 @@
+ALTER TABLE "current_account" ADD COLUMN "account_number" numeric;

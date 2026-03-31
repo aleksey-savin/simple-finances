@@ -38,6 +38,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
 } from 'lucide-react'
+import { Card } from './card'
 
 // ─── DataTable ────────────────────────────────────────────────────────────────
 
@@ -46,6 +47,8 @@ interface DataTableProps<TData> {
   data: TData[]
   /** Render prop — receives the table instance to build a custom toolbar */
   toolbar?: (table: ReactTable<TData>) => React.ReactNode
+  /** Optional custom tbody renderer for pages that need grouped rows */
+  renderBody?: (table: ReactTable<TData>) => React.ReactNode
   initialSorting?: SortingState
   /** Page sizes shown in the pagination dropdown.  Defaults to [10, 20, 50, 100] */
   pageSizes?: number[]
@@ -56,6 +59,7 @@ export function DataTable<TData>({
   columns,
   data,
   toolbar,
+  renderBody,
   initialSorting = [],
   pageSizes = [10, 20, 50, 100],
   defaultPageSize = 20,
@@ -89,9 +93,9 @@ export function DataTable<TData>({
 
   return (
     <div className="flex flex-col gap-4">
-      {toolbar?.(table)}
+      <Card className="p-4">{toolbar?.(table)}</Card>
 
-      <div className="border overflow-hidden">
+      <Card className="p-4">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -126,7 +130,9 @@ export function DataTable<TData>({
           </TableHeader>
 
           <TableBody>
-            {table.getRowModel().rows.length > 0 ? (
+            {renderBody ? (
+              renderBody(table)
+            ) : table.getRowModel().rows.length > 0 ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
@@ -161,7 +167,7 @@ export function DataTable<TData>({
             )}
           </TableBody>
         </Table>
-      </div>
+      </Card>
 
       <DataTablePagination table={table} pageSizes={pageSizes} />
     </div>

@@ -7,10 +7,11 @@ import {
   invoice,
   currentAccountUser,
   currentAccount,
+  clientCounterparty,
   invoiceTag,
 } from '#/db/schema'
 import { eq, inArray, isNull } from 'drizzle-orm'
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 
 import { toast } from 'sonner'
 import z from 'zod'
@@ -18,6 +19,8 @@ import {
   type ColumnDef,
   type FilterFn,
   type Table,
+  flexRender,
+  type Row as TableRowModel,
 } from '@tanstack/react-table'
 import { DataTable, DataTableColumnHeader } from '#/components/ui/data-table'
 import { Badge } from '#/components/ui/badge'
@@ -61,6 +64,9 @@ import {
 import { TagPicker, TagChips, type TagItem } from '#/components/ui/tag-picker'
 import { TagSummaryPanel } from '#/components/ui/tag-summary-panel'
 import { syncRecurringRulesForAccounts } from '#/lib/recurring'
+import { getPaymentState } from '#/lib/invoice-payment'
+import { Card } from '#/components/ui/card'
+import { TableCell, TableRow } from '#/components/ui/table'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -100,6 +106,9 @@ const fetchReceivables = createServerFn().handler(async () => {
         currentAccount: { columns: { id: true, name: true } },
         counterparty: { columns: { id: true, name: true } },
         createdByUser: { columns: { id: true, name: true } },
+        settlements: {
+          columns: { amount: true, settledAt: true },
+        },
       },
       orderBy: (t, { asc }) => asc(t.createdAt),
     }),
@@ -110,16 +119,75 @@ const fetchReceivables = createServerFn().handler(async () => {
     db.query.counterparty.findMany({ columns: { id: true, name: true } }),
   ])
 
+  const normalizedRows = rows
+    .map((row) => {
+      const paymentState = getPaymentState({
+        amount: row.amount,
+        paidAt: row.paidAt,
+        settlements: row.settlements,
+      })
+
+      return {
+        ...row,
+        paidAt: paymentState.effectivePaidAt,
+        manualPaid: paymentState.manualPaid,
+        settledAmount: paymentState.settledAmount,
+        outstandingAmount: paymentState.outstandingAmount,
+        paymentStatus: paymentState.status,
+      }
+    })
+    .filter((row) => row.paymentStatus !== 'paid')
+
+  const counterpartyIds = [
+    ...new Set(
+      normalizedRows
+        .map((row) => row.counterparty?.id)
+        .filter((value): value is string => Boolean(value)),
+    ),
+  ]
+
+  const clientLinks =
+    counterpartyIds.length > 0
+      ? await db.query.clientCounterparty.findMany({
+          where: inArray(clientCounterparty.counterpartyId, counterpartyIds),
+          with: {
+            client: {
+              columns: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+          orderBy: (table, { asc }) => asc(table.createdAt),
+        })
+      : []
+
+  const clientByCounterpartyId = new Map<string, { id: string; name: string }>()
+
+  for (const link of clientLinks) {
+    if (!clientByCounterpartyId.has(link.counterpartyId)) {
+      clientByCounterpartyId.set(link.counterpartyId, link.client)
+    }
+  }
+
+  const rowsWithClients = normalizedRows.map((row) => ({
+    ...row,
+    client: row.counterparty
+      ? (clientByCounterpartyId.get(row.counterparty.id) ?? null)
+      : null,
+  }))
+
   // Unique categories from the returned rows
   const categoryMap = new Map<string, string>()
-  for (const r of rows) categoryMap.set(r.category.id, r.category.name)
+  for (const r of rowsWithClients)
+    categoryMap.set(r.category.id, r.category.name)
   const categories = [...categoryMap.entries()].map(([id, name]) => ({
     id,
     name,
   }))
 
   // Fetch tags for all income rows
-  const incomeIds = rows.map((r) => r.id)
+  const incomeIds = rowsWithClients.map((r) => r.id)
   const incomeTagRows =
     incomeIds.length > 0
       ? await db.query.invoiceTag.findMany({
@@ -153,6 +221,11 @@ const fetchReceivables = createServerFn().handler(async () => {
           paidAt: true,
           kind: true,
         },
+        with: {
+          settlements: {
+            columns: { amount: true, settledAt: true },
+          },
+        },
       },
       tag: { columns: { id: true } },
     },
@@ -163,18 +236,40 @@ const fetchReceivables = createServerFn().handler(async () => {
         .filter((it) => it.tag.id === t.id)
         .reduce(
           (s, it) =>
-            s + Number(rows.find((r) => r.id === it.invoiceId)?.amount ?? 0),
+            s +
+            Number(
+              rowsWithClients.find((r) => r.id === it.invoiceId)
+                ?.outstandingAmount ?? 0,
+            ),
           0,
         )
       const expenseTotal = allExpenseTags
-        .filter(
-          (et) =>
-            et.tag.id === t.id &&
-            et.invoice.kind === 'payable' &&
-            accountIdSet.has(et.invoice.currentAccountId) &&
-            !et.invoice.paidAt,
-        )
-        .reduce((s, et) => s + Number(et.invoice.amount), 0)
+        .filter((et) => {
+          if (
+            et.tag.id !== t.id ||
+            et.invoice.kind !== 'payable' ||
+            !accountIdSet.has(et.invoice.currentAccountId)
+          ) {
+            return false
+          }
+
+          const paymentState = getPaymentState({
+            amount: et.invoice.amount,
+            paidAt: et.invoice.paidAt,
+            settlements: et.invoice.settlements,
+          })
+
+          return paymentState.status !== 'paid'
+        })
+        .reduce((s, et) => {
+          const paymentState = getPaymentState({
+            amount: et.invoice.amount,
+            paidAt: et.invoice.paidAt,
+            settlements: et.invoice.settlements,
+          })
+
+          return s + paymentState.outstandingAmount
+        }, 0)
       return {
         tag: { id: t.id, name: t.name, color: t.color },
         expenseTotal,
@@ -185,7 +280,7 @@ const fetchReceivables = createServerFn().handler(async () => {
     .filter((t) => t.expenseTotal > 0 || t.incomeTotal > 0)
 
   return {
-    rows,
+    rows: rowsWithClients,
     accounts,
     categories,
     counterparties,
@@ -261,6 +356,16 @@ function formatCurrency(n: number) {
   })
 }
 
+function pluralRecords(n: number): string {
+  const mod10 = n % 10
+  const mod100 = n % 100
+  if (mod10 === 1 && mod100 !== 11) return 'запись'
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) {
+    return 'записи'
+  }
+  return 'записей'
+}
+
 function getDueMeta(dueDate: Date | string | null | undefined) {
   if (!dueDate) return { isOverdue: false, daysLeft: null }
   const now = new Date()
@@ -297,9 +402,10 @@ const overdueFilterFn: FilterFn<IncomeRow> = (
 }
 overdueFilterFn.autoRemove = (val) => !val
 
-type IncomeStatus = 'overdue' | 'soon' | 'ontime' | 'nodate'
+type IncomeStatus = 'partial' | 'overdue' | 'soon' | 'ontime' | 'nodate'
 
 function getIncomeStatus(row: IncomeRow): IncomeStatus {
+  if (row.paymentStatus === 'partial') return 'partial'
   if (!row.dueDate) return 'nodate'
   const { isOverdue, daysLeft } = getDueMeta(row.dueDate)
   if (isOverdue) return 'overdue'
@@ -517,8 +623,14 @@ function ReceivablesPage() {
             className="justify-end w-full"
           />
         ),
-        cell: ({ getValue }) => (
-          <span className="font-semibold tabular-nums text-green-600 block text-right">
+        cell: ({ getValue, row }) => (
+          <span
+            className={`font-semibold tabular-nums block text-right ${
+              row.original.paymentStatus === 'partial'
+                ? 'text-amber-600'
+                : 'text-green-600'
+            }`}
+          >
             +{formatCurrency(getValue() as number)} ₽
           </span>
         ),
@@ -577,6 +689,13 @@ function ReceivablesPage() {
         filterFn: statusFilterFn,
         accessorFn: (row) => getIncomeStatus(row),
         cell: ({ row }) => {
+          if (row.original.paymentStatus === 'partial')
+            return (
+              <Badge className="text-xs bg-amber-500 text-white border-transparent whitespace-nowrap">
+                Частично получено
+              </Badge>
+            )
+
           const { dueDate } = row.original
           if (!dueDate)
             return (
@@ -636,22 +755,24 @@ function ReceivablesPage() {
         size: 80,
         cell: ({ row }) => (
           <div className="flex items-center gap-1 justify-end">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-8 text-green-600 hover:text-green-700 hover:bg-green-50"
-                    onClick={() => handleTogglePaid(row.original)}
-                  >
-                    <Circle className="size-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Отметить как полученное</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            {row.original.paidAt && (
+            {row.original.paymentStatus !== 'paid' && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+                      onClick={() => handleTogglePaid(row.original)}
+                    >
+                      <Circle className="size-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Отметить как полученное</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            {row.original.paymentStatus === 'paid' && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -676,23 +797,24 @@ function ReceivablesPage() {
                 </Tooltip>
               </TooltipProvider>
             )}
-            {!row.original.paidAt && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={() => setDeleteTarget(row.original)}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Удалить</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
+            {row.original.paymentStatus !== 'paid' &&
+              row.original.settledAmount === 0 && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => setDeleteTarget(row.original)}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Удалить</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
           </div>
         ),
         meta: { cellClassName: 'text-right' },
@@ -703,13 +825,15 @@ function ReceivablesPage() {
   )
 
   // ── Stats from all rows (before table filtering) ───────────────────────────
-  const totalAll = rows.reduce((s, r) => s + Number(r.amount), 0)
-  const overdueAll = rows.filter((r) => getDueMeta(r.dueDate).isOverdue).length
+  const totalAll = rows.reduce((s, r) => s + r.outstandingAmount, 0)
+  const overdueAll = rows.filter(
+    (r) => r.paymentStatus !== 'paid' && getDueMeta(r.dueDate).isOverdue,
+  ).length
 
   return (
     <>
       {/* Page header */}
-      <div className="flex flex-wrap items-start justify-end gap-4">
+      <Card className="flex flex-wrap gap-4 p-4">
         <div className="flex gap-3">
           <div className="border px-4 py-2 text-sm">
             <p className="text-muted-foreground">Всего ожидается</p>
@@ -726,13 +850,16 @@ function ReceivablesPage() {
             </div>
           )}
         </div>
-      </div>
+      </Card>
 
       {/* Table */}
       <DataTable
         columns={columns}
         data={rows}
         initialSorting={[{ id: 'dueDate', desc: false }]}
+        renderBody={(table) =>
+          renderReceivablesTableBody(table, columns.length)
+        }
         toolbar={(table) => (
           <Toolbar
             table={table}
@@ -833,6 +960,7 @@ function Toolbar({
     }),
   )
   const statusOptions: MultiSelectOption[] = [
+    { value: 'partial', label: 'Частично получен' },
     { value: 'overdue', label: 'Просрочен' },
     { value: 'soon', label: 'Скоро' },
     { value: 'ontime', label: 'В срок' },
@@ -849,11 +977,13 @@ function Toolbar({
 
   const filteredRows = table.getFilteredRowModel().rows
   const filteredTotal = filteredRows.reduce(
-    (s, r) => s + Number(r.original.amount),
+    (s, r) => s + r.original.outstandingAmount,
     0,
   )
   const filteredOverdue = filteredRows.filter(
-    (r) => getDueMeta(r.original.dueDate).isOverdue,
+    (r) =>
+      r.original.paymentStatus !== 'paid' &&
+      getDueMeta(r.original.dueDate).isOverdue,
   ).length
 
   return (
@@ -971,4 +1101,157 @@ function Toolbar({
       </div>
     </div>
   )
+}
+
+function renderReceivablesTableBody(
+  table: Table<IncomeRow>,
+  columnsCount: number,
+) {
+  const rows = table.getRowModel().rows
+
+  if (rows.length === 0) {
+    return (
+      <TableRow>
+        <TableCell
+          colSpan={columnsCount}
+          className="h-32 text-center text-muted-foreground"
+        >
+          Ничего не найдено
+        </TableCell>
+      </TableRow>
+    )
+  }
+
+  const groupedRows = groupReceivableRows(rows)
+
+  return groupedRows.map((entry) => {
+    if (entry.kind === 'row') {
+      return renderReceivableRow(entry.row)
+    }
+
+    const total = entry.rows.reduce(
+      (sum, row) => sum + row.original.outstandingAmount,
+      0,
+    )
+    const counterparties = [
+      ...new Set(
+        entry.rows
+          .map((row) => row.original.counterparty?.name)
+          .filter((value): value is string => Boolean(value)),
+      ),
+    ]
+
+    return (
+      <Fragment key={`client-group-${entry.client.id}`}>
+        <TableRow className="bg-muted/35 hover:bg-muted/35">
+          <TableCell colSpan={columnsCount} className="py-2.5">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <div className="flex items-center gap-2">
+                <span className="font-medium">{entry.client.name}</span>
+                <Badge variant="secondary" className="text-[11px] font-normal">
+                  Клиент
+                </Badge>
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {entry.rows.length} {pluralRecords(entry.rows.length)}
+              </span>
+              {counterparties.length > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  {counterparties.join(', ')}
+                </span>
+              )}
+              <span className="ml-auto text-sm font-semibold text-green-600 tabular-nums">
+                {formatCurrency(total)} ₽
+              </span>
+            </div>
+          </TableCell>
+        </TableRow>
+        {entry.rows.map((row, index) =>
+          renderReceivableRow(
+            row,
+            index === entry.rows.length - 1 ? 'border-b-4 border-b-border' : '',
+          ),
+        )}
+      </Fragment>
+    )
+  })
+}
+
+function renderReceivableRow(
+  row: TableRowModel<IncomeRow>,
+  className?: string,
+) {
+  return (
+    <TableRow
+      key={row.id}
+      data-state={row.getIsSelected() ? 'selected' : undefined}
+      className={className}
+    >
+      {row.getVisibleCells().map((cell) => (
+        <TableCell
+          key={cell.id}
+          className={
+            cell.column.columnDef.meta?.cellClassName as string | undefined
+          }
+        >
+          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+        </TableCell>
+      ))}
+    </TableRow>
+  )
+}
+
+function groupReceivableRows(rows: TableRowModel<IncomeRow>[]) {
+  const clientCounts = new Map<string, number>()
+
+  for (const row of rows) {
+    if (row.original.client?.id) {
+      clientCounts.set(
+        row.original.client.id,
+        (clientCounts.get(row.original.client.id) ?? 0) + 1,
+      )
+    }
+  }
+
+  const groups: (
+    | { kind: 'row'; row: TableRowModel<IncomeRow> }
+    | {
+        kind: 'client'
+        client: NonNullable<IncomeRow['client']>
+        rows: TableRowModel<IncomeRow>[]
+      }
+  )[] = []
+  const groupByClientId = new Map<
+    string,
+    {
+      kind: 'client'
+      client: NonNullable<IncomeRow['client']>
+      rows: TableRowModel<IncomeRow>[]
+    }
+  >()
+
+  for (const row of rows) {
+    const client = row.original.client
+
+    if (!client || (clientCounts.get(client.id) ?? 0) < 2) {
+      groups.push({ kind: 'row', row })
+      continue
+    }
+
+    const existing = groupByClientId.get(client.id)
+    if (existing) {
+      existing.rows.push(row)
+      continue
+    }
+
+    const nextGroup = {
+      kind: 'client' as const,
+      client,
+      rows: [row],
+    }
+    groupByClientId.set(client.id, nextGroup)
+    groups.push(nextGroup)
+  }
+
+  return groups
 }

@@ -64,6 +64,8 @@ import {
 import { TagPicker, TagChips, type TagItem } from '#/components/ui/tag-picker'
 import { TagSummaryPanel } from '#/components/ui/tag-summary-panel'
 import { syncRecurringRulesForAccounts } from '#/lib/recurring'
+import { getPaymentState } from '#/lib/invoice-payment'
+import { Card } from '#/components/ui/card'
 
 // ─── Normalised row shared by both tables ─────────────────────────────────────
 
@@ -81,6 +83,10 @@ export type ExpenseRow = {
   paidAt: string | null
   /** ISO string | null  — always null for projected rows */
   archivedAt: string | null
+  manualPaid: boolean
+  settledAmount: number
+  outstandingAmount: number
+  paymentStatus: 'unpaid' | 'partial' | 'paid'
   category: { id: string; name: string }
   currentAccount: { id: string; name: string }
   counterpartyId: string | null
@@ -134,10 +140,16 @@ const fetchPayables = createServerFn().handler(async () => {
     year: 'numeric',
   })
 
-  const withRelations = {
+  const baseWithRelations = {
     category: { columns: { id: true as const, name: true as const } },
     currentAccount: { columns: { id: true as const, name: true as const } },
     counterparty: { columns: { id: true as const, name: true as const } },
+  }
+  const invoiceWithRelations = {
+    ...baseWithRelations,
+    settlements: {
+      columns: { amount: true as const, settledAt: true as const },
+    },
   }
 
   const [
@@ -156,7 +168,7 @@ const fetchPayables = createServerFn().handler(async () => {
         lte(invoice.createdAt, monthEnd),
         isNull(invoice.archivedAt),
       ),
-      with: withRelations,
+      with: invoiceWithRelations,
       orderBy: (t, { asc }) => asc(t.createdAt),
     }),
 
@@ -168,7 +180,7 @@ const fetchPayables = createServerFn().handler(async () => {
         lt(invoice.createdAt, monthStart),
         isNull(invoice.archivedAt),
       ),
-      with: withRelations,
+      with: invoiceWithRelations,
       orderBy: (t, { asc }) => asc(t.createdAt),
     }),
 
@@ -179,7 +191,7 @@ const fetchPayables = createServerFn().handler(async () => {
         eq(recurringRule.type, 'payable'),
         eq(recurringRule.isActive, true),
       ),
-      with: withRelations,
+      with: baseWithRelations,
     }),
 
     db.query.currentAccount.findMany({
@@ -221,6 +233,10 @@ const fetchPayables = createServerFn().handler(async () => {
           dueDate: dueDate?.toISOString() ?? null,
           paidAt: null,
           archivedAt: null,
+          manualPaid: false,
+          settledAmount: 0,
+          outstandingAmount: Number(rule.amount),
+          paymentStatus: 'unpaid',
           category: rule.category,
           currentAccount: rule.currentAccount,
           counterpartyId: rule.counterpartyId ?? null,
@@ -238,38 +254,45 @@ const fetchPayables = createServerFn().handler(async () => {
 
   // ── Normalise real rows ────────────────────────────────────────────────────
 
-  const toRow = (
-    r: (typeof realCurrentMonth)[number],
-    paid: string | null,
-  ): ExpenseRow => ({
-    id: r.id,
-    amount: r.amount,
-    description: r.description,
-    categoryId: r.categoryId,
-    currentAccountId: r.currentAccountId,
-    createdAt: r.createdAt.toISOString(),
-    dueDate: r.dueDate ? r.dueDate.toISOString() : null,
-    paidAt: paid,
-    archivedAt: r.archivedAt ? r.archivedAt.toISOString() : null,
-    category: r.category,
-    currentAccount: r.currentAccount,
-    counterpartyId: r.counterpartyId ?? null,
-    counterparty: r.counterparty ?? null,
-    isProjected: false,
-  })
+  const toRow = (r: (typeof realCurrentMonth)[number]): ExpenseRow => {
+    const paymentState = getPaymentState({
+      amount: r.amount,
+      paidAt: r.paidAt,
+      settlements: r.settlements,
+    })
+
+    return {
+      id: r.id,
+      amount: r.amount,
+      description: r.description,
+      categoryId: r.categoryId,
+      currentAccountId: r.currentAccountId,
+      createdAt: r.createdAt.toISOString(),
+      dueDate: r.dueDate ? r.dueDate.toISOString() : null,
+      paidAt: paymentState.effectivePaidAt?.toISOString() ?? null,
+      archivedAt: r.archivedAt ? r.archivedAt.toISOString() : null,
+      manualPaid: paymentState.manualPaid,
+      settledAmount: paymentState.settledAmount,
+      outstandingAmount: paymentState.outstandingAmount,
+      paymentStatus: paymentState.status,
+      category: r.category,
+      currentAccount: r.currentAccount,
+      counterpartyId: r.counterpartyId ?? null,
+      counterparty: r.counterparty ?? null,
+      isProjected: false,
+    }
+  }
 
   const currentMonth: ExpenseRow[] = [
-    ...realCurrentMonth.map((r) =>
-      toRow(r, r.paidAt ? r.paidAt.toISOString() : null),
-    ),
+    ...realCurrentMonth.map((r) => toRow(r)),
     ...projected,
   ].sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   )
 
-  const previousUnpaid: ExpenseRow[] = previousUnpaidRaw.map((r) =>
-    toRow(r, r.paidAt ? r.paidAt.toISOString() : null),
-  )
+  const previousUnpaid: ExpenseRow[] = previousUnpaidRaw
+    .map((r) => toRow(r))
+    .filter((row) => row.paymentStatus !== 'paid')
 
   // ── Unique category list across all rows ───────────────────────────────────
 
@@ -322,6 +345,11 @@ const fetchPayables = createServerFn().handler(async () => {
           paidAt: true,
           kind: true,
         },
+        with: {
+          settlements: {
+            columns: { amount: true, settledAt: true },
+          },
+        },
       },
       tag: { columns: { id: true } },
     },
@@ -339,18 +367,44 @@ const fetchPayables = createServerFn().handler(async () => {
       })
       .reduce((s, et) => {
         const exp = expenseById.get(et.invoiceId)
-        return s + Number(exp?.amount ?? 0)
+        if (!exp) return s
+
+        const paymentState = getPaymentState({
+          amount: exp.amount,
+          paidAt: exp.paidAt,
+          settlements: exp.settlements,
+        })
+
+        return s + paymentState.outstandingAmount
       }, 0)
 
     const incomeTotal = allIncomeTags
-      .filter(
-        (it) =>
-          it.tag.id === t.id &&
-          it.invoice.kind === 'receivable' &&
-          accountIdSet.has(it.invoice.currentAccountId) &&
-          !it.invoice.paidAt,
-      )
-      .reduce((s, it) => s + Number(it.invoice.amount), 0)
+      .filter((it) => {
+        if (
+          it.tag.id !== t.id ||
+          it.invoice.kind !== 'receivable' ||
+          !accountIdSet.has(it.invoice.currentAccountId)
+        ) {
+          return false
+        }
+
+        const paymentState = getPaymentState({
+          amount: it.invoice.amount,
+          paidAt: it.invoice.paidAt,
+          settlements: it.invoice.settlements,
+        })
+
+        return paymentState.status !== 'paid'
+      })
+      .reduce((s, it) => {
+        const paymentState = getPaymentState({
+          amount: it.invoice.amount,
+          paidAt: it.invoice.paidAt,
+          settlements: it.invoice.settlements,
+        })
+
+        return s + paymentState.outstandingAmount
+      }, 0)
 
     return {
       tag: { id: t.id, name: t.name, color: t.color },
@@ -480,6 +534,7 @@ overdueFilterFn.autoRemove = (v) => !v
 
 type ExpenseStatus =
   | 'paid'
+  | 'partial'
   | 'projected'
   | 'overdue'
   | 'soon'
@@ -488,7 +543,8 @@ type ExpenseStatus =
 
 function getExpenseStatus(row: ExpenseRow): ExpenseStatus {
   if (row.isProjected) return 'projected'
-  if (row.paidAt) return 'paid'
+  if (row.paymentStatus === 'paid') return 'paid'
+  if (row.paymentStatus === 'partial') return 'partial'
   if (!row.dueDate) return 'nodate'
   const { isOverdue, daysLeft } = getDueMeta(row.dueDate)
   if (isOverdue) return 'overdue'
@@ -517,13 +573,20 @@ function StatusBadge({ row }: { row: ExpenseRow }) {
       </Badge>
     )
 
-  if (row.paidAt)
+  if (row.paymentStatus === 'paid')
     return (
       <Badge
         variant="outline"
         className="text-xs text-green-600 border-green-200 whitespace-nowrap"
       >
         Оплачено
+      </Badge>
+    )
+
+  if (row.paymentStatus === 'partial')
+    return (
+      <Badge className="text-xs bg-amber-500 text-white border-transparent whitespace-nowrap">
+        Частично оплачено
       </Badge>
     )
 
@@ -608,7 +671,7 @@ function ActionButtons({
 
   return (
     <div className="flex items-center gap-1 justify-end">
-      {!row.paidAt && (
+      {row.paymentStatus !== 'paid' && (
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -625,7 +688,7 @@ function ActionButtons({
           </Tooltip>
         </TooltipProvider>
       )}
-      {row.paidAt && (
+      {row.paymentStatus === 'paid' && (
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -648,7 +711,7 @@ function ActionButtons({
           </Tooltip>
         </TooltipProvider>
       )}
-      {!row.paidAt && (
+      {row.paymentStatus !== 'paid' && row.settledAmount === 0 && (
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -765,9 +828,11 @@ function buildColumns(
           className={`font-semibold tabular-nums block text-right ${
             row.original.isProjected
               ? 'text-muted-foreground'
-              : row.original.paidAt
+              : row.original.paymentStatus === 'paid'
                 ? 'text-foreground/60 line-through'
-                : 'text-red-500'
+                : row.original.paymentStatus === 'partial'
+                  ? 'text-amber-600'
+                  : 'text-red-500'
           }`}
         >
           −{formatCurrency(getValue() as number)} ₽
@@ -899,6 +964,7 @@ function Toolbar({
     { value: 'soon', label: 'Скоро' },
     { value: 'ontime', label: 'В срок' },
     { value: 'nodate', label: 'Без срока' },
+    { value: 'partial', label: 'Частично оплачен' },
     { value: 'paid', label: 'Оплачено' },
     { value: 'projected', label: 'Запланировано' },
   ]
@@ -919,11 +985,14 @@ function Toolbar({
 
   const filteredRows = table.getFilteredRowModel().rows
   const filteredTotal = filteredRows.reduce(
-    (s, r) => s + Number(r.original.amount),
+    (s, r) => s + r.original.outstandingAmount,
     0,
   )
   const filteredOverdue = filteredRows.filter(
-    (r) => !r.original.isProjected && getDueMeta(r.original.dueDate).isOverdue,
+    (r) =>
+      !r.original.isProjected &&
+      r.original.paymentStatus !== 'paid' &&
+      getDueMeta(r.original.dueDate).isOverdue,
   ).length
 
   return (
@@ -1205,26 +1274,38 @@ function PayablesPage() {
   // ── Summary stats ──────────────────────────────────────────────────────────
 
   const currentMonthUnpaid = currentMonth
-    .filter((r) => !r.paidAt)
-    .reduce((s, r) => s + Number(r.amount), 0)
+    .filter((r) => r.paymentStatus !== 'paid')
+    .reduce((s, r) => s + r.outstandingAmount, 0)
 
-  const currentMonthPaid = currentMonth
-    .filter((r) => r.paidAt)
-    .reduce((s, r) => s + Number(r.amount), 0)
+  const currentMonthPaid = currentMonth.reduce(
+    (s, r) =>
+      s +
+      (r.paymentStatus === 'paid'
+        ? Number(r.amount)
+        : r.paymentStatus === 'partial'
+          ? r.settledAmount
+          : 0),
+    0,
+  )
 
-  const previousTotal = previousUnpaid.reduce((s, r) => s + Number(r.amount), 0)
+  const previousTotal = previousUnpaid.reduce(
+    (s, r) => s + r.outstandingAmount,
+    0,
+  )
 
   const overdueCount = [
     ...currentMonth.filter((r) => !r.isProjected),
     ...previousUnpaid,
-  ].filter((r) => !r.paidAt && getDueMeta(r.dueDate).isOverdue).length
+  ].filter(
+    (r) => r.paymentStatus !== 'paid' && getDueMeta(r.dueDate).isOverdue,
+  ).length
 
   const projectedCount = currentMonth.filter((r) => r.isProjected).length
 
   return (
     <>
       {/* ── Page header ──────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-start justify-end gap-4">
+      <Card className="flex flex-wrap items-start justify-end p-4">
         {/* Stat cards */}
         <div className="flex flex-wrap gap-3">
           <div className="border px-4 py-2 text-sm min-w-35">
@@ -1235,7 +1316,7 @@ function PayablesPage() {
           </div>
 
           {currentMonthPaid > 0 && (
-            <div className="border px-4 py-2 text-sm min-w-35">
+            <div className="border px-4 text-sm min-w-35">
               <p className="text-muted-foreground">Оплачено (месяц)</p>
               <p className="text-lg font-semibold text-foreground/60 tabular-nums">
                 {formatCurrency(currentMonthPaid)} ₽
@@ -1244,7 +1325,7 @@ function PayablesPage() {
           )}
 
           {previousTotal > 0 && (
-            <div className="border border-orange-200 bg-orange-50 px-4 py-2 text-sm min-w-35">
+            <div className="border border-orange-200 bg-orange-50 px-4 text-sm min-w-35">
               <p className="text-orange-700">Долг прошлых периодов</p>
               <p className="text-lg font-semibold text-orange-600 tabular-nums">
                 {formatCurrency(previousTotal)} ₽
@@ -1261,10 +1342,10 @@ function PayablesPage() {
             </div>
           )}
         </div>
-      </div>
+      </Card>
 
       {/* ── Current month ─────────────────────────────────────────────────── */}
-      <section className="flex flex-col gap-4">
+      <div className="flex flex-col">
         <div className="flex items-center gap-3">
           {projectedCount > 0 && (
             <Badge variant="outline" className="text-xs gap-1 h-6">
@@ -1289,7 +1370,7 @@ function PayablesPage() {
             />
           )}
         />
-      </section>
+      </div>
 
       {/* ── Previous unpaid ───────────────────────────────────────────────── */}
       {previousUnpaid.length > 0 && (

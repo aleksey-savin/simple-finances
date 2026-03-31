@@ -20,19 +20,22 @@ export const EditAccountForm = ({
 }) => {
   const router = useRouter()
   const queryClient = useQueryClient()
+  const editAccountFormSchema = updateAccountSchema.omit({ id: true })
 
   const form = useForm({
     defaultValues: {
       name: account.name ?? '',
+      accountNumber: account.accountNumber ?? '',
       acceptPayments: account.acceptPayments ?? false,
     },
-    validators: { onSubmit: updateAccountSchema },
+    validators: { onSubmit: editAccountFormSchema },
     onSubmit: async ({ value }) => {
       try {
         await updateAccount({
           data: {
             id: account.id,
             name: value.name,
+            accountNumber: value.accountNumber,
             acceptPayments: value.acceptPayments,
           },
         })
@@ -69,6 +72,31 @@ export const EditAccountForm = ({
                 onChange={(e) => field.handleChange(e.target.value)}
                 aria-invalid={isInvalid}
                 autoComplete="off"
+              />
+              {isInvalid && <FieldError errors={field.state.meta.errors} />}
+            </Field>
+          )
+        }}
+      </form.Field>
+
+      <form.Field name="accountNumber">
+        {(field) => {
+          const isInvalid =
+            field.state.meta.isTouched && !field.state.meta.isValid
+          return (
+            <Field data-invalid={isInvalid}>
+              <FieldLabel htmlFor={field.name}>Номер счёта</FieldLabel>
+              <Input
+                id={field.name}
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(e) =>
+                  field.handleChange(e.target.value.replace(/\D/g, ''))
+                }
+                aria-invalid={isInvalid}
+                autoComplete="off"
+                inputMode="numeric"
+                placeholder="Введите номер счёта"
               />
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>

@@ -3,6 +3,8 @@ import type {
   bankTransaction,
   bankTransactionDirectionEnum,
   category,
+  client,
+  clientCounterparty,
   counterparty,
   counterpartyTypeEnum,
   currentAccount,
@@ -74,6 +76,15 @@ export type TagUpdate = Partial<TagInsert> & { id: string }
 export type Counterparty = typeof counterparty.$inferSelect
 export type CounterpartyInsert = typeof counterparty.$inferInsert
 export type CounterpartyUpdate = Partial<CounterpartyInsert> & { id: string }
+
+// ─── Client ───────────────────────────────────────────────────────────────────
+
+export type Client = typeof client.$inferSelect
+export type ClientInsert = typeof client.$inferInsert
+export type ClientUpdate = Partial<ClientInsert> & { id: string }
+
+export type ClientCounterparty = typeof clientCounterparty.$inferSelect
+export type ClientCounterpartyInsert = typeof clientCounterparty.$inferInsert
 
 // ─── Expense ──────────────────────────────────────────────────────────────────
 

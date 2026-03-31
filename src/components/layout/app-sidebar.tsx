@@ -18,10 +18,12 @@ import {
   BanknoteArrowDown,
   BanknoteArrowUp,
   CalendarCheck,
+  FileSpreadsheet,
   User,
   Wallet,
 } from 'lucide-react'
 import Accounts from '../accounts'
+import Clients from '../clients'
 import CounterParties from '../counterparties'
 import Categories from '../categories'
 
@@ -38,6 +40,11 @@ const navMain = [
         title: 'Расписание платежей',
         icon: <CalendarCheck className="size-5" />,
         url: '/recurring',
+      },
+      {
+        title: 'Импорт выписки',
+        icon: <FileSpreadsheet className="size-5" />,
+        url: '/bank-import',
       },
     ],
   },
@@ -103,6 +110,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarFooter>
         <div className="flex flex-col w-auto sm:hidden gap-2 mx-4">
           <Accounts />
+          <Clients />
           <CounterParties />
           <Categories />
         </div>

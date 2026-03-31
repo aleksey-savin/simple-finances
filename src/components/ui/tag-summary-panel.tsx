@@ -32,7 +32,7 @@ interface TagSummaryPanelProps {
 }
 
 export function TagSummaryPanel({ totals, className }: TagSummaryPanelProps) {
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(true)
   const [hidden, setHidden] = useState(false)
 
   if (hidden) {

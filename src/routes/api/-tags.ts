@@ -5,6 +5,7 @@ import { db } from '#/db'
 import { tag, invoiceTag, currentAccountUser, invoice } from '#/db/schema'
 import { and, eq, inArray } from 'drizzle-orm'
 import z from 'zod'
+import { getPaymentState } from '#/lib/invoice-payment'
 
 // ─── Fetch all tags ────────────────────────────────────────────────────────────
 
@@ -244,6 +245,11 @@ export const fetchTagTotals = createServerFn().handler(async () => {
           paidAt: true,
           kind: true,
         },
+        with: {
+          settlements: {
+            columns: { amount: true, settledAt: true },
+          },
+        },
       },
       tag: { columns: { id: true } },
     },
@@ -259,9 +265,21 @@ export const fetchTagTotals = createServerFn().handler(async () => {
           entry.tag.id === t.id &&
           entry.invoice.kind === 'payable' &&
           accountIdSet.has(entry.invoice.currentAccountId) &&
-          !entry.invoice.paidAt,
+          getPaymentState({
+            amount: entry.invoice.amount,
+            paidAt: entry.invoice.paidAt,
+            settlements: entry.invoice.settlements,
+          }).status !== 'paid',
       )
-      .reduce((s, entry) => s + Number(entry.invoice.amount), 0)
+      .reduce((s, entry) => {
+        const paymentState = getPaymentState({
+          amount: entry.invoice.amount,
+          paidAt: entry.invoice.paidAt,
+          settlements: entry.invoice.settlements,
+        })
+
+        return s + paymentState.outstandingAmount
+      }, 0)
 
     const incomeTotal = invoiceTags
       .filter(
@@ -269,9 +287,21 @@ export const fetchTagTotals = createServerFn().handler(async () => {
           entry.tag.id === t.id &&
           entry.invoice.kind === 'receivable' &&
           accountIdSet.has(entry.invoice.currentAccountId) &&
-          !entry.invoice.paidAt,
+          getPaymentState({
+            amount: entry.invoice.amount,
+            paidAt: entry.invoice.paidAt,
+            settlements: entry.invoice.settlements,
+          }).status !== 'paid',
       )
-      .reduce((s, entry) => s + Number(entry.invoice.amount), 0)
+      .reduce((s, entry) => {
+        const paymentState = getPaymentState({
+          amount: entry.invoice.amount,
+          paidAt: entry.invoice.paidAt,
+          settlements: entry.invoice.settlements,
+        })
+
+        return s + paymentState.outstandingAmount
+      }, 0)
 
     return {
       tag: t,
