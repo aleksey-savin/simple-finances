@@ -271,11 +271,13 @@ export function InvoiceForm({
                     <SelectValue placeholder="Выберите категорию" />
                   </SelectTrigger>
                   <SelectContent>
-                    {filteredCategories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
+                    {filteredCategories
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
@@ -304,11 +306,13 @@ export function InvoiceForm({
                     <SelectValue placeholder="Выберите счёт" />
                   </SelectTrigger>
                   <SelectContent>
-                    {accounts.map((account) => (
-                      <SelectItem key={account.id} value={account.id}>
-                        {account.name}
-                      </SelectItem>
-                    ))}
+                    {accounts
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map((account) => (
+                        <SelectItem key={account.id} value={account.id}>
+                          {account.name}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
@@ -347,14 +351,16 @@ export function InvoiceForm({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="__none__">Не указан</SelectItem>
-                          {counterparties.map((counterparty) => (
-                            <SelectItem
-                              key={counterparty.id}
-                              value={counterparty.id}
-                            >
-                              {counterparty.name}
-                            </SelectItem>
-                          ))}
+                          {counterparties
+                            .sort((a, b) => a.name.localeCompare(b.name))
+                            .map((counterparty) => (
+                              <SelectItem
+                                key={counterparty.id}
+                                value={counterparty.id}
+                              >
+                                {counterparty.name}
+                              </SelectItem>
+                            ))}
                         </SelectContent>
                       </Select>
                     </Field>
