@@ -29,6 +29,7 @@ export const fetchCounterparties = createServerFn().handler(async () => {
     with: {
       linkedUser: { columns: { id: true, name: true, email: true } },
     },
+    orderBy: (counterparty, { asc }) => [asc(counterparty.name)],
   })
 })
 

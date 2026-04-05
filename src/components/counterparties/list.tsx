@@ -1,8 +1,9 @@
-import { useState } from 'react'
-import { Pencil, User, UserCheck } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Pencil, Search, User, UserCheck, X } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   Item,
   ItemActions,
@@ -81,6 +82,27 @@ export const CounterpartiesList = () => {
     queryFn: () => fetchCounterparties(),
   })
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+
+  const filteredCounterparties = useMemo(() => {
+    const query = search.trim().toLowerCase()
+
+    if (!query) {
+      return counterparties
+    }
+
+    return counterparties.filter((counterparty) => {
+      const haystack = [
+        counterparty.name,
+        counterparty.fullName ?? '',
+        counterparty.tin ?? '',
+      ]
+        .join(' ')
+        .toLowerCase()
+
+      return haystack.includes(query)
+    })
+  }, [counterparties, search])
 
   return (
     <>
@@ -88,15 +110,39 @@ export const CounterpartiesList = () => {
         <p className="text-sm font-medium text-muted-foreground">
           Все контрагенты ({counterparties.length})
         </p>
+        <div className="relative mt-3">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Поиск по названию или ИНН"
+            className="pr-9 pl-9"
+          />
+          {search && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="absolute top-1/2 right-1 size-7 -translate-y-1/2"
+              onClick={() => setSearch('')}
+            >
+              <X className="size-3.5" />
+            </Button>
+          )}
+        </div>
       </div>
       <div className="flex-1 overflow-y-auto px-6 pb-4">
         {counterparties.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-6">
             Нет добавленных контрагентов
           </p>
+        ) : filteredCounterparties.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-6">
+            Ничего не найдено
+          </p>
         ) : (
           <div className="flex flex-col gap-1.5">
-            {counterparties.map((c) => (
+            {filteredCounterparties.map((c) => (
               <CounterpartyRow
                 key={c.id}
                 counterparty={c}

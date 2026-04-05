@@ -22,6 +22,7 @@ import {
   settlement,
 } from '#/db/schema'
 import {
+  buildBankTransactionImportKey,
   extractDocumentRefs,
   normalizeBankDocumentNumber,
   normalizeCounterpartyName,
@@ -180,56 +181,55 @@ export const importBankStatement = createServerFn({ method: 'POST' })
       },
     })
 
-    const existingDocumentNumbers = new Set<string>()
     const existingExternalIds = new Set<string>()
 
     for (const row of existingTransactions) {
-      if (row.externalId) {
-        existingExternalIds.add(row.externalId)
-        if (row.externalId.startsWith('doc:')) {
-          existingDocumentNumbers.add(row.externalId.slice(4))
-        }
+      const payload = parseStoredBankTransactionPayload(row.rawPayload)
+      if (payload) {
+        existingExternalIds.add(
+          buildBankTransactionImportKey({
+            documentNumber: payload.documentNumber,
+            documentDate: payload.documentDate,
+            bookedAt: payload.bookedAt,
+            amount: payload.amount,
+            direction: payload.direction,
+            accountNumber: payload.accountNumber,
+            counterpartyName: payload.counterpartyName,
+            description: payload.description,
+          }),
+        )
+        continue
       }
 
-      const payload = parseStoredBankTransactionPayload(row.rawPayload)
-      const documentNumber = normalizeBankDocumentNumber(
-        payload?.documentNumber,
-      )
-
-      if (documentNumber) {
-        existingDocumentNumbers.add(documentNumber)
+      if (row.externalId) {
+        existingExternalIds.add(row.externalId)
       }
     }
 
     const importedIds = await db.transaction(async (tx) => {
       const nextIds: string[] = []
-      const seenDocumentNumbers = new Set<string>()
       const seenExternalIds = new Set<string>()
 
       for (const document of parsed.documents) {
-        const documentNumber = normalizeBankDocumentNumber(
-          document.documentNumber,
-        )
+        const importKey = buildBankTransactionImportKey({
+          documentNumber: document.documentNumber,
+          documentDate: document.documentDate,
+          bookedAt: document.bookedAt,
+          amount: document.amount,
+          direction: document.direction,
+          accountNumber: document.accountNumber,
+          counterpartyName: document.counterpartyName,
+          description: document.description,
+        })
 
-        if (documentNumber) {
-          if (
-            existingDocumentNumbers.has(documentNumber) ||
-            seenDocumentNumbers.has(documentNumber)
-          ) {
-            continue
-          }
-
-          seenDocumentNumbers.add(documentNumber)
-        } else {
-          if (
-            existingExternalIds.has(document.externalId) ||
-            seenExternalIds.has(document.externalId)
-          ) {
-            continue
-          }
-
-          seenExternalIds.add(document.externalId)
+        if (
+          existingExternalIds.has(importKey) ||
+          seenExternalIds.has(importKey)
+        ) {
+          continue
         }
+
+        seenExternalIds.add(importKey)
 
         const payload = JSON.stringify(document)
         const [created] = await tx
@@ -243,7 +243,7 @@ export const importBankStatement = createServerFn({ method: 'POST' })
             valueDate: document.valueDate,
             description: document.description,
             counterpartyNameRaw: document.counterpartyName,
-            externalId: document.externalId,
+            externalId: importKey,
             rawPayload: payload,
           })
           .onConflictDoNothing({
@@ -258,11 +258,7 @@ export const importBankStatement = createServerFn({ method: 'POST' })
           continue
         }
 
-        if (documentNumber) {
-          existingDocumentNumbers.add(documentNumber)
-        } else {
-          existingExternalIds.add(document.externalId)
-        }
+        existingExternalIds.add(importKey)
 
         nextIds.push(created.id)
       }

@@ -124,6 +124,53 @@ export function normalizeBankDocumentNumber(value: string | null | undefined) {
   return normalized ? normalized : null
 }
 
+export function buildBankTransactionImportKey(input: {
+  documentNumber?: string | null
+  documentDate?: Date | string | null
+  bookedAt?: Date | string | null
+  amount: string
+  direction: BankTransactionDirection
+  accountNumber?: string | null
+  counterpartyName?: string | null
+  description?: string | null
+}) {
+  const documentNumber = normalizeBankDocumentNumber(input.documentNumber)
+
+  if (documentNumber) {
+    const effectiveDate =
+      normalizeImportKeyDate(input.documentDate) ??
+      normalizeImportKeyDate(input.bookedAt) ??
+      ''
+
+    return [
+      'doc',
+      documentNumber,
+      effectiveDate,
+      input.direction,
+      input.amount,
+      input.accountNumber ?? '',
+    ].join(':')
+  }
+
+  const payload = [
+    input.accountNumber ?? '',
+    input.direction,
+    input.amount,
+    normalizeImportKeyDate(input.bookedAt) ?? '',
+    normalizeCounterpartyName(input.counterpartyName),
+    (input.description ?? '').trim().toLowerCase(),
+  ].join('|')
+
+  let hash = 2166136261
+
+  for (let index = 0; index < payload.length; index += 1) {
+    hash ^= payload.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+  }
+
+  return `tx_${Math.abs(hash).toString(16)}`
+}
+
 function buildDocument(
   fields: Record<string, string>,
   statementAccountNumber?: string,
@@ -179,12 +226,13 @@ function buildDocument(
     recipientName,
     recipientTin,
     recipientAccount,
-    externalId: buildExternalId({
+    externalId: buildBankTransactionImportKey({
       documentNumber,
+      documentDate: parseStatementDate(fields.Дата),
+      bookedAt,
       accountNumber,
       direction,
       amount,
-      bookedAt,
       counterpartyName,
       description: fields.НазначениеПлатежа,
     }),
@@ -214,39 +262,6 @@ function inferDirection(
   return 'debit'
 }
 
-function buildExternalId(input: {
-  accountNumber: string | null
-  direction: BankTransactionDirection
-  amount: string
-  bookedAt: Date
-  documentNumber?: string
-  counterpartyName?: string | null
-  description?: string | null
-}) {
-  const documentNumber = normalizeBankDocumentNumber(input.documentNumber)
-  if (documentNumber) {
-    return `doc:${documentNumber}`
-  }
-
-  const payload = [
-    input.accountNumber ?? '',
-    input.direction,
-    input.amount,
-    input.bookedAt.toISOString().slice(0, 10),
-    normalizeCounterpartyName(input.counterpartyName),
-    (input.description ?? '').trim().toLowerCase(),
-  ].join('|')
-
-  let hash = 2166136261
-
-  for (let index = 0; index < payload.length; index += 1) {
-    hash ^= payload.charCodeAt(index)
-    hash = Math.imul(hash, 16777619)
-  }
-
-  return `tx_${Math.abs(hash).toString(16)}`
-}
-
 function parseStatementDate(value: string | null | undefined) {
   if (!value) return null
 
@@ -259,6 +274,15 @@ function parseStatementDate(value: string | null | undefined) {
 
 function normalizeAmount(value: string | null | undefined) {
   return Number(value ?? 0).toFixed(2)
+}
+
+function normalizeImportKeyDate(value: Date | string | null | undefined) {
+  if (!value) return null
+
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+
+  return date.toISOString().slice(0, 10)
 }
 
 function normalizeTin(value: string | null | undefined) {
