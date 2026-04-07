@@ -53,15 +53,12 @@ export function BankImportList({
 
   if (isMobile) {
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-6">
         {rows.map((row) => (
-          <Card key={row.id} className="flex flex-col gap-4 p-5">
+          <Card key={row.id} className="flex flex-col gap-6 p-6">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex flex-col gap-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="outline">
-                    {row.direction === 'credit' ? 'Поступление' : 'Списание'}
-                  </Badge>
                   <StatusBadge status={row.status} />
                   <Badge variant="secondary">{formatDate(row.bookedAt)}</Badge>
                   <Badge variant="secondary">{row.currentAccount.name}</Badge>
@@ -84,9 +81,7 @@ export function BankImportList({
               <div className="flex flex-col items-start gap-1 lg:items-end">
                 <div
                   className={`text-xl font-semibold tabular-nums ${
-                    row.direction === 'credit'
-                      ? 'text-green-600'
-                      : 'text-red-500'
+                    row.direction === 'credit' ? 'text-success' : ''
                   }`}
                 >
                   {row.direction === 'credit' ? '+' : '−'}
@@ -169,7 +164,7 @@ export function BankImportList({
   }
 
   return (
-    <Card className="mt-4 hidden sm:block p-4">
+    <Card className="hidden sm:block p-6">
       <Table>
         <TableHeader>
           <TableRow>
@@ -193,16 +188,16 @@ export function BankImportList({
               </TableRow>
               {group.items.map((row) => (
                 <TableRow key={row.id}>
-                  <TableCell className="min-w-xl whitespace-normal">
+                  <TableCell className="min-w-xs whitespace-normal">
                     <div className="flex flex-col gap-1">
                       <span>{row.description ?? 'Без назначения платежа'}</span>
                       <BankTransactionSettlementsDetails row={row} />
                     </div>
                   </TableCell>
 
-                  <TableCell className="min-w-md whitespace-normal">
+                  <TableCell className="max-w-0">
                     <div className="flex flex-col gap-1">
-                      <span>
+                      <span className="whitespace-normal wrap-break-word">
                         {row.counterpartyName ?? 'Контрагент не определён'}
                       </span>
                       <span className="text-xs text-muted-foreground">
@@ -213,7 +208,7 @@ export function BankImportList({
                     </div>
                   </TableCell>
 
-                  <TableCell className="max-w-0 whitespace-normal">
+                  <TableCell className="max-w-0 flex flex-col items-start gap-2">
                     <div className="flex flex-col items-start gap-2">
                       <StatusBadge status={row.status} />
                       {row.status !== 'matched' && (
@@ -230,12 +225,10 @@ export function BankImportList({
                     </div>
                   </TableCell>
 
-                  <TableCell className="text-right">
+                  <TableCell className="max-w-0 text-right">
                     <div
                       className={`font-semibold tabular-nums ${
-                        row.direction === 'credit'
-                          ? 'text-green-600'
-                          : 'text-red-500'
+                        row.direction === 'credit' && 'text-success'
                       }`}
                     >
                       {row.direction === 'credit' ? '+' : '−'}
@@ -293,7 +286,7 @@ function StatusBadge({
 }) {
   if (status === 'matched') {
     return (
-      <Badge className="gap-1 bg-green-600 text-white">
+      <Badge variant="success" className="gap-1">
         <CheckCircle2 className="size-3.5" />
         Полностью разнесено
       </Badge>
@@ -301,7 +294,7 @@ function StatusBadge({
   }
 
   if (status === 'partial') {
-    return <Badge className="bg-amber-500 text-white">Частично разнесено</Badge>
+    return <Badge className="bg-warning text-white">Частично разнесено</Badge>
   }
 
   return <Badge variant="outline">Без привязки</Badge>

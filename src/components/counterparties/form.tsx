@@ -316,7 +316,7 @@ export const CounterpartyForm = ({
               onChange={(e) => setEmailInput(e.target.value)}
               className={
                 foundUser
-                  ? 'border-green-500 pr-8'
+                  ? 'border-primary pr-8'
                   : notFound
                     ? 'border-destructive pr-8'
                     : emailInput
@@ -346,7 +346,7 @@ export const CounterpartyForm = ({
             </p>
           )}
           {!isSearching && foundUser && (
-            <p className="flex items-center gap-1.5 text-xs text-green-600">
+            <p className="flex items-center gap-1.5 text-xs text-success">
               <UserCheck className="size-3.5" />
               {foundUser.name} ({foundUser.email})
             </p>

@@ -18,16 +18,18 @@ function NewTransactionPage() {
   const router = useRouter()
   const { categories, accounts, counterparties } =
     transactionsRoute.useLoaderData()
+  const transactionsSearch = transactionsRoute.useSearch()
 
   const [kind, setKind] = useState<'payable' | 'receivable'>('payable')
 
-  const handleClose = () => router.navigate({ to: '/transactions' })
+  const handleClose = () =>
+    router.navigate({ to: '/transactions', search: transactionsSearch })
 
   return (
     <ResponsiveDialog
       open
       onOpenChange={(open) => !open && handleClose()}
-      title="Новая транзакция"
+      title="Новая операция"
     >
       {/* Type toggle */}
       <div className="flex border overflow-hidden divide-x text-sm mb-4 shrink-0">

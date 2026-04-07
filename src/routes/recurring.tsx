@@ -175,8 +175,8 @@ function RecurringPage() {
           <p className="text-sm">Нет ни одного правила. Создайте первое!</p>
         </div>
       ) : (
-        <>
-          <Card className="flex flex-col gap-8 p-4">
+        <div className="flex flex-col gap-6">
+          <Card className="flex flex-col gap-6 p-6">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -250,12 +250,12 @@ function RecurringPage() {
           </Card>
 
           {filteredRules.length === 0 ? (
-            <Card className="mt-4 p-8 text-center text-sm text-muted-foreground">
+            <Card className="p-6 text-center text-sm text-muted-foreground">
               Ничего не найдено
             </Card>
           ) : (
             <>
-              <div className="mt-4 flex flex-col gap-3 sm:hidden">
+              <div className="flex flex-col gap-3 sm:hidden">
                 {filteredRules.map((rule) => (
                   <RuleCard
                     key={rule.id}
@@ -272,7 +272,7 @@ function RecurringPage() {
                 ))}
               </div>
 
-              <Card className="mt-4 hidden p-4 sm:block">
+              <Card className="hidden p-6 sm:block">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -312,7 +312,7 @@ function RecurringPage() {
               </Card>
             </>
           )}
-        </>
+        </div>
       )}
       <Outlet />
     </>

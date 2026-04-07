@@ -103,7 +103,7 @@ export const EditCategoryForm = ({
                 onCheckedChange={(val: boolean) => field.handleChange(val)}
               />
               <FieldLabel htmlFor={`edit-income-${category.id}`}>
-                Доходы
+                Доход
               </FieldLabel>
             </div>
           )}

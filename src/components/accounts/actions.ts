@@ -36,6 +36,7 @@ export const fetchAccounts = createServerFn().handler(async () => {
 
   const accountsData = await db.query.currentAccount.findMany({
     where: inArray(currentAccount.id, accountIds),
+    orderBy: (table, { asc }) => asc(table.name),
     with: {
       members: {
         with: {

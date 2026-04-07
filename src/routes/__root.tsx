@@ -54,7 +54,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'Доходы / расходы',
+        title: process.env.APP_TITLE,
       },
     ],
     links: [
@@ -88,7 +88,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                   <AppSidebar />
                   <SidebarInset>
                     <AppHeader />
-                    <div className="flex flex-col gap-4 p-2 sm:p-8">
+                    <div className="flex flex-col gap-4 p-2 sm:p-6">
                       {children}
                     </div>
                   </SidebarInset>

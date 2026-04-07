@@ -34,6 +34,13 @@ import {
   AlertDialogTitle,
 } from '../ui/alert-dialog'
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '../ui/dialog'
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -41,7 +48,8 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu'
 import { cn } from '#/lib/utils'
-import { TagChips, TagPicker, type TagItem } from '../ui/tag-picker'
+import { TagChips, TagPicker } from '../ui/tag-picker'
+import type { TagItem } from '../ui/tag-picker'
 
 function formatDate(date: Date): string {
   if (isToday(date)) return 'Сегодня'
@@ -92,6 +100,9 @@ export function InvoiceListItem({
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [archiveOpen, setArchiveOpen] = useState(false)
+  const [activeLinkedDocumentId, setActiveLinkedDocumentId] = useState<
+    string | null
+  >(null)
 
   const isPayable = item.kind === 'payable'
   const isLinkedReceivable = !isPayable && !!item.linkedInvoiceId
@@ -112,18 +123,29 @@ export function InvoiceListItem({
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
+  const linkedBankDocuments = (item.settlements ?? []).filter(
+    (settlement): settlement is NonNullable<Invoice['settlements']>[number] & {
+      bankTransaction: NonNullable<
+        NonNullable<Invoice['settlements']>[number]['bankTransaction']
+      >
+    } => Boolean(settlement.bankTransaction),
+  )
+  const activeLinkedDocument =
+    linkedBankDocuments.find(
+      (settlement) => settlement.bankTransaction.id === activeLinkedDocumentId,
+    ) ?? null
 
   const cfg = isPayable
     ? {
         amountPrefix: '−',
         amountColor: '',
         status: isPaid ? (
-          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-emerald-500">
+          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-success">
             <CheckCircle2 className="w-4 h-4 inline-block" />{' '}
             {`Оплачено ${paidDate}`}
           </div>
         ) : isPartial ? (
-          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-amber-500">
+          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-warning">
             <Clock className="w-4 h-4 inline-block" />{' '}
             {`Частично оплачено ${Number(item.settledAmount).toLocaleString(
               'ru-RU',
@@ -134,23 +156,23 @@ export function InvoiceListItem({
             )} из ${amountFormatted}`}
           </div>
         ) : (
-          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-amber-500">
+          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-warning">
             <Clock className="w-4 h-4 inline-block" />{' '}
-            {dueDateLabel ?? 'Ожидает оплаты'}
+            {dueDateLabel}
           </div>
         ),
         entityName: 'Расход',
       }
     : {
         amountPrefix: '+',
-        amountColor: 'text-emerald-600',
+        amountColor: 'text-success',
         status: isPaid ? (
-          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-emerald-500">
+          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-success">
             <CheckCircle2 className="w-4 h-4 inline-block" />{' '}
             {`Оплачено ${paidDate}`}
           </div>
         ) : isPartial ? (
-          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-amber-500">
+          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-warning">
             <Clock className="w-4 h-4 inline-block" />{' '}
             {`Частично оплачено ${Number(item.settledAmount).toLocaleString(
               'ru-RU',
@@ -161,9 +183,9 @@ export function InvoiceListItem({
             )} из ${amountFormatted}`}
           </div>
         ) : (
-          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-amber-500">
+          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-warning">
             <Clock className="w-4 h-4 inline-block" />{' '}
-            {dueDateLabel ?? 'Ожидает оплаты'}
+            {dueDateLabel}
           </div>
         ),
         entityName: 'Доход',
@@ -311,20 +333,34 @@ export function InvoiceListItem({
           className="gap-1 px-1.5 py-0 text-xs text-muted-foreground"
         >
           <Link2 className="size-3" />
-          {item.createdByUser
-            ? `Создан автоматически · ${item.createdByUser.name}`
-            : 'Создан автоматически'}
+          {`Создан автоматически · ${item.createdByUser.name}`}
         </Badge>
       ) : (
         sharedAccountIds.has(item.currentAccount.id) &&
-        item.createdByUser && (
-          <span className="text-xs text-muted-foreground">
-            {item.createdByUser.name}
-          </span>
-        )
+        <span className="text-xs text-muted-foreground">
+          {item.createdByUser.name}
+        </span>
       )}
     </div>
   )
+
+  const linkedDocumentsRow =
+    linkedBankDocuments.length > 0 ? (
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="text-xs text-muted-foreground">Связанные документы:</span>
+        {linkedBankDocuments.map((settlement) => (
+          <button
+            key={settlement.bankTransaction.id}
+            type="button"
+            className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            onClick={() => setActiveLinkedDocumentId(settlement.bankTransaction.id)}
+          >
+            <Link2 className="size-3" />
+            Банк · {formatDate(new Date(settlement.bankTransaction.bookedAt))}
+          </button>
+        ))}
+      </div>
+    ) : null
 
   const dialogs = (
     <>
@@ -360,6 +396,82 @@ export function InvoiceListItem({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <Dialog
+        open={activeLinkedDocument !== null}
+        onOpenChange={(open) => !open && setActiveLinkedDocumentId(null)}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Связанный банковский документ</DialogTitle>
+            <DialogDescription>
+              Детали банковской операции, связанной с этой записью.
+            </DialogDescription>
+          </DialogHeader>
+
+          {activeLinkedDocument && (
+            <div className="flex flex-col gap-4 text-sm">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <LinkedDocumentField
+                  label="Дата операции"
+                  value={formatDetailedDate(
+                    new Date(activeLinkedDocument.bankTransaction.bookedAt),
+                  )}
+                />
+                <LinkedDocumentField
+                  label="Сумма операции"
+                  value={`${activeLinkedDocument.bankTransaction.direction === 'credit' ? '+' : '−'}${formatMoney(activeLinkedDocument.bankTransaction.amount)} ₽`}
+                />
+                <LinkedDocumentField
+                  label="Связано с записью"
+                  value={`${formatMoney(activeLinkedDocument.amount)} ₽`}
+                />
+                <LinkedDocumentField
+                  label="Счёт"
+                  value={activeLinkedDocument.bankTransaction.currentAccount.name}
+                />
+              </div>
+
+              <LinkedDocumentField
+                label="Контрагент"
+                value={
+                  activeLinkedDocument.bankTransaction.counterpartyNameRaw ??
+                  'Контрагент не определён'
+                }
+              />
+              <LinkedDocumentField
+                label="Назначение"
+                value={
+                  activeLinkedDocument.bankTransaction.description ??
+                  'Без назначения платежа'
+                }
+              />
+
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    void router.navigate({
+                      to: '/bank-import',
+                      search: {
+                        accountId:
+                          activeLinkedDocument.bankTransaction.currentAccountId,
+                        page: 1,
+                        pageSize: 25,
+                        search: '',
+                        direction: 'all',
+                        status: 'all',
+                      },
+                    })
+                  }}
+                >
+                  Открыть импорт
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   )
 
@@ -389,6 +501,7 @@ export function InvoiceListItem({
                 {item.description}
               </div>
               <TagChips tags={assignedTags} />
+              {linkedDocumentsRow}
             </div>
           </TableCell>
           <TableCell
@@ -472,6 +585,7 @@ export function InvoiceListItem({
 
             {badgesRow}
             <TagChips tags={assignedTags} />
+            {linkedDocumentsRow}
 
             <div className="flex items-center justify-end pt-1">
               <div className="flex flex-col items-end gap-0.5">
@@ -500,4 +614,36 @@ export function InvoiceListItem({
       </Item>
     </>
   )
+}
+
+function LinkedDocumentField({
+  label,
+  value,
+}: {
+  label: string
+  value: string
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span>{value}</span>
+    </div>
+  )
+}
+
+function formatDetailedDate(date: Date) {
+  return date.toLocaleString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+function formatMoney(value: string) {
+  return Number(value).toLocaleString('ru-RU', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
 }

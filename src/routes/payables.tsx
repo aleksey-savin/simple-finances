@@ -1,125 +1,56 @@
-import { createFileRoute, useRouter } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
-import { auth } from 'utils/auth'
+import { Cron } from 'croner'
+import { and, eq, gte, inArray, isNull, lt, lte } from 'drizzle-orm'
+
+import { PayablesPage } from '#/components/payables/payables-page'
+import type {
+  ExpenseRow,
+  PayablesLoaderData,
+  TagsMap,
+} from '#/components/payables/types'
 import { db } from '#/db'
 import {
+  currentAccount,
+  currentAccountUser,
   invoice,
   invoiceTag,
   recurringRule,
-  currentAccountUser,
-  currentAccount,
 } from '#/db/schema'
-import { and, eq, gte, inArray, isNull, lt, lte } from 'drizzle-orm'
-import { useMemo, useState } from 'react'
-
-import { toast } from 'sonner'
-import z from 'zod'
-import { Cron } from 'croner'
-import {
-  type ColumnDef,
-  type FilterFn,
-  type Table,
-} from '@tanstack/react-table'
-import { DataTable, DataTableColumnHeader } from '#/components/ui/data-table'
-import { Badge } from '#/components/ui/badge'
-import { Button } from '#/components/ui/button'
-import { Input } from '#/components/ui/input'
-import {
-  MultiSelectCombobox,
-  type MultiSelectOption,
-} from '#/components/ui/multi-select-combobox'
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '#/components/ui/dialog'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '#/components/ui/tooltip'
-import {
-  AlertTriangle,
-  Archive,
-  ArchiveRestore,
-  Circle,
-  Clock,
-  Search,
-  Trash2,
-  X,
-} from 'lucide-react'
-import {
-  fetchTags,
-  createTag,
-  addExpenseTag,
-  removeExpenseTag,
-  fetchTagTotals,
-} from '#/routes/api/-tags'
-import { TagPicker, TagChips, type TagItem } from '#/components/ui/tag-picker'
-import { TagSummaryPanel } from '#/components/ui/tag-summary-panel'
-import { syncRecurringRulesForAccounts } from '#/lib/recurring'
 import { getPaymentState } from '#/lib/invoice-payment'
-import { Card } from '#/components/ui/card'
-
-// ─── Normalised row shared by both tables ─────────────────────────────────────
-
-export type ExpenseRow = {
-  id: string
-  amount: string
-  description: string
-  categoryId: string
-  currentAccountId: string
-  /** ISO string */
-  createdAt: string
-  /** ISO string | null */
-  dueDate: string | null
-  /** ISO string | null  — always null for projected rows */
-  paidAt: string | null
-  /** ISO string | null  — always null for projected rows */
-  archivedAt: string | null
-  manualPaid: boolean
-  settledAmount: number
-  outstandingAmount: number
-  paymentStatus: 'unpaid' | 'partial' | 'paid'
-  category: { id: string; name: string }
-  currentAccount: { id: string; name: string }
-  counterpartyId: string | null
-  counterparty: { id: string; name: string } | null
-  /** true  → virtual row generated from a recurring rule (not yet in DB) */
-  isProjected: boolean
-}
-
-type TagsMap = Record<string, TagItem[]>
-
-// ─── Server functions ─────────────────────────────────────────────────────────
+import { syncRecurringRulesForAccounts } from '#/lib/recurring'
+import { auth } from 'utils/auth'
 
 const fetchPayables = createServerFn().handler(async () => {
   const request = getRequest()
   const session = await auth.api.getSession({ headers: request.headers })
-  if (!session?.user?.id) throw new Error('Не авторизован')
+
+  if (!session || !session.user.id) {
+    throw new Error('Не авторизован')
+  }
 
   const memberships = await db
     .select({ currentAccountId: currentAccountUser.currentAccountId })
     .from(currentAccountUser)
     .where(eq(currentAccountUser.userId, session.user.id))
 
-  const accountIds = memberships.map((m) => m.currentAccountId)
+  const accountIds = memberships.map(
+    (membership) => membership.currentAccountId,
+  )
 
   if (accountIds.length === 0) {
     return {
-      currentMonth: [] as ExpenseRow[],
-      previousUnpaid: [] as ExpenseRow[],
-      accounts: [] as { id: string; name: string }[],
-      categories: [] as { id: string; name: string }[],
-      counterparties: [] as { id: string; name: string }[],
+      currentMonth: [],
+      previousUnpaid: [],
+      accounts: [],
+      categories: [],
+      counterparties: [],
       monthLabel: '',
-    }
+      tagsMap: {},
+      allTags: [],
+      tagTotals: [],
+    } satisfies PayablesLoaderData
   }
 
   await syncRecurringRulesForAccounts(accountIds)
@@ -159,7 +90,6 @@ const fetchPayables = createServerFn().handler(async () => {
     accounts,
     counterparties,
   ] = await Promise.all([
-    // All expenses this month (paid + unpaid), excluding archived
     db.query.invoice.findMany({
       where: and(
         inArray(invoice.currentAccountId, accountIds),
@@ -169,10 +99,8 @@ const fetchPayables = createServerFn().handler(async () => {
         isNull(invoice.archivedAt),
       ),
       with: invoiceWithRelations,
-      orderBy: (t, { asc }) => asc(t.createdAt),
+      orderBy: (table, { asc }) => asc(table.createdAt),
     }),
-
-    // All non-archived expenses from months before the current one
     db.query.invoice.findMany({
       where: and(
         inArray(invoice.currentAccountId, accountIds),
@@ -181,10 +109,8 @@ const fetchPayables = createServerFn().handler(async () => {
         isNull(invoice.archivedAt),
       ),
       with: invoiceWithRelations,
-      orderBy: (t, { asc }) => asc(t.createdAt),
+      orderBy: (table, { asc }) => asc(table.createdAt),
     }),
-
-    // Active payable recurring rules
     db.query.recurringRule.findMany({
       where: and(
         inArray(recurringRule.currentAccountId, accountIds),
@@ -193,7 +119,6 @@ const fetchPayables = createServerFn().handler(async () => {
       ),
       with: baseWithRelations,
     }),
-
     db.query.currentAccount.findMany({
       where: inArray(currentAccount.id, accountIds),
       columns: { id: true, name: true },
@@ -201,15 +126,11 @@ const fetchPayables = createServerFn().handler(async () => {
     db.query.counterparty.findMany({ columns: { id: true, name: true } }),
   ])
 
-  // ── Project recurring rules onto the remaining days of the month ───────────
-
   const projected: ExpenseRow[] = []
 
   for (const rule of activeRules) {
     try {
       const job = new Cron(rule.cronExpression, { paused: true })
-      // Start from the later of (now, monthStart) so we don't generate entries
-      // that correspond to already-created real rows earlier in the month.
       let after = now > monthStart ? now : monthStart
 
       for (let guard = 0; guard < 200; guard++) {
@@ -225,6 +146,7 @@ const fetchPayables = createServerFn().handler(async () => {
 
         projected.push({
           id: `projected::${rule.id}::${next.getTime()}`,
+          periodGroup: 'current-month',
           amount: rule.amount,
           description: rule.description,
           categoryId: rule.categoryId,
@@ -244,67 +166,70 @@ const fetchPayables = createServerFn().handler(async () => {
           isProjected: true,
         })
 
-        // Advance past this occurrence (add 1 ms to avoid repeating it)
         after = new Date(next.getTime() + 1)
       }
     } catch {
-      // Skip rules with invalid cron expressions
+      // Skip rules with invalid cron expressions.
     }
   }
 
-  // ── Normalise real rows ────────────────────────────────────────────────────
-
-  const toRow = (r: (typeof realCurrentMonth)[number]): ExpenseRow => {
+  const toRow = (record: (typeof realCurrentMonth)[number]): ExpenseRow => {
     const paymentState = getPaymentState({
-      amount: r.amount,
-      paidAt: r.paidAt,
-      settlements: r.settlements,
+      amount: record.amount,
+      paidAt: record.paidAt,
+      settlements: record.settlements,
     })
 
     return {
-      id: r.id,
-      amount: r.amount,
-      description: r.description,
-      categoryId: r.categoryId,
-      currentAccountId: r.currentAccountId,
-      createdAt: r.createdAt.toISOString(),
-      dueDate: r.dueDate ? r.dueDate.toISOString() : null,
+      id: record.id,
+      periodGroup: 'current-month',
+      amount: record.amount,
+      description: record.description,
+      categoryId: record.categoryId,
+      currentAccountId: record.currentAccountId,
+      createdAt: record.createdAt.toISOString(),
+      dueDate: record.dueDate ? record.dueDate.toISOString() : null,
       paidAt: paymentState.effectivePaidAt?.toISOString() ?? null,
-      archivedAt: r.archivedAt ? r.archivedAt.toISOString() : null,
+      archivedAt: record.archivedAt ? record.archivedAt.toISOString() : null,
       manualPaid: paymentState.manualPaid,
       settledAmount: paymentState.settledAmount,
       outstandingAmount: paymentState.outstandingAmount,
       paymentStatus: paymentState.status,
-      category: r.category,
-      currentAccount: r.currentAccount,
-      counterpartyId: r.counterpartyId ?? null,
-      counterparty: r.counterparty ?? null,
+      category: record.category,
+      currentAccount: record.currentAccount,
+      counterpartyId: record.counterpartyId ?? null,
+      counterparty: record.counterparty ?? null,
       isProjected: false,
     }
   }
 
   const currentMonth: ExpenseRow[] = [
-    ...realCurrentMonth.map((r) => toRow(r)),
+    ...realCurrentMonth.map((record) => toRow(record)),
     ...projected,
   ].sort(
-    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    (left, right) =>
+      new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime(),
   )
 
-  const previousUnpaid: ExpenseRow[] = previousUnpaidRaw
-    .map((r) => toRow(r))
+  const previousUnpaid = previousUnpaidRaw
+    .map((record) => ({
+      ...toRow(record),
+      periodGroup: 'previous-periods' as const,
+    }))
     .filter((row) => row.paymentStatus !== 'paid')
 
-  // ── Unique category list across all rows ───────────────────────────────────
+  const categoryMap = new Map<string, string>()
+  for (const row of [...currentMonth, ...previousUnpaid]) {
+    categoryMap.set(row.category.id, row.category.name)
+  }
+  const categories = [...categoryMap.entries()].map(([id, name]) => ({
+    id,
+    name,
+  }))
 
-  const catMap = new Map<string, string>()
-  for (const r of [...currentMonth, ...previousUnpaid])
-    catMap.set(r.category.id, r.category.name)
-  const categories = [...catMap.entries()].map(([id, name]) => ({ id, name }))
-
-  // Fetch tags for all real expense ids
   const realIds = [
-    ...realCurrentMonth.map((r) => r.id),
-    ...previousUnpaidRaw.map((r) => r.id),
+    ...realCurrentMonth.map((record) => record.id),
+    ...previousUnpaidRaw.map((record) => record.id),
   ]
 
   const expenseTagRows =
@@ -316,24 +241,28 @@ const fetchPayables = createServerFn().handler(async () => {
       : []
 
   const tagsMap: TagsMap = {}
-  for (const et of expenseTagRows) {
-    if (!tagsMap[et.invoiceId]) tagsMap[et.invoiceId] = []
-    tagsMap[et.invoiceId].push({
-      id: et.tag.id,
-      name: et.tag.name,
-      color: et.tag.color,
+  for (const expenseTag of expenseTagRows) {
+    if (!tagsMap[expenseTag.invoiceId]) {
+      tagsMap[expenseTag.invoiceId] = []
+    }
+
+    tagsMap[expenseTag.invoiceId]?.push({
+      id: expenseTag.tag.id,
+      name: expenseTag.tag.name,
+      color: expenseTag.tag.color,
     })
   }
 
   const allTags = await db.query.tag.findMany({
-    orderBy: (t, { asc }) => asc(t.name),
+    orderBy: (table, { asc }) => asc(table.name),
   })
 
   const accountIdSet = new Set(accountIds)
-
-  // Build a lookup from invoiceId -> invoice record for amount lookups
   const expenseById = new Map(
-    [...realCurrentMonth, ...previousUnpaidRaw].map((r) => [r.id, r]),
+    [...realCurrentMonth, ...previousUnpaidRaw].map((record) => [
+      record.id,
+      record,
+    ]),
   )
 
   const allIncomeTags = await db.query.invoiceTag.findMany({
@@ -355,68 +284,67 @@ const fetchPayables = createServerFn().handler(async () => {
     },
   })
 
-  const tagTotalsRaw = allTags.map((t) => {
-    const expenseTotal = expenseTagRows
-      .filter((et) => {
-        const exp = expenseById.get(et.invoiceId)
-        return (
-          et.tag.id === t.id &&
-          exp !== undefined &&
-          accountIdSet.has(exp.currentAccountId)
-        )
-      })
-      .reduce((s, et) => {
-        const exp = expenseById.get(et.invoiceId)
-        if (!exp) return s
+  const tagTotals = allTags
+    .map((tag) => {
+      const expenseTotal = expenseTagRows
+        .filter((expenseTag) => {
+          const expense = expenseById.get(expenseTag.invoiceId)
 
-        const paymentState = getPaymentState({
-          amount: exp.amount,
-          paidAt: exp.paidAt,
-          settlements: exp.settlements,
+          return (
+            expenseTag.tag.id === tag.id &&
+            expense !== undefined &&
+            accountIdSet.has(expense.currentAccountId)
+          )
         })
+        .reduce((sum, expenseTag) => {
+          const expense = expenseById.get(expenseTag.invoiceId)
+          if (!expense) return sum
 
-        return s + paymentState.outstandingAmount
-      }, 0)
+          const paymentState = getPaymentState({
+            amount: expense.amount,
+            paidAt: expense.paidAt,
+            settlements: expense.settlements,
+          })
 
-    const incomeTotal = allIncomeTags
-      .filter((it) => {
-        if (
-          it.tag.id !== t.id ||
-          it.invoice.kind !== 'receivable' ||
-          !accountIdSet.has(it.invoice.currentAccountId)
-        ) {
-          return false
-        }
+          return sum + paymentState.outstandingAmount
+        }, 0)
 
-        const paymentState = getPaymentState({
-          amount: it.invoice.amount,
-          paidAt: it.invoice.paidAt,
-          settlements: it.invoice.settlements,
+      const incomeTotal = allIncomeTags
+        .filter((incomeTag) => {
+          if (
+            incomeTag.tag.id !== tag.id ||
+            incomeTag.invoice.kind !== 'receivable' ||
+            !accountIdSet.has(incomeTag.invoice.currentAccountId)
+          ) {
+            return false
+          }
+
+          const paymentState = getPaymentState({
+            amount: incomeTag.invoice.amount,
+            paidAt: incomeTag.invoice.paidAt,
+            settlements: incomeTag.invoice.settlements,
+          })
+
+          return paymentState.status !== 'paid'
         })
+        .reduce((sum, incomeTag) => {
+          const paymentState = getPaymentState({
+            amount: incomeTag.invoice.amount,
+            paidAt: incomeTag.invoice.paidAt,
+            settlements: incomeTag.invoice.settlements,
+          })
 
-        return paymentState.status !== 'paid'
-      })
-      .reduce((s, it) => {
-        const paymentState = getPaymentState({
-          amount: it.invoice.amount,
-          paidAt: it.invoice.paidAt,
-          settlements: it.invoice.settlements,
-        })
+          return sum + paymentState.outstandingAmount
+        }, 0)
 
-        return s + paymentState.outstandingAmount
-      }, 0)
-
-    return {
-      tag: { id: t.id, name: t.name, color: t.color },
-      expenseTotal,
-      incomeTotal,
-      net: incomeTotal - expenseTotal,
-    }
-  })
-
-  const tagTotals = tagTotalsRaw.filter(
-    (t) => t.expenseTotal > 0 || t.incomeTotal > 0,
-  )
+      return {
+        tag: { id: tag.id, name: tag.name, color: tag.color },
+        expenseTotal,
+        incomeTotal,
+        net: incomeTotal - expenseTotal,
+      }
+    })
+    .filter((total) => total.expenseTotal > 0 || total.incomeTotal > 0)
 
   return {
     currentMonth,
@@ -426,1027 +354,20 @@ const fetchPayables = createServerFn().handler(async () => {
     counterparties,
     monthLabel,
     tagsMap,
-    allTags: allTags.map((t) => ({
-      id: t.id,
-      name: t.name,
-      color: t.color,
+    allTags: allTags.map((tag) => ({
+      id: tag.id,
+      name: tag.name,
+      color: tag.color,
     })),
     tagTotals,
-  }
+  } satisfies PayablesLoaderData
 })
 
-// ── Mark paid ──────────────────────────────────────────────────────────────────
-
-const markPaidSchema = z.object({ id: z.string(), paid: z.boolean() })
-
-const markPaid = createServerFn({ method: 'POST' })
-  .inputValidator(markPaidSchema)
-  .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
-    await db
-      .update(invoice)
-      .set({ paidAt: data.paid ? new Date() : null })
-      .where(eq(invoice.id, data.id))
-  })
-
-// ── Archive ────────────────────────────────────────────────────────────────────
-
-const archiveExpenseSchema = z.object({ id: z.string(), archive: z.boolean() })
-
-const archiveExpense = createServerFn({ method: 'POST' })
-  .inputValidator(archiveExpenseSchema)
-  .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
-    await db
-      .update(invoice)
-      .set({ archivedAt: data.archive ? new Date() : null })
-      .where(eq(invoice.id, data.id))
-  })
-
-// ── Delete ─────────────────────────────────────────────────────────────────────
-
-const deleteExpenseSchema = z.object({ id: z.string() })
-
-const deleteExpense = createServerFn({ method: 'POST' })
-  .inputValidator(deleteExpenseSchema)
-  .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
-    await db.delete(invoice).where(eq(invoice.id, data.id))
-  })
-
-// ─── Route ────────────────────────────────────────────────────────────────────
+function PayablesRouteComponent() {
+  return <PayablesPage {...Route.useLoaderData()} />
+}
 
 export const Route = createFileRoute('/payables')({
-  component: PayablesPage,
+  component: PayablesRouteComponent,
   loader: () => fetchPayables(),
 })
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatDate(d: string | Date | null | undefined) {
-  if (!d) return null
-  return new Date(d).toLocaleDateString('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
-}
-
-function formatCurrency(n: number) {
-  return n.toLocaleString('ru-RU', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
-}
-
-function getDueMeta(dueDate: string | null | undefined) {
-  if (!dueDate) return { isOverdue: false, daysLeft: null }
-  const diff = Math.ceil(
-    (new Date(dueDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
-  )
-  return { isOverdue: diff < 0, daysLeft: diff }
-}
-
-// ─── Custom TanStack Table filter fns ─────────────────────────────────────────
-
-const idFilterFn: FilterFn<ExpenseRow> = (row, columnId, value: string[]) => {
-  if (!value?.length) return true
-  if (columnId === 'account')
-    return value.includes(row.original.currentAccount.id)
-  if (columnId === 'category') return value.includes(row.original.category.id)
-  if (columnId === 'counterparty')
-    return value.includes(row.original.counterparty?.id ?? '')
-  return true
-}
-idFilterFn.autoRemove = (v) => !v?.length
-
-const overdueFilterFn: FilterFn<ExpenseRow> = (row, _id, value: boolean) => {
-  if (!value) return true
-  return getDueMeta(row.original.dueDate).isOverdue
-}
-overdueFilterFn.autoRemove = (v) => !v
-
-type ExpenseStatus =
-  | 'paid'
-  | 'partial'
-  | 'projected'
-  | 'overdue'
-  | 'soon'
-  | 'ontime'
-  | 'nodate'
-
-function getExpenseStatus(row: ExpenseRow): ExpenseStatus {
-  if (row.isProjected) return 'projected'
-  if (row.paymentStatus === 'paid') return 'paid'
-  if (row.paymentStatus === 'partial') return 'partial'
-  if (!row.dueDate) return 'nodate'
-  const { isOverdue, daysLeft } = getDueMeta(row.dueDate)
-  if (isOverdue) return 'overdue'
-  if (daysLeft !== null && daysLeft <= 7) return 'soon'
-  return 'ontime'
-}
-
-const statusFilterFn: FilterFn<ExpenseRow> = (
-  row,
-  _id,
-  value: ExpenseStatus[],
-) => {
-  if (!value?.length) return true
-  return value.includes(getExpenseStatus(row.original))
-}
-statusFilterFn.autoRemove = (v) => !v?.length
-
-// ─── Status badge (shared by both tables) ────────────────────────────────────
-
-function StatusBadge({ row }: { row: ExpenseRow }) {
-  if (row.isProjected)
-    return (
-      <Badge variant="outline" className="text-xs gap-1 whitespace-nowrap">
-        <Clock className="size-3" />
-        Запланировано
-      </Badge>
-    )
-
-  if (row.paymentStatus === 'paid')
-    return (
-      <Badge
-        variant="outline"
-        className="text-xs text-green-600 border-green-200 whitespace-nowrap"
-      >
-        Оплачено
-      </Badge>
-    )
-
-  if (row.paymentStatus === 'partial')
-    return (
-      <Badge className="text-xs bg-amber-500 text-white border-transparent whitespace-nowrap">
-        Частично оплачено
-      </Badge>
-    )
-
-  const { dueDate } = row
-  if (!dueDate)
-    return (
-      <Badge variant="outline" className="text-xs whitespace-nowrap">
-        Без срока
-      </Badge>
-    )
-
-  const { isOverdue, daysLeft } = getDueMeta(dueDate)
-  if (isOverdue)
-    return (
-      <Badge variant="destructive" className="text-xs gap-1 whitespace-nowrap">
-        <AlertTriangle className="size-3" />
-        Просрочен
-      </Badge>
-    )
-  if (daysLeft !== null && daysLeft <= 7)
-    return (
-      <Badge className="text-xs bg-amber-500 text-white border-transparent whitespace-nowrap">
-        Скоро
-      </Badge>
-    )
-  return (
-    <Badge
-      variant="outline"
-      className="text-xs text-blue-600 border-blue-200 whitespace-nowrap"
-    >
-      В срок
-    </Badge>
-  )
-}
-
-// ─── DueDate cell (shared) ────────────────────────────────────────────────────
-
-function DueDateCell({ row }: { row: ExpenseRow }) {
-  const { dueDate, isProjected } = row
-  if (!dueDate) return <span className="text-muted-foreground text-sm">—</span>
-
-  const { isOverdue, daysLeft } = getDueMeta(dueDate)
-  return (
-    <div className="flex flex-col gap-0.5">
-      <span
-        className={`text-sm font-medium ${
-          !isProjected && isOverdue ? 'text-red-500' : ''
-        }`}
-      >
-        {formatDate(dueDate)}
-      </span>
-      {!isProjected && isOverdue && (
-        <span className="text-xs text-red-400">
-          просрочен {Math.abs(daysLeft!)} дн.
-        </span>
-      )}
-      {!isProjected && !isOverdue && daysLeft !== null && daysLeft <= 7 && (
-        <span className="text-xs text-amber-500">осталось {daysLeft} дн.</span>
-      )}
-      {isProjected && (
-        <span className="text-xs text-muted-foreground">по расписанию</span>
-      )}
-    </div>
-  )
-}
-
-// ─── Action buttons ───────────────────────────────────────────────────────────
-
-function ActionButtons({
-  row,
-  onMarkPaid,
-  onDelete,
-  onArchive,
-}: {
-  row: ExpenseRow
-  onMarkPaid: (row: ExpenseRow) => void
-  onDelete: (row: ExpenseRow) => void
-  onArchive: (row: ExpenseRow) => void
-}) {
-  // Projected rows: no actions
-  if (row.isProjected) return null
-
-  return (
-    <div className="flex items-center gap-1 justify-end">
-      {row.paymentStatus !== 'paid' && (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8 text-red-500 hover:text-red-600 hover:bg-red-50"
-                onClick={() => onMarkPaid(row)}
-              >
-                <Circle className="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Отметить как оплаченное</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      )}
-      {row.paymentStatus === 'paid' && (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8 text-muted-foreground hover:text-foreground"
-                onClick={() => onArchive(row)}
-              >
-                {row.archivedAt ? (
-                  <ArchiveRestore className="size-4" />
-                ) : (
-                  <Archive className="size-4" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              {row.archivedAt ? 'Разархивировать' : 'Архивировать'}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      )}
-      {row.paymentStatus !== 'paid' && row.settledAmount === 0 && (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                onClick={() => onDelete(row)}
-              >
-                <Trash2 className="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Удалить</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      )}
-    </div>
-  )
-}
-
-// ─── Column factory ───────────────────────────────────────────────────────────
-
-function buildColumns(
-  onMarkPaid: (row: ExpenseRow) => void,
-  onDelete: (row: ExpenseRow) => void,
-  onArchive: (row: ExpenseRow) => void,
-  tagsMap: TagsMap,
-  allTags: TagItem[],
-  onTagAdd: (expenseId: string, tag: TagItem) => Promise<void>,
-  onTagRemove: (expenseId: string, tag: TagItem) => Promise<void>,
-  onTagCreate: (name: string, color: string) => Promise<TagItem>,
-): ColumnDef<ExpenseRow, unknown>[] {
-  return [
-    {
-      id: 'counterparty',
-      accessorFn: (row) => row.counterparty?.name ?? '',
-      filterFn: idFilterFn,
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Контрагент" />
-      ),
-      cell: ({ row }) => (
-        <span className="text-muted-foreground text-sm">
-          {row.original.counterparty?.name ?? '—'}
-        </span>
-      ),
-    },
-    {
-      id: 'description',
-      accessorKey: 'description',
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Описание" />
-      ),
-      cell: ({ row }) => {
-        const tags = tagsMap[row.original.id] ?? []
-        return (
-          <div className="flex flex-col gap-0.5">
-            <div className="flex items-center gap-2">
-              <span
-                className={`font-medium wrap-break-word whitespace-normal ${
-                  row.original.isProjected ? 'text-muted-foreground' : ''
-                }`}
-              >
-                {row.original.description}
-              </span>
-              {row.original.isProjected && (
-                <Clock className="size-3.5 shrink-0 text-muted-foreground" />
-              )}
-            </div>
-            <TagChips tags={tags} />
-          </div>
-        )
-      },
-      minSize: 160,
-    },
-    {
-      id: 'category',
-      accessorFn: (row) => row.category.name,
-      filterFn: idFilterFn,
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Категория" />
-      ),
-      cell: ({ row }) => (
-        <Badge variant="secondary" className="text-xs font-normal">
-          {row.original.category.name}
-        </Badge>
-      ),
-    },
-    {
-      id: 'account',
-      accessorFn: (row) => row.currentAccount.name,
-      filterFn: idFilterFn,
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Счёт" />
-      ),
-      cell: ({ row }) => (
-        <span className="text-muted-foreground text-sm">
-          {row.original.currentAccount.name}
-        </span>
-      ),
-    },
-
-    {
-      id: 'amount',
-      accessorFn: (row) => Number(row.amount),
-      header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Сумма"
-          className="justify-end w-full"
-        />
-      ),
-      cell: ({ getValue, row }) => (
-        <span
-          className={`font-semibold tabular-nums block text-right ${
-            row.original.isProjected
-              ? 'text-muted-foreground'
-              : row.original.paymentStatus === 'paid'
-                ? 'text-foreground/60 line-through'
-                : row.original.paymentStatus === 'partial'
-                  ? 'text-amber-600'
-                  : 'text-red-500'
-          }`}
-        >
-          −{formatCurrency(getValue() as number)} ₽
-        </span>
-      ),
-      meta: { headerClassName: 'text-right', cellClassName: 'text-right' },
-    },
-    {
-      id: 'createdAt',
-      accessorFn: (row) => new Date(row.createdAt).getTime(),
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Дата создания" />
-      ),
-      cell: ({ row }) => (
-        <span className="text-sm text-muted-foreground">
-          {formatDate(row.original.createdAt)}
-        </span>
-      ),
-    },
-    {
-      id: 'dueDate',
-      accessorFn: (row) =>
-        row.dueDate ? new Date(row.dueDate).getTime() : Infinity,
-      filterFn: overdueFilterFn,
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Срок оплаты" />
-      ),
-      cell: ({ row }) => <DueDateCell row={row.original} />,
-    },
-    {
-      id: 'status',
-      enableSorting: false,
-      filterFn: statusFilterFn,
-      accessorFn: (row) => getExpenseStatus(row),
-      header: 'Статус',
-      cell: ({ row }) => <StatusBadge row={row.original} />,
-    },
-    {
-      id: 'tags',
-      enableSorting: false,
-      size: 40,
-      accessorFn: (row) => (tagsMap[row.id] ?? []).map((t) => t.id).join(','),
-      filterFn: (row, _id, value: string[]) => {
-        if (!value?.length) return true
-        return (tagsMap[row.original.id] ?? []).some((t) =>
-          value.includes(t.id),
-        )
-      },
-      header: '',
-      cell: ({ row }) => {
-        if (row.original.isProjected) return null
-        const tags = tagsMap[row.original.id] ?? []
-        return (
-          <TagPicker
-            assignedTags={tags}
-            allTags={allTags}
-            onAdd={(tag) => onTagAdd(row.original.id, tag)}
-            onRemove={(tag) => onTagRemove(row.original.id, tag)}
-            onCreate={onTagCreate}
-          />
-        )
-      },
-    },
-    {
-      id: 'actions',
-      enableSorting: false,
-      size: 80,
-      header: '',
-      cell: ({ row }) => (
-        <ActionButtons
-          row={row.original}
-          onMarkPaid={onMarkPaid}
-          onDelete={onDelete}
-          onArchive={onArchive}
-        />
-      ),
-      meta: { cellClassName: 'text-right' },
-    },
-  ]
-}
-
-// ─── Toolbar ──────────────────────────────────────────────────────────────────
-
-function Toolbar({
-  table,
-  accounts,
-  categories,
-  counterparties,
-  allTags,
-  accentColor = 'red',
-}: {
-  table: Table<ExpenseRow>
-  accounts: { id: string; name: string }[]
-  categories: { id: string; name: string }[]
-  counterparties: { id: string; name: string }[]
-  allTags: TagItem[]
-  accentColor?: 'red' | 'orange'
-}) {
-  const globalFilter = (table.getState().globalFilter as string) ?? ''
-  const accountFilter =
-    (table.getColumn('account')?.getFilterValue() as string[]) ?? []
-  const categoryFilter =
-    (table.getColumn('category')?.getFilterValue() as string[]) ?? []
-  const counterpartyFilter =
-    (table.getColumn('counterparty')?.getFilterValue() as string[]) ?? []
-  const overdueOnly =
-    (table.getColumn('dueDate')?.getFilterValue() as boolean) ?? false
-  const statusFilter =
-    (table.getColumn('status')?.getFilterValue() as ExpenseStatus[]) ?? []
-  const tagFilter =
-    (table.getColumn('tags')?.getFilterValue() as string[]) ?? []
-
-  const accountOptions: MultiSelectOption[] = accounts.map((account) => ({
-    value: account.id,
-    label: account.name,
-  }))
-  const categoryOptions: MultiSelectOption[] = categories.map((category) => ({
-    value: category.id,
-    label: category.name,
-  }))
-  const counterpartyOptions: MultiSelectOption[] = counterparties.map(
-    (counterparty) => ({
-      value: counterparty.id,
-      label: counterparty.name,
-    }),
-  )
-  const statusOptions: MultiSelectOption[] = [
-    { value: 'overdue', label: 'Просрочен' },
-    { value: 'soon', label: 'Скоро' },
-    { value: 'ontime', label: 'В срок' },
-    { value: 'nodate', label: 'Без срока' },
-    { value: 'partial', label: 'Частично оплачен' },
-    { value: 'paid', label: 'Оплачено' },
-    { value: 'projected', label: 'Запланировано' },
-  ]
-  const tagOptions: MultiSelectOption[] = allTags.map((tag) => ({
-    value: tag.id,
-    label: tag.name,
-    color: tag.color,
-  }))
-
-  const hasFilters =
-    globalFilter ||
-    accountFilter.length > 0 ||
-    categoryFilter.length > 0 ||
-    counterpartyFilter.length > 0 ||
-    overdueOnly ||
-    statusFilter.length > 0 ||
-    tagFilter.length > 0
-
-  const filteredRows = table.getFilteredRowModel().rows
-  const filteredTotal = filteredRows.reduce(
-    (s, r) => s + r.original.outstandingAmount,
-    0,
-  )
-  const filteredOverdue = filteredRows.filter(
-    (r) =>
-      !r.original.isProjected &&
-      r.original.paymentStatus !== 'paid' &&
-      getDueMeta(r.original.dueDate).isOverdue,
-  ).length
-
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-        <Input
-          placeholder="Поиск по описанию, категории, счёту…"
-          value={globalFilter}
-          onChange={(e) => table.setGlobalFilter(e.target.value)}
-          className="pl-9"
-        />
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <MultiSelectCombobox
-          options={accountOptions}
-          value={accountFilter}
-          onValueChange={(value) =>
-            table
-              .getColumn('account')
-              ?.setFilterValue(value.length ? value : undefined)
-          }
-          placeholder="Все счета"
-          searchPlaceholder="Поиск счета…"
-          emptyText="Счета не найдены"
-        />
-
-        <MultiSelectCombobox
-          options={categoryOptions}
-          value={categoryFilter}
-          onValueChange={(value) =>
-            table
-              .getColumn('category')
-              ?.setFilterValue(value.length ? value : undefined)
-          }
-          placeholder="Все категории"
-          searchPlaceholder="Поиск категории…"
-          emptyText="Категории не найдены"
-        />
-
-        {counterparties.length > 0 && (
-          <MultiSelectCombobox
-            options={counterpartyOptions}
-            value={counterpartyFilter}
-            onValueChange={(value) =>
-              table
-                .getColumn('counterparty')
-                ?.setFilterValue(value.length ? value : undefined)
-            }
-            placeholder="Все контрагенты"
-            searchPlaceholder="Поиск контрагента…"
-            emptyText="Контрагенты не найдены"
-          />
-        )}
-
-        <MultiSelectCombobox
-          options={statusOptions}
-          value={statusFilter}
-          onValueChange={(value) =>
-            table
-              .getColumn('status')
-              ?.setFilterValue(value.length ? value : undefined)
-          }
-          placeholder="Все статусы"
-          searchPlaceholder="Поиск статуса…"
-          emptyText="Статусы не найдены"
-          className="w-48"
-        />
-
-        {allTags.length > 0 && (
-          <MultiSelectCombobox
-            options={tagOptions}
-            value={tagFilter}
-            onValueChange={(value) =>
-              table
-                .getColumn('tags')
-                ?.setFilterValue(value.length ? value : undefined)
-            }
-            placeholder="Все теги"
-            searchPlaceholder="Поиск тега…"
-            emptyText="Теги не найдены"
-          />
-        )}
-
-        <Button
-          variant={overdueOnly ? 'destructive' : 'outline'}
-          size="sm"
-          className="h-8 gap-1.5"
-          onClick={() =>
-            table
-              .getColumn('dueDate')
-              ?.setFilterValue(overdueOnly ? undefined : true)
-          }
-        >
-          <AlertTriangle className="size-3.5" />
-          Только просроченные
-        </Button>
-
-        {hasFilters && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 gap-1"
-            onClick={() => {
-              table.resetColumnFilters()
-              table.setGlobalFilter('')
-            }}
-          >
-            <X className="size-3.5" />
-            Сбросить
-          </Button>
-        )}
-
-        <div className="ml-auto flex items-center gap-3 text-sm">
-          {filteredOverdue > 0 && (
-            <span className="text-red-500 font-medium">
-              {filteredOverdue} просрочено
-            </span>
-          )}
-          <span
-            className={`font-semibold tabular-nums ${
-              accentColor === 'red' ? 'text-red-500' : 'text-orange-500'
-            }`}
-          >
-            Итого: {formatCurrency(filteredTotal)} ₽
-          </span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
-function PayablesPage() {
-  const router = useRouter()
-  const {
-    currentMonth,
-    previousUnpaid,
-    accounts,
-    categories,
-    counterparties,
-    tagsMap: initialTagsMap,
-    allTags: initialAllTags,
-    tagTotals: initialTagTotals,
-  } = Route.useLoaderData()
-
-  // Local tag state (optimistic updates without full page reload)
-  const [tagsMap, setTagsMap] = useState<TagsMap>(initialTagsMap ?? {})
-  const [allTags, setAllTags] = useState<TagItem[]>(initialAllTags ?? [])
-  const [tagTotals, setTagTotals] = useState<
-    {
-      tag: { id: string; name: string; color: string }
-      expenseTotal: number
-      incomeTotal: number
-      net: number
-    }[]
-  >(initialTagTotals ?? [])
-
-  const [deleteTarget, setDeleteTarget] = useState<ExpenseRow | null>(null)
-  const [archiveTarget, setArchiveTarget] = useState<ExpenseRow | null>(null)
-
-  // Refresh tag totals from server (called after any tag mutation)
-  const refreshTotals = async () => {
-    try {
-      const [totals, tags] = await Promise.all([fetchTagTotals(), fetchTags()])
-      setTagTotals(totals)
-      setAllTags(tags.map((t) => ({ id: t.id, name: t.name, color: t.color })))
-    } catch {
-      // ignore
-    }
-  }
-
-  const handleTagAdd = async (expenseId: string, tag: TagItem) => {
-    // Optimistic update
-    setTagsMap((prev) => ({
-      ...prev,
-      [expenseId]: [
-        ...(prev[expenseId] ?? []).filter((t) => t.id !== tag.id),
-        tag,
-      ],
-    }))
-    await addExpenseTag({ data: { expenseId, tagId: tag.id } })
-    await refreshTotals()
-  }
-
-  const handleTagRemove = async (expenseId: string, tag: TagItem) => {
-    setTagsMap((prev) => ({
-      ...prev,
-      [expenseId]: (prev[expenseId] ?? []).filter((t) => t.id !== tag.id),
-    }))
-    await removeExpenseTag({ data: { expenseId, tagId: tag.id } })
-    await refreshTotals()
-  }
-
-  const handleTagCreate = async (
-    name: string,
-    color: string,
-  ): Promise<TagItem> => {
-    const created = await createTag({ data: { name, color } })
-    const newTag: TagItem = {
-      id: created.id,
-      name: created.name,
-      color: created.color,
-    }
-    setAllTags((prev) =>
-      [...prev, newTag].sort((a, b) => a.name.localeCompare(b.name)),
-    )
-    return newTag
-  }
-
-  const handleMarkPaid = async (row: ExpenseRow) => {
-    try {
-      await markPaid({ data: { id: row.id, paid: true } })
-      await router.invalidate()
-      toast.success('Отмечено как оплаченное')
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Ошибка')
-    }
-  }
-
-  const handleDeleteConfirm = async () => {
-    if (!deleteTarget) return
-    try {
-      await deleteExpense({ data: { id: deleteTarget.id } })
-      await router.invalidate()
-      toast.success('Запись удалена')
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Ошибка')
-    } finally {
-      setDeleteTarget(null)
-    }
-  }
-
-  const handleArchive = async (row: ExpenseRow) => {
-    if (row.archivedAt) {
-      try {
-        await archiveExpense({ data: { id: row.id, archive: false } })
-        await router.invalidate()
-        toast.success('Запись разархивирована')
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : 'Ошибка')
-      }
-    } else {
-      setArchiveTarget(row)
-    }
-  }
-
-  const handleArchiveConfirm = async () => {
-    if (!archiveTarget) return
-    try {
-      await archiveExpense({ data: { id: archiveTarget.id, archive: true } })
-      await router.invalidate()
-      toast.success('Запись архивирована')
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Ошибка')
-    } finally {
-      setArchiveTarget(null)
-    }
-  }
-
-  const columns = useMemo(
-    () =>
-      buildColumns(
-        handleMarkPaid,
-        setDeleteTarget,
-        handleArchive,
-        tagsMap,
-        allTags,
-        handleTagAdd,
-        handleTagRemove,
-        handleTagCreate,
-      ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [router, tagsMap, allTags],
-  )
-
-  // ── Summary stats ──────────────────────────────────────────────────────────
-
-  const currentMonthUnpaid = currentMonth
-    .filter((r) => r.paymentStatus !== 'paid')
-    .reduce((s, r) => s + r.outstandingAmount, 0)
-
-  const currentMonthPaid = currentMonth.reduce(
-    (s, r) =>
-      s +
-      (r.paymentStatus === 'paid'
-        ? Number(r.amount)
-        : r.paymentStatus === 'partial'
-          ? r.settledAmount
-          : 0),
-    0,
-  )
-
-  const previousTotal = previousUnpaid.reduce(
-    (s, r) => s + r.outstandingAmount,
-    0,
-  )
-
-  const overdueCount = [
-    ...currentMonth.filter((r) => !r.isProjected),
-    ...previousUnpaid,
-  ].filter(
-    (r) => r.paymentStatus !== 'paid' && getDueMeta(r.dueDate).isOverdue,
-  ).length
-
-  const projectedCount = currentMonth.filter((r) => r.isProjected).length
-
-  return (
-    <>
-      {/* ── Page header ──────────────────────────────────────────────────── */}
-      <Card className="flex flex-wrap items-start justify-end p-4">
-        {/* Stat cards */}
-        <div className="flex flex-wrap gap-3">
-          <div className="border px-4 py-2 text-sm min-w-35">
-            <p className="text-muted-foreground">К оплате (месяц)</p>
-            <p className="text-lg font-semibold text-red-500 tabular-nums">
-              {formatCurrency(currentMonthUnpaid)} ₽
-            </p>
-          </div>
-
-          {currentMonthPaid > 0 && (
-            <div className="border px-4 text-sm min-w-35">
-              <p className="text-muted-foreground">Оплачено (месяц)</p>
-              <p className="text-lg font-semibold text-foreground/60 tabular-nums">
-                {formatCurrency(currentMonthPaid)} ₽
-              </p>
-            </div>
-          )}
-
-          {previousTotal > 0 && (
-            <div className="border border-orange-200 bg-orange-50 px-4 text-sm min-w-35">
-              <p className="text-orange-700">Долг прошлых периодов</p>
-              <p className="text-lg font-semibold text-orange-600 tabular-nums">
-                {formatCurrency(previousTotal)} ₽
-              </p>
-            </div>
-          )}
-
-          {overdueCount > 0 && (
-            <div className="border border-red-200 bg-red-50 px-4 py-2 text-sm">
-              <p className="text-red-600">Просрочено</p>
-              <p className="text-lg font-semibold text-red-600">
-                {overdueCount} {overdueCount === 1 ? 'запись' : 'записей'}
-              </p>
-            </div>
-          )}
-        </div>
-      </Card>
-
-      {/* ── Current month ─────────────────────────────────────────────────── */}
-      <div className="flex flex-col">
-        <div className="flex items-center gap-3">
-          {projectedCount > 0 && (
-            <Badge variant="outline" className="text-xs gap-1 h-6">
-              <Clock className="size-3" />
-              {projectedCount} запланировано
-            </Badge>
-          )}
-        </div>
-
-        <DataTable
-          columns={columns}
-          data={currentMonth}
-          initialSorting={[{ id: 'createdAt', desc: false }]}
-          toolbar={(table) => (
-            <Toolbar
-              table={table}
-              accounts={accounts}
-              categories={categories}
-              counterparties={counterparties}
-              allTags={allTags}
-              accentColor="red"
-            />
-          )}
-        />
-      </div>
-
-      {/* ── Previous unpaid ───────────────────────────────────────────────── */}
-      {previousUnpaid.length > 0 && (
-        <section className="flex flex-col gap-4">
-          <div>
-            <h2 className="text-lg font-semibold">
-              Неоплаченные за прошлые периоды
-            </h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Расходы прошлых месяцев, которые ещё не оплачены
-            </p>
-          </div>
-
-          <DataTable
-            columns={columns}
-            data={previousUnpaid}
-            initialSorting={[{ id: 'dueDate', desc: false }]}
-            toolbar={(table) => (
-              <Toolbar
-                table={table}
-                accounts={accounts}
-                categories={categories}
-                counterparties={counterparties}
-                allTags={allTags}
-                accentColor="orange"
-              />
-            )}
-          />
-        </section>
-      )}
-
-      {/* ── Delete confirmation ───────────────────────────────────────────── */}
-      <Dialog
-        open={deleteTarget !== null}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Удалить запись?</DialogTitle>
-            <DialogDescription>
-              «{deleteTarget?.description}» будет удалена безвозвратно.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Отмена</Button>
-            </DialogClose>
-            <Button variant="destructive" onClick={handleDeleteConfirm}>
-              Удалить
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── Archive confirmation ──────────────────────────────────────────── */}
-      <Dialog
-        open={archiveTarget !== null}
-        onOpenChange={(open) => !open && setArchiveTarget(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Архивировать запись?</DialogTitle>
-            <DialogDescription>
-              «{archiveTarget?.description}» будет перемещена в архив.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Отмена</Button>
-            </DialogClose>
-            <Button onClick={handleArchiveConfirm}>Архивировать</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      {/* ── Tag summary panel ─────────────────────────────────────────── */}
-      <TagSummaryPanel totals={tagTotals ?? []} />
-    </>
-  )
-}

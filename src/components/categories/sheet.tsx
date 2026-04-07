@@ -1,4 +1,4 @@
-import { PlusCircle } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -26,8 +26,8 @@ const Categories = () => {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="secondary">
-          <PlusCircle /> Категория
+        <Button variant="default">
+          <Plus /> Категория
         </Button>
       </SheetTrigger>
       <SheetContent className="flex flex-col gap-0 overflow-hidden">

@@ -12,8 +12,8 @@ import { PlusIcon } from 'lucide-react'
 
 const ROUTE_LABELS: Record<string, { label: string; showAddButton: boolean }> =
   {
-    transactions: { label: 'Транзакции', showAddButton: true },
-    'bank-import': { label: 'Импорт выписки', showAddButton: false },
+    transactions: { label: 'Все операции', showAddButton: true },
+    'bank-import': { label: 'Банковские выписки', showAddButton: false },
     recurring: { label: 'Запланированные платежи', showAddButton: true },
     receivables: { label: 'Дебиторская задолженность', showAddButton: false },
     payables: { label: 'Платежи и обязательства', showAddButton: false },
@@ -131,7 +131,12 @@ export function AppBreadCrumbs() {
           {/* Show Add button on root entity pages like /recurring or /users */}
           {showAddButton && (
             <BreadcrumbItem>
-              <Button asChild size="sm" className="gap-2 ml-2">
+              <Button
+                variant="success"
+                asChild
+                size="sm"
+                className="gap-2 ml-2"
+              >
                 <Link to={`/${lastSegment}/new` as any}>
                   <PlusIcon className="size-4" />
                 </Link>

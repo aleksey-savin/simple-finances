@@ -8,7 +8,7 @@ import {
   SheetTrigger,
 } from '#/components/ui/sheet'
 import { Button } from '#/components/ui/button'
-import { PlusCircle } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { AddCounterpartyForm } from './form'
 import { CounterpartiesList } from './list'
 import { Separator } from '../ui/separator'
@@ -19,8 +19,8 @@ export default function CounterParties() {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="secondary" className="gap-1.5">
-          <PlusCircle className="size-3.5" />
+        <Button variant="default">
+          <Plus />
           Контрагент
         </Button>
       </SheetTrigger>

@@ -113,7 +113,7 @@ export const AddCategoryForm = () => {
                         field.handleChange(val)
                       }}
                     />
-                    <FieldLabel htmlFor={field.name}>Доходы</FieldLabel>
+                    <FieldLabel htmlFor={field.name}>Доход</FieldLabel>
                   </div>
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>

@@ -1,4 +1,4 @@
-import { PlusCircle } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -26,8 +26,8 @@ const Accounts = () => {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="secondary">
-          <PlusCircle /> Счет
+        <Button variant="default">
+          <Plus /> Счет
         </Button>
       </SheetTrigger>
       <SheetContent className="flex flex-col gap-0 overflow-hidden">

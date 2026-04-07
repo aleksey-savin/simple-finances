@@ -28,6 +28,24 @@ export type Invoice = Pick<
   settledAmount: number
   outstandingAmount: number
   paymentStatus: 'unpaid' | 'partial' | 'paid'
+  settlements?: Array<{
+    id: string
+    amount: string
+    settledAt: Date
+    bankTransaction?: {
+      id: string
+      amount: string
+      direction: 'credit' | 'debit'
+      bookedAt: Date
+      description: string | null
+      counterpartyNameRaw: string | null
+      currentAccountId: string
+      currentAccount: {
+        id: string
+        name: string
+      }
+    }
+  }>
   category: Pick<DBCategory, 'id' | 'name'>
   currentAccount: Pick<CurrentAccount, 'id' | 'name'>
   counterparty: Pick<DBCounterparty, 'id' | 'name'> | null

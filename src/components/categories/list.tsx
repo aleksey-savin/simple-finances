@@ -42,10 +42,7 @@ function CategoryRow({
           <ItemTitle>{category.name}</ItemTitle>
           <div className="flex gap-1 flex-wrap mt-0.5">
             {category.useForExpenses && (
-              <Badge
-                variant="secondary"
-                className="text-xs px-1.5 py-0 text-red-600 bg-red-50 dark:bg-red-950/30"
-              >
+              <Badge variant="destructive" className="text-xs px-1.5 py-0">
                 Расходы
               </Badge>
             )}
@@ -54,7 +51,7 @@ function CategoryRow({
                 variant="secondary"
                 className="text-xs px-1.5 py-0 text-green-700 bg-green-50 dark:bg-green-950/30"
               >
-                Доходы
+                Доход
               </Badge>
             )}
             {!category.useForExpenses && !category.useForIncome && (
@@ -66,10 +63,7 @@ function CategoryRow({
               </Badge>
             )}
             {category.isShared && (
-              <Badge
-                variant="secondary"
-                className="text-xs px-1.5 py-0 gap-1 text-blue-600 bg-blue-50 dark:bg-blue-950/30"
-              >
+              <Badge variant="default" className="text-xs px-1.5 py-0 gap-1">
                 <Globe className="size-2.5" />
                 Общая
               </Badge>
@@ -126,7 +120,6 @@ export const CategoriesList = () => {
       if (sharedFilter === 'own') return !c.isShared
       return true
     })
-    .sort((a, b) => a.name.localeCompare(b.name, 'ru'))
 
   return (
     <>
@@ -148,7 +141,7 @@ export const CategoriesList = () => {
             Расходы
           </ToggleGroupItem>
           <ToggleGroupItem value="income" className="text-xs h-7 px-2">
-            Доходы
+            Доход
           </ToggleGroupItem>
         </ToggleGroup>
         <ToggleGroup

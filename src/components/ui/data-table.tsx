@@ -1,16 +1,19 @@
 import * as React from 'react'
 import {
-  type ColumnDef,
-  type SortingState,
-  type ColumnFiltersState,
-  type Table as ReactTable,
-  type Column,
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   useReactTable,
+} from '@tanstack/react-table'
+import type {
+  Column,
+  ColumnDef,
+  ColumnFiltersState,
+  PaginationState,
+  SortingState,
+  Table as ReactTable,
 } from '@tanstack/react-table'
 import {
   Table,
@@ -50,6 +53,7 @@ interface DataTableProps<TData> {
   /** Optional custom tbody renderer for pages that need grouped rows */
   renderBody?: (table: ReactTable<TData>) => React.ReactNode
   initialSorting?: SortingState
+  pagination?: boolean
   /** Page sizes shown in the pagination dropdown.  Defaults to [10, 20, 50, 100] */
   pageSizes?: number[]
   defaultPageSize?: number
@@ -61,6 +65,7 @@ export function DataTable<TData>({
   toolbar,
   renderBody,
   initialSorting = [],
+  pagination = true,
   pageSizes = [10, 20, 50, 100],
   defaultPageSize = 20,
 }: DataTableProps<TData>) {
@@ -69,7 +74,7 @@ export function DataTable<TData>({
     [],
   )
   const [globalFilter, setGlobalFilter] = React.useState<string>('')
-  const [pagination, setPagination] = React.useState({
+  const [paginationState, setPaginationState] = React.useState<PaginationState>({
     pageIndex: 0,
     pageSize: defaultPageSize,
   })
@@ -77,16 +82,21 @@ export function DataTable<TData>({
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, columnFilters, globalFilter, pagination },
+    state: {
+      sorting,
+      columnFilters,
+      globalFilter,
+      ...(pagination ? { pagination: paginationState } : {}),
+    },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
-    onPaginationChange: setPagination,
+    ...(pagination ? { onPaginationChange: setPaginationState } : {}),
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    autoResetPageIndex: false,
+    ...(pagination ? { getPaginationRowModel: getPaginationRowModel() } : {}),
+    ...(pagination ? { autoResetPageIndex: false } : {}),
     // Make global filter work across all string-valued columns
     globalFilterFn: 'includesString',
   })
@@ -111,11 +121,7 @@ export function DataTable<TData>({
                       minWidth: header.column.columnDef.minSize,
                       maxWidth: header.column.columnDef.maxSize,
                     }}
-                    className={cn(
-                      header.column.columnDef.meta?.headerClassName as
-                        | string
-                        | undefined,
-                    )}
+                    className={cn(header.column.columnDef.meta?.headerClassName)}
                   >
                     {header.isPlaceholder
                       ? null
@@ -141,11 +147,7 @@ export function DataTable<TData>({
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
-                      className={cn(
-                        cell.column.columnDef.meta?.cellClassName as
-                          | string
-                          | undefined,
-                      )}
+                      className={cn(cell.column.columnDef.meta?.cellClassName)}
                     >
                       {flexRender(
                         cell.column.columnDef.cell,
@@ -169,7 +171,7 @@ export function DataTable<TData>({
         </Table>
       </Card>
 
-      <DataTablePagination table={table} pageSizes={pageSizes} />
+      {pagination && <DataTablePagination table={table} pageSizes={pageSizes} />}
     </div>
   )
 }
@@ -322,7 +324,6 @@ function pluralRecords(n: number): string {
 
 // Augment TanStack Table's ColumnMeta so consumers can pass className hints
 declare module '@tanstack/react-table' {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData, TValue> {
     headerClassName?: string
     cellClassName?: string

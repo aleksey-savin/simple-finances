@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PlusCircle } from 'lucide-react'
+import { Plus } from 'lucide-react'
 
 import { Button } from '#/components/ui/button'
 import { Separator } from '../ui/separator'
@@ -20,8 +20,8 @@ export default function Clients() {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="secondary" className="gap-1.5">
-          <PlusCircle className="size-3.5" />
+        <Button variant="default">
+          <Plus />
           Клиент
         </Button>
       </SheetTrigger>

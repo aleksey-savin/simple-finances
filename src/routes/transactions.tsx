@@ -9,10 +9,8 @@ import {
   DrawerTitle,
 } from '#/components/ui/drawer'
 import { Input } from '#/components/ui/input'
-import {
-  MultiSelectCombobox,
-  type MultiSelectOption,
-} from '#/components/ui/multi-select-combobox'
+import { MultiSelectCombobox } from '#/components/ui/multi-select-combobox'
+import type { MultiSelectOption } from '#/components/ui/multi-select-combobox'
 import {
   Popover,
   PopoverContent,
@@ -62,16 +60,16 @@ import {
   removeExpenseTag,
   removeIncomeTag,
 } from '#/routes/api/-tags'
-import { type TagItem } from '#/components/ui/tag-picker'
+import type { TagItem } from '#/components/ui/tag-picker'
 import { TagSummaryPanel } from '#/components/ui/tag-summary-panel'
 
-type TagsMap = Record<string, TagItem[]>
+type TagsMap = Partial<Record<string, TagItem[]>>
 
 const fetchData = createServerFn().handler(async () => {
   const request = getRequest()
   const session = await auth.api.getSession({ headers: request.headers })
 
-  if (!session?.user?.id) {
+  if (!session || !session.user.id) {
     throw new Error('Не авторизован')
   }
 
@@ -132,7 +130,28 @@ const fetchData = createServerFn().handler(async () => {
           currentAccount: { columns: { id: true, name: true } },
           createdByUser: { columns: { id: true, name: true } },
           settlements: {
-            columns: { amount: true, settledAt: true },
+            columns: { id: true, amount: true, settledAt: true },
+            with: {
+              bankTransaction: {
+                columns: {
+                  id: true,
+                  amount: true,
+                  direction: true,
+                  bookedAt: true,
+                  description: true,
+                  counterpartyNameRaw: true,
+                  currentAccountId: true,
+                },
+                with: {
+                  currentAccount: {
+                    columns: {
+                      id: true,
+                      name: true,
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       }),
@@ -338,9 +357,9 @@ function App() {
   const isMobile = useIsMobile()
   const currentPage = searchParams.page
   const pageSize = searchParams.pageSize
-  const [tagsMap, setTagsMap] = useState<TagsMap>(initialTagsMap ?? {})
-  const [allTags, setAllTags] = useState<TagItem[]>(initialAllTags ?? [])
-  const [tagTotals, setTagTotals] = useState(initialTagTotals ?? [])
+  const [tagsMap, setTagsMap] = useState<TagsMap>(initialTagsMap)
+  const [allTags, setAllTags] = useState<TagItem[]>(initialAllTags)
+  const [tagTotals, setTagTotals] = useState(initialTagTotals)
 
   const feed = [...invoices].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
@@ -376,11 +395,11 @@ function App() {
     value: account.id,
     label: account.name,
   }))
-  const categoryOptions: MultiSelectOption[] = categories.map((category) => ({
-    value: category.id,
-    label: category.name,
+  const categoryOptions: MultiSelectOption[] = categories.map((item) => ({
+    value: item.id,
+    label: item.name,
   }))
-  const counterpartyOptions: MultiSelectOption[] = (counterparties ?? []).map(
+  const counterpartyOptions: MultiSelectOption[] = counterparties.map(
     (counterparty) => ({
       value: counterparty.id,
       label: counterparty.name,
@@ -538,7 +557,7 @@ function App() {
           item.category.name,
           item.counterparty?.name,
           item.currentAccount.name,
-          item.createdByUser?.name ?? '',
+          item.createdByUser.name,
           (tagsMap[item.id] ?? []).map((tag) => tag.name).join(' '),
           Number(item.amount).toLocaleString('ru-RU'),
         ]
@@ -641,12 +660,12 @@ function App() {
   }, [router, searchParams, currentPage, safePage, pageSize])
 
   return (
-    <>
+    <div className="flex flex-col gap-6">
       {/* ── Summary cards ──────────────────────────────────────────────────── */}
       <InvoiceSummary feed={filteredFeed} />
 
       {/* ── Filter bar ─────────────────────────────────────────────────────── */}
-      <Card className="flex flex-col gap-8 p-4">
+      <Card className="flex flex-col gap-6 p-6">
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
@@ -657,7 +676,7 @@ function App() {
             className="pl-9"
           />
         </div>
-        <div className="flex flex-wrap w-full lg:justify-between items-center gap-4">
+        <div className="flex flex-wrap w-full lg:justify-between items-center gap-6">
           {/* Type */}
           <ToggleGroup variant="outline" type="single" defaultValue="all">
             {(['all', 'receivable', 'payable'] as const).map((t) => (
@@ -865,7 +884,7 @@ function App() {
         </p>
       ) : (
         <>
-          <div className="mt-4 flex flex-col gap-2 sm:hidden">
+          <div className="flex flex-col gap-2 sm:hidden">
             {paginatedFeed.map((item) => (
               <InvoiceItem
                 key={item.id}
@@ -875,7 +894,7 @@ function App() {
                 togglePaid={togglePaid}
                 categories={categories}
                 accounts={accounts}
-                counterparties={counterparties ?? []}
+                counterparties={counterparties}
                 assignedTags={tagsMap[item.id] ?? []}
                 allTags={allTags}
                 onTagAdd={(tag) => handleTagAdd(item.id, item.kind, tag)}
@@ -885,7 +904,7 @@ function App() {
             ))}
           </div>
 
-          <Card className="mt-4 hidden sm:block p-4">
+          <Card className="hidden sm:block p-6">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -925,7 +944,7 @@ function App() {
                         togglePaid={togglePaid}
                         categories={categories}
                         accounts={accounts}
-                        counterparties={counterparties ?? []}
+                        counterparties={counterparties}
                         assignedTags={tagsMap[item.id] ?? []}
                         allTags={allTags}
                         onTagAdd={(tag) =>
@@ -943,7 +962,7 @@ function App() {
             </Table>
           </Card>
 
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted-foreground">
               Страница {safePage} из {totalPages} · всего страниц {totalPages} ·
               всего записей {filteredFeed.length}
@@ -1013,9 +1032,9 @@ function App() {
           </div>
         </>
       )}
-      <TagSummaryPanel totals={tagTotals ?? []} />
+      <TagSummaryPanel totals={tagTotals} />
       <Outlet />
-    </>
+    </div>
   )
 }
 

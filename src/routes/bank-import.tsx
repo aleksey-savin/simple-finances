@@ -14,8 +14,8 @@ import {
 } from '#/components/bank-import/create-dialog'
 import { BankImportDeleteDialog } from '#/components/bank-import/delete-dialog'
 import { Card } from '#/components/ui/card'
-import { BankImportFilters } from '#/components/bank-import/filters'
-import { BankImportHeader } from '#/components/bank-import/header'
+import { BankImportFilters } from '#/components/bank-import/filters-card'
+import { BankImport } from '#/components/bank-import/import-card'
 import { BankImportPagination } from '#/components/bank-import/pagination'
 import {
   attachBankTransaction,
@@ -27,6 +27,14 @@ import {
   type ImportedBankTransactionView,
 } from '#/components/bank-import/actions'
 import { normalizeCounterpartyName } from '#/lib/bank-statement'
+import { AccountSelection } from '#/components/bank-import/account-card'
+
+const emptyCreateDraft: BankImportCreateDraft = {
+  amount: '',
+  description: '',
+  categoryId: '',
+  counterpartyId: '',
+}
 
 const bankImportSearchSchema = z.object({
   accountId: z.string().optional(),
@@ -110,12 +118,8 @@ function BankImportPage() {
 
   const [createTarget, setCreateTarget] =
     useState<ImportedBankTransactionView | null>(null)
-  const [createDraft, setCreateDraft] = useState<BankImportCreateDraft>({
-    amount: '',
-    description: '',
-    categoryId: '',
-    counterpartyId: '',
-  })
+  const [createDraft, setCreateDraft] =
+    useState<BankImportCreateDraft>(emptyCreateDraft)
   const [isSubmittingCreate, setIsSubmittingCreate] = useState(false)
   const [deleteTarget, setDeleteTarget] =
     useState<ImportedBankTransactionView | null>(null)
@@ -139,60 +143,32 @@ function BankImportPage() {
   }
 
   useEffect(() => {
-    if (!attachTarget) {
-      setAllocationDrafts([])
-      return
-    }
-
-    const firstCandidate = attachTarget.suggestedInvoices[0]
-    if (!firstCandidate || attachTarget.remainingAmount <= 0) {
-      setAllocationDrafts([{ invoiceId: '', amount: '' }])
-      return
-    }
-
-    setAllocationDrafts([
-      {
-        invoiceId: firstCandidate.id,
-        amount: String(
-          Math.min(
-            firstCandidate.outstandingAmount,
-            attachTarget.remainingAmount,
-          ),
-        ),
-      },
-    ])
-  }, [attachTarget])
-
-  useEffect(() => {
     setAttachTarget(null)
+    setAllocationDrafts([])
     setCreateTarget(null)
+    setCreateDraft(emptyCreateDraft)
     setDeleteTarget(null)
   }, [selectedAccountId])
 
-  useEffect(() => {
-    if (!createTarget) return
+  const openAttachDialog = (target: ImportedBankTransactionView) => {
+    setAttachTarget(target)
+    setAllocationDrafts(buildAllocationDrafts(target))
+  }
 
-    const categoryOptions = categories.filter((category) =>
-      createTarget.direction === 'credit'
-        ? category.useForIncome
-        : category.useForExpenses,
-    )
-    const guessedCounterparty = guessCounterpartyId(
-      createTarget,
-      counterparties,
-    )
+  const closeAttachDialog = () => {
+    setAttachTarget(null)
+    setAllocationDrafts([])
+  }
 
-    setCreateDraft({
-      amount: createTarget.remainingAmount.toFixed(2),
-      description:
-        createTarget.description ??
-        `${createTarget.direction === 'credit' ? 'Поступление' : 'Списание'} ${
-          createTarget.counterpartyName ?? ''
-        }`.trim(),
-      categoryId: categoryOptions[0]?.id ?? '',
-      counterpartyId: guessedCounterparty ?? '',
-    })
-  }, [categories, counterparties, createTarget])
+  const openCreateDialog = (target: ImportedBankTransactionView) => {
+    setCreateTarget(target)
+    setCreateDraft(buildCreateDraft(target, categories, counterparties))
+  }
+
+  const closeCreateDialog = () => {
+    setCreateTarget(null)
+    setCreateDraft(emptyCreateDraft)
+  }
 
   const handleImport = async () => {
     if (!selectedAccountId) {
@@ -273,7 +249,7 @@ function BankImportPage() {
         },
       })
 
-      setAttachTarget(null)
+      closeAttachDialog()
       await router.invalidate()
       toast.success('Банковская транзакция успешно привязана')
     } catch (error) {
@@ -307,7 +283,7 @@ function BankImportPage() {
         },
       })
 
-      setCreateTarget(null)
+      closeCreateDialog()
       await router.invalidate()
       toast.success('Invoice создан и сразу связан с банковской транзакцией')
     } catch (error) {
@@ -348,27 +324,33 @@ function BankImportPage() {
   return (
     <>
       <div className="flex flex-col gap-6">
-        <BankImportHeader
-          accounts={accounts}
-          selectedAccountId={selectedAccountId}
-          isImporting={isImporting}
-          onAccountChange={(value) => {
-            void router.navigate({
-              to: '/bank-import',
-              search: {
-                accountId: value || undefined,
-                page: 1,
-                pageSize,
-                search,
-                direction: directionFilter,
-                status: statusFilter,
-              },
-              replace: true,
-            })
-          }}
-          onFileChange={setSelectedFile}
-          onImport={handleImport}
-        />
+        <div className="flex md:flex-row flex-col gap-6 w-full">
+          <AccountSelection
+            accounts={accounts}
+            selectedAccountId={selectedAccountId}
+            onAccountChange={(value) => {
+              void router.navigate({
+                to: '/bank-import',
+                search: {
+                  accountId: value || undefined,
+                  page: 1,
+                  pageSize,
+                  search,
+                  direction: directionFilter,
+                  status: statusFilter,
+                },
+                replace: true,
+              })
+            }}
+          />
+          <BankImport
+            accounts={accounts}
+            selectedAccountId={selectedAccountId}
+            isImporting={isImporting}
+            onFileChange={setSelectedFile}
+            onImport={handleImport}
+          />
+        </div>
 
         {selectedAccountId && (
           <BankImportFilters
@@ -430,8 +412,8 @@ function BankImportPage() {
         ) : (
           <BankImportList
             rows={rows}
-            onAttach={setAttachTarget}
-            onCreate={setCreateTarget}
+            onAttach={openAttachDialog}
+            onCreate={openCreateDialog}
             onDelete={setDeleteTarget}
           />
         )}
@@ -487,7 +469,7 @@ function BankImportPage() {
         target={attachTarget}
         allocationDrafts={allocationDrafts}
         isSubmitting={isSubmittingAttach}
-        onOpenChange={(open) => !open && setAttachTarget(null)}
+        onOpenChange={(open) => !open && closeAttachDialog()}
         onAllocationDraftsChange={setAllocationDrafts}
         onSubmit={handleAttachSubmit}
       />
@@ -499,7 +481,7 @@ function BankImportPage() {
         categories={categories}
         counterparties={counterparties}
         isSubmitting={isSubmittingCreate}
-        onOpenChange={(open) => !open && setCreateTarget(null)}
+        onOpenChange={(open) => !open && closeCreateDialog()}
         onDraftChange={setCreateDraft}
         onSubmit={handleCreateSubmit}
       />
@@ -524,6 +506,57 @@ async function readBankStatementFile(file: File) {
   }
 
   return new TextDecoder('utf-8').decode(bytes)
+}
+
+function buildAllocationDrafts(
+  target: ImportedBankTransactionView,
+): BankImportAllocationDraft[] {
+  const firstCandidate = target.suggestedInvoices[0]
+  if (!firstCandidate || target.remainingAmount <= 0) {
+    return [{ invoiceId: '', amount: '' }]
+  }
+
+  return [
+    {
+      invoiceId: firstCandidate.id,
+      amount: String(
+        Math.min(firstCandidate.outstandingAmount, target.remainingAmount),
+      ),
+    },
+  ]
+}
+
+function buildCreateDraft(
+  target: ImportedBankTransactionView,
+  categories: {
+    id: string
+    name: string
+    useForIncome: boolean
+    useForExpenses: boolean
+  }[],
+  counterparties: {
+    id: string
+    name: string
+    tin: string | null
+  }[],
+): BankImportCreateDraft {
+  const categoryOptions = categories.filter((category) =>
+    target.direction === 'credit'
+      ? category.useForIncome
+      : category.useForExpenses,
+  )
+  const guessedCounterparty = guessCounterpartyId(target, counterparties)
+
+  return {
+    amount: target.remainingAmount.toFixed(2),
+    description:
+      target.description ??
+      `${target.direction === 'credit' ? 'Поступление' : 'Списание'} ${
+        target.counterpartyName ?? ''
+      }`.trim(),
+    categoryId: categoryOptions[0]?.id ?? '',
+    counterpartyId: guessedCounterparty ?? '',
+  }
 }
 
 function guessCounterpartyId(

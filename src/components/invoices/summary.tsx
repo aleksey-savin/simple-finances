@@ -74,8 +74,8 @@ export function InvoiceSummary({ feed }: Props) {
   }, [feed])
 
   return (
-    <div className="mb-4 flex gap-2">
-      <Card className="w-full gap-2 px-4 py-4 sm:width-fit">
+    <div className="flex gap-6">
+      <Card className="gap-2 px-4 py-4 sm:width-fit">
         <CardHeader className="p-0">
           <CardTitle className="font-medium">Расходы</CardTitle>
         </CardHeader>
@@ -96,8 +96,7 @@ export function InvoiceSummary({ feed }: Props) {
           </div>
         </CardContent>
       </Card>
-
-      <Card className="w-full gap-2 px-4 py-4 sm:width-fit">
+      <Card className="gap-2 px-4 py-4 sm:width-fit">
         <CardHeader className="p-0">
           <CardTitle className="font-medium">Доходы</CardTitle>
         </CardHeader>
@@ -114,7 +113,7 @@ export function InvoiceSummary({ feed }: Props) {
             <p className="mb-1 text-[10px] leading-none text-muted-foreground">
               Оплачено
             </p>
-            <p className="text-sm font-semibold text-green-600">
+            <p className="text-sm font-semibold text-success">
               {fmt(stats.paidReceivables)}
             </p>
           </div>

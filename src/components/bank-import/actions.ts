@@ -24,7 +24,6 @@ import {
 import {
   buildBankTransactionImportKey,
   extractDocumentRefs,
-  normalizeBankDocumentNumber,
   normalizeCounterpartyName,
   parseBankStatement,
   parseStoredBankTransactionPayload,

@@ -32,7 +32,7 @@ const navMain = [
     title: 'Обзор',
     items: [
       {
-        title: 'Все транзакции',
+        title: 'Все операции',
         icon: <Wallet className="size-5" />,
         url: '/transactions',
       },
@@ -42,7 +42,7 @@ const navMain = [
         url: '/recurring',
       },
       {
-        title: 'Импорт выписки',
+        title: 'Банковские выписки',
         icon: <FileSpreadsheet className="size-5" />,
         url: '/bank-import',
       },

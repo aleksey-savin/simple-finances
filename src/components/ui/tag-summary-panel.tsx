@@ -57,7 +57,7 @@ export function TagSummaryPanel({ totals, className }: TagSummaryPanelProps) {
   return (
     <div
       className={cn(
-        'fixed bottom-6 right-6 z-50',
+        'fixed bottom-6 left-1/2 z-50 -translate-x-1/2',
         'w-72 shadow-xl border',
         'bg-background/95 backdrop-blur-sm',
         'overflow-hidden',
@@ -116,7 +116,7 @@ export function TagSummaryPanel({ totals, className }: TagSummaryPanelProps) {
                     <span
                       className={cn(
                         'text-xs font-semibold tabular-nums',
-                        net >= 0 ? 'text-green-600' : 'text-red-500',
+                        net >= 0 ? 'text-primary' : 'text-destructive',
                       )}
                     >
                       {net >= 0 ? '+' : ''}
@@ -127,12 +127,12 @@ export function TagSummaryPanel({ totals, className }: TagSummaryPanelProps) {
                   {/* Breakdown */}
                   <div className="grid grid-cols-2 gap-x-2 text-xs text-muted-foreground pl-4">
                     {incomeTotal > 0 && (
-                      <span className="text-green-600">
+                      <span className="text-success">
                         ↑ {formatCurrency(incomeTotal)} ₽
                       </span>
                     )}
                     {expenseTotal > 0 && (
-                      <span className="text-red-500">
+                      <span className="text-destructive">
                         ↓ {formatCurrency(expenseTotal)} ₽
                       </span>
                     )}
@@ -159,8 +159,8 @@ export function TagSummaryPanel({ totals, className }: TagSummaryPanelProps) {
             className={cn(
               'font-semibold tabular-nums',
               totals.reduce((s, t) => s + t.net, 0) >= 0
-                ? 'text-green-600'
-                : 'text-red-500',
+                ? 'text-primary'
+                : 'text-destructive',
             )}
           >
             Итого:{' '}

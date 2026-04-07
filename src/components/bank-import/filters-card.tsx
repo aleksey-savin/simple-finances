@@ -28,7 +28,8 @@ export function BankImportFilters({
   onClearFilters: () => void
 }) {
   return (
-    <Card className="flex flex-col gap-6 p-4">
+    <Card className="flex flex-col gap-6 p-6">
+      <h1 className="text-xl font-semibold">Фильтр</h1>
       <div className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -45,7 +46,8 @@ export function BankImportFilters({
           type="single"
           value={directionFilter}
           onValueChange={(value) => {
-            if (value) onDirectionFilterChange(value as BankImportDirectionFilter)
+            if (value)
+              onDirectionFilterChange(value as BankImportDirectionFilter)
           }}
         >
           <ToggleGroupItem value="all">Все</ToggleGroupItem>
