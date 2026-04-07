@@ -21,11 +21,11 @@ export function formatCurrency(n: number) {
 export function pluralRecords(n: number): string {
   const mod10 = n % 10
   const mod100 = n % 100
-  if (mod10 === 1 && mod100 !== 11) return 'запись'
+  if (mod10 === 1 && mod100 !== 11) return 'счёт'
   if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) {
-    return 'записи'
+    return 'счёта'
   }
-  return 'записей'
+  return 'счётов'
 }
 
 export function getDueMeta(dueDate: string | Date | null | undefined) {
@@ -48,7 +48,11 @@ export function getIncomeStatus(row: IncomeRow): IncomeStatus {
   return 'ontime'
 }
 
-export const idFilterFn: FilterFn<IncomeRow> = (row, columnId, value: string[]) => {
+export const idFilterFn: FilterFn<IncomeRow> = (
+  row,
+  columnId,
+  value: string[],
+) => {
   if (value.length === 0) return true
   if (columnId === 'account') {
     return value.includes(row.original.currentAccount.id)
@@ -61,7 +65,11 @@ export const idFilterFn: FilterFn<IncomeRow> = (row, columnId, value: string[]) 
 }
 idFilterFn.autoRemove = (value) => !value?.length
 
-export const overdueFilterFn: FilterFn<IncomeRow> = (row, _id, value: boolean) => {
+export const overdueFilterFn: FilterFn<IncomeRow> = (
+  row,
+  _id,
+  value: boolean,
+) => {
   if (!value) return true
   return getDueMeta(row.original.dueDate).isOverdue
 }
@@ -80,8 +88,7 @@ statusFilterFn.autoRemove = (value) => !value?.length
 export function getReceivablesSummary(rows: IncomeRow[]) {
   const totalAll = rows.reduce((sum, row) => sum + row.outstandingAmount, 0)
   const overdueAll = rows.filter(
-    (row) =>
-      row.paymentStatus !== 'paid' && getDueMeta(row.dueDate).isOverdue,
+    (row) => row.paymentStatus !== 'paid' && getDueMeta(row.dueDate).isOverdue,
   ).length
 
   return {

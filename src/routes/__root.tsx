@@ -54,7 +54,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: process.env.APP_TITLE,
+        title: import.meta.env.APP_TITLE || 'Портал',
       },
     ],
     links: [

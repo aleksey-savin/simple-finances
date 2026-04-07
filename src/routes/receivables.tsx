@@ -14,7 +14,6 @@ import {
   clientCounterparty,
   currentAccount,
   currentAccountUser,
-  invoice,
   invoiceTag,
 } from '#/db/schema'
 import { getPaymentState } from '#/lib/invoice-payment'

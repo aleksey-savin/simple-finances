@@ -55,7 +55,11 @@ export function ReceivablesTableSection({
       initialSorting={initialSorting}
       pagination={false}
       renderBody={(table) =>
-        renderReceivablesTableBody(table, expandedClientIds, setExpandedClientIds)
+        renderReceivablesTableBody(
+          table,
+          expandedClientIds,
+          setExpandedClientIds,
+        )
       }
       toolbar={(table) => (
         <ReceivablesToolbar
@@ -143,10 +147,7 @@ function renderReceivablesTableBody(
                 ) : (
                   <ChevronRight className="size-4 text-muted-foreground" />
                 )}
-                <span className="font-medium">{entry.client.name}</span>
-                <Badge variant="secondary" className="text-[11px] font-normal">
-                  Клиент
-                </Badge>
+                <span className="font-bold">{entry.client.name}</span>
               </div>
               <span className="text-xs text-muted-foreground">
                 {entry.rows.length} {pluralRecords(entry.rows.length)}

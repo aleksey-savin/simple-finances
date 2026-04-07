@@ -205,7 +205,7 @@ const fetchData = createServerFn().handler(async () => {
   const tagsMap: TagsMap = {}
   for (const row of invoiceTagRows) {
     if (!tagsMap[row.invoiceId]) tagsMap[row.invoiceId] = []
-    tagsMap[row.invoiceId].push({
+    tagsMap[row.invoiceId]?.push({
       id: row.tag.id,
       name: row.tag.name,
       color: row.tag.color,
