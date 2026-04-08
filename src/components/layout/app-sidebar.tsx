@@ -19,11 +19,13 @@ import {
   BanknoteArrowUp,
   CalendarCheck,
   FileSpreadsheet,
+  LayoutDashboard,
   User,
   Wallet,
 } from 'lucide-react'
 import Accounts from '../accounts'
 import Clients from '../clients'
+import Companies from '../companies'
 import CounterParties from '../counterparties'
 import Categories from '../categories'
 
@@ -31,6 +33,11 @@ const navMain = [
   {
     title: 'Обзор',
     items: [
+      {
+        title: 'Dashboard',
+        icon: <LayoutDashboard className="size-5" />,
+        url: '/dashboard',
+      },
       {
         title: 'Все операции',
         icon: <Wallet className="size-5" />,
@@ -110,6 +117,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarFooter>
         <div className="flex flex-col w-auto sm:hidden gap-2 mx-4">
           <Accounts />
+          <Companies />
           <Clients />
           <CounterParties />
           <Categories />

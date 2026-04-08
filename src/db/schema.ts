@@ -315,6 +315,46 @@ export const clientCounterparty = pgTable(
   ],
 )
 
+export const company = pgTable('company', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  name: text('name').notNull(),
+  createdBy: text('created_by')
+    .notNull()
+    .references(() => user.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at')
+    .defaultNow()
+    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .notNull(),
+})
+
+export const companyCurrentAccount = pgTable(
+  'company_current_account',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    companyId: text('company_id')
+      .notNull()
+      .references(() => company.id, { onDelete: 'cascade' }),
+    currentAccountId: text('current_account_id')
+      .notNull()
+      .references(() => currentAccount.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    unique('company_current_account_unique').on(
+      table.companyId,
+      table.currentAccountId,
+    ),
+    unique('company_current_account_account_unique').on(table.currentAccountId),
+    index('company_current_account_company_idx').on(table.companyId),
+    index('company_current_account_account_idx').on(table.currentAccountId),
+  ],
+)
+
 export const expense = pgTable(
   'expense',
   {
@@ -605,6 +645,7 @@ export const invoiceTagRelations = relations(invoiceTag, ({ one }) => ({
 export const userRelations = relations(user, ({ many }) => ({
   currentAccountUsers: many(currentAccountUser),
   clients: many(client),
+  companies: many(company),
 }))
 
 export const currentAccountRelations = relations(
@@ -616,6 +657,7 @@ export const currentAccountRelations = relations(
     bankTransactions: many(bankTransaction),
     members: many(currentAccountUser),
     recurringRules: many(recurringRule),
+    companyLinks: many(companyCurrentAccount),
   }),
 )
 
@@ -761,6 +803,28 @@ export const clientCounterpartyRelations = relations(
     counterparty: one(counterparty, {
       fields: [clientCounterparty.counterpartyId],
       references: [counterparty.id],
+    }),
+  }),
+)
+
+export const companyRelations = relations(company, ({ one, many }) => ({
+  currentAccounts: many(companyCurrentAccount),
+  createdByUser: one(user, {
+    fields: [company.createdBy],
+    references: [user.id],
+  }),
+}))
+
+export const companyCurrentAccountRelations = relations(
+  companyCurrentAccount,
+  ({ one }) => ({
+    company: one(company, {
+      fields: [companyCurrentAccount.companyId],
+      references: [company.id],
+    }),
+    currentAccount: one(currentAccount, {
+      fields: [companyCurrentAccount.currentAccountId],
+      references: [currentAccount.id],
     }),
   }),
 )

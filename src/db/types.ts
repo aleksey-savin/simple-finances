@@ -5,6 +5,8 @@ import type {
   category,
   client,
   clientCounterparty,
+  company,
+  companyCurrentAccount,
   counterparty,
   counterpartyTypeEnum,
   currentAccount,
@@ -85,6 +87,15 @@ export type ClientUpdate = Partial<ClientInsert> & { id: string }
 
 export type ClientCounterparty = typeof clientCounterparty.$inferSelect
 export type ClientCounterpartyInsert = typeof clientCounterparty.$inferInsert
+
+// ─── Company ──────────────────────────────────────────────────────────────────
+
+export type Company = typeof company.$inferSelect
+export type CompanyInsert = typeof company.$inferInsert
+export type CompanyUpdate = Partial<CompanyInsert> & { id: string }
+
+export type CompanyCurrentAccount = typeof companyCurrentAccount.$inferSelect
+export type CompanyCurrentAccountInsert = typeof companyCurrentAccount.$inferInsert
 
 // ─── Expense ──────────────────────────────────────────────────────────────────
 

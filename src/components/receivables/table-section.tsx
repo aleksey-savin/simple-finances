@@ -5,7 +5,6 @@ import { flexRender } from '@tanstack/react-table'
 import type { ColumnDef, Row, SortingState, Table } from '@tanstack/react-table'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 
-import { Badge } from '#/components/ui/badge'
 import { DataTable } from '#/components/ui/data-table'
 import type { TagItem } from '#/components/ui/tag-picker'
 import { TableCell, TableRow } from '#/components/ui/table'

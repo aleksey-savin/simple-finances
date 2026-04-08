@@ -5,6 +5,7 @@ import { SidebarTrigger } from '../ui/sidebar'
 import Accounts from '../accounts'
 import Categories from '../categories'
 import Clients from '../clients'
+import Companies from '../companies'
 import Counterparties from '../counterparties'
 
 export const AppHeader = () => {
@@ -22,6 +23,7 @@ export const AppHeader = () => {
       </div>
       <div className="hidden sm:flex gap-2 items-center">
         <Accounts />
+        <Companies />
         <Clients />
         <Counterparties />
         <Categories />

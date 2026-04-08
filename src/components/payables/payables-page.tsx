@@ -16,7 +16,6 @@ import { buildPayablesColumns } from './columns'
 import { PayablesSummaryCards } from './summary-cards'
 import { PayablesTableSection } from './table-section'
 import type { PayablesLoaderData, PayablesTagTotal, TagsMap } from './types'
-import { getPayablesSummary } from './utils'
 
 export function PayablesPage({
   currentMonth,
@@ -117,8 +116,6 @@ export function PayablesPage({
     onTagRemove: handleTagRemove,
     onTagCreate: handleTagCreate,
   })
-
-  const summary = getPayablesSummary(currentMonth, previousUnpaid)
 
   return (
     <>

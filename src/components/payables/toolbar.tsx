@@ -13,7 +13,7 @@ import type {
   NamedEntity,
   PayablesPeriodGroup,
 } from './types'
-import { formatCurrency, getDueMeta } from './utils'
+import { formatCurrency } from './utils'
 
 type PayablesToolbarProps = {
   table: Table<ExpenseRow>
@@ -113,12 +113,6 @@ export function PayablesToolbar({
     (sum, row) => sum + row.original.outstandingAmount,
     0,
   )
-  const filteredOverdue = filteredRows.filter(
-    (row) =>
-      !row.original.isProjected &&
-      row.original.paymentStatus !== 'paid' &&
-      getDueMeta(row.original.dueDate).isOverdue,
-  ).length
 
   return (
     <div className="flex flex-col gap-3">

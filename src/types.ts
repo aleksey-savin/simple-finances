@@ -1,6 +1,7 @@
 import type {
   Category as DBCategory,
   Client as DBClient,
+  Company as DBCompany,
   Invoice as DBInvoice,
   Counterparty as DBCounterparty,
   CurrentAccount,
@@ -91,6 +92,10 @@ export type Counterparty = Pick<
 
 export type Client = Pick<DBClient, 'id' | 'name' | 'createdBy'> & {
   counterparties: Pick<DBCounterparty, 'id' | 'name'>[]
+}
+
+export type Company = Pick<DBCompany, 'id' | 'name' | 'createdBy'> & {
+  accounts: Pick<CurrentAccount, 'id' | 'name'>[]
 }
 
 export type NamedEntity = {
@@ -190,6 +195,53 @@ export type PayablesLoaderData = {
   tagsMap: TagsMap
   allTags: TagItem[]
   tagTotals: PayablesTagTotal[]
+}
+
+export type DashboardAccountBalance = {
+  id: string
+  name: string
+  bankNameInitials: string | null
+  balance: number
+}
+
+export type DashboardScope = {
+  id: string
+  name: string
+  kind: 'personal' | 'company'
+  accountCount: number
+  totalBalance: number
+}
+
+export type DashboardBankSummary = {
+  totalCount: number
+  totalRemaining: number
+  incomingRemaining: number
+  outgoingRemaining: number
+}
+
+export type DashboardMonthlyOutlook = {
+  receivablesAmount: number
+  receivablesCount: number
+  unissuedInvoicesAmount: number
+  unissuedInvoicesCount: number
+  currentMonthIncoming: number
+  previousPeriodDebt: number
+  previousPeriodDebtCount: number
+  plannedExpenses: number
+  plannedExpensesCount: number
+  expensesWithDebt: number
+  expensesWithDebtCount: number
+  netWithoutPreviousPeriodDebt: number
+  netWithPreviousPeriodDebt: number
+}
+
+export type DashboardLoaderData = {
+  scopes: DashboardScope[]
+  selectedScopeId: string
+  accounts: DashboardAccountBalance[]
+  totalBalance: number
+  bankSummary: DashboardBankSummary
+  monthlyOutlook: DashboardMonthlyOutlook
 }
 
 // ─── Recurring Rule ───────────────────────────────────────────────────────────
