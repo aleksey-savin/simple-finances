@@ -7,6 +7,8 @@ import {
   Archive,
   ArchiveRestore,
   CheckCircle2,
+  ChevronDown,
+  ChevronRight,
   Clock,
   Copy,
   Link2,
@@ -103,6 +105,7 @@ export function InvoiceListItem({
   const [activeLinkedDocumentId, setActiveLinkedDocumentId] = useState<
     string | null
   >(null)
+  const [linkedDocumentsOpen, setLinkedDocumentsOpen] = useState(false)
 
   const isPayable = item.kind === 'payable'
   const isLinkedReceivable = !isPayable && !!item.linkedInvoiceId
@@ -124,7 +127,9 @@ export function InvoiceListItem({
     maximumFractionDigits: 2,
   })
   const linkedBankDocuments = (item.settlements ?? []).filter(
-    (settlement): settlement is NonNullable<Invoice['settlements']>[number] & {
+    (
+      settlement,
+    ): settlement is NonNullable<Invoice['settlements']>[number] & {
       bankTransaction: NonNullable<
         NonNullable<Invoice['settlements']>[number]['bankTransaction']
       >
@@ -157,8 +162,7 @@ export function InvoiceListItem({
           </div>
         ) : (
           <div className="flex gap-1 justify-center items-center text-sm font-semibold text-warning">
-            <Clock className="w-4 h-4 inline-block" />{' '}
-            {dueDateLabel}
+            <Clock className="w-4 h-4 inline-block" /> {dueDateLabel}
           </div>
         ),
         entityName: 'Расход',
@@ -184,8 +188,7 @@ export function InvoiceListItem({
           </div>
         ) : (
           <div className="flex gap-1 justify-center items-center text-sm font-semibold text-warning">
-            <Clock className="w-4 h-4 inline-block" />{' '}
-            {dueDateLabel}
+            <Clock className="w-4 h-4 inline-block" /> {dueDateLabel}
           </div>
         ),
         entityName: 'Доход',
@@ -336,29 +339,56 @@ export function InvoiceListItem({
           {`Создан автоматически · ${item.createdByUser.name}`}
         </Badge>
       ) : (
-        sharedAccountIds.has(item.currentAccount.id) &&
-        <span className="text-xs text-muted-foreground">
-          {item.createdByUser.name}
-        </span>
+        sharedAccountIds.has(item.currentAccount.id) && (
+          <span className="text-xs text-muted-foreground">
+            {item.createdByUser.name}
+          </span>
+        )
       )}
     </div>
   )
 
-  const linkedDocumentsRow =
+  const linkedDocumentsSection =
     linkedBankDocuments.length > 0 ? (
-      <div className="flex flex-wrap items-center gap-1.5">
-        <span className="text-xs text-muted-foreground">Связанные документы:</span>
-        {linkedBankDocuments.map((settlement) => (
-          <button
-            key={settlement.bankTransaction.id}
-            type="button"
-            className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            onClick={() => setActiveLinkedDocumentId(settlement.bankTransaction.id)}
-          >
-            <Link2 className="size-3" />
-            Банк · {formatDate(new Date(settlement.bankTransaction.bookedAt))}
-          </button>
-        ))}
+      <div className="flex flex-col gap-2 border border-border/60 bg-muted/20 p-2">
+        <button
+          type="button"
+          className="flex items-center justify-between gap-2 text-left"
+          onClick={() => setLinkedDocumentsOpen((open) => !open)}
+          aria-expanded={linkedDocumentsOpen}
+        >
+          <div className="flex items-center gap-2">
+            {linkedDocumentsOpen ? (
+              <ChevronDown className="size-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="size-4 text-muted-foreground" />
+            )}
+            <span className="text-sm font-medium">Связанные документы</span>
+          </div>
+          <span className="text-xs text-muted-foreground">
+            {linkedBankDocuments.length}
+          </span>
+        </button>
+
+        {linkedDocumentsOpen ? (
+          <div className="flex flex-col gap-1">
+            {linkedBankDocuments.map((settlement) => (
+              <button
+                key={settlement.bankTransaction.id}
+                type="button"
+                className="flex items-start gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted"
+                onClick={() =>
+                  setActiveLinkedDocumentId(settlement.bankTransaction.id)
+                }
+              >
+                <Link2 className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+                <span className="text-foreground">
+                  {formatLinkedDocumentLabel(settlement.bankTransaction)}
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
     ) : null
 
@@ -427,7 +457,9 @@ export function InvoiceListItem({
                 />
                 <LinkedDocumentField
                   label="Счёт"
-                  value={activeLinkedDocument.bankTransaction.currentAccount.name}
+                  value={
+                    activeLinkedDocument.bankTransaction.currentAccount.name
+                  }
                 />
               </div>
 
@@ -501,7 +533,7 @@ export function InvoiceListItem({
                 {item.description}
               </div>
               <TagChips tags={assignedTags} />
-              {linkedDocumentsRow}
+              {linkedDocumentsSection}
             </div>
           </TableCell>
           <TableCell
@@ -585,7 +617,7 @@ export function InvoiceListItem({
 
             {badgesRow}
             <TagChips tags={assignedTags} />
-            {linkedDocumentsRow}
+            {linkedDocumentsSection}
 
             <div className="flex items-center justify-end pt-1">
               <div className="flex flex-col items-end gap-0.5">
@@ -646,4 +678,22 @@ function formatMoney(value: string) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
+}
+
+function formatMoneyShort(value: string) {
+  const amount = Number(value)
+  const hasFraction = !Number.isInteger(amount)
+
+  return amount.toLocaleString('ru-RU', {
+    minimumFractionDigits: hasFraction ? 2 : 0,
+    maximumFractionDigits: 2,
+  })
+}
+
+function formatLinkedDocumentLabel(
+  document: NonNullable<
+    NonNullable<Invoice['settlements']>[number]['bankTransaction']
+  >,
+) {
+  return `Банковская операция на сумму ${formatMoneyShort(document.amount)} руб. от ${new Date(document.bookedAt).toLocaleDateString('ru-RU')}`
 }

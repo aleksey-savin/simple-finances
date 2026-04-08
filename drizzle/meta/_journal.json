@@ -211,6 +211,13 @@
       "when": 1774958576476,
       "tag": "0029_dapper_squirrel_girl",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1775624146795,
+      "tag": "0030_fantastic_nighthawk",
+      "breakpoints": true
     }
   ]
 }

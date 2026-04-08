@@ -1,4 +1,5 @@
 export { default } from './sheet'
+export { BalanceCorrection } from './balance-correction'
 export { DeleteAccount } from './delete'
 export { AddAccountForm } from './form-add'
 export { EditAccountForm } from './form-edit'

@@ -25,6 +25,7 @@ export const EditAccountForm = ({
   const form = useForm({
     defaultValues: {
       name: account.name ?? '',
+      bankBik: account.bankBik ?? '',
       accountNumber: account.accountNumber ?? '',
       acceptPayments: account.acceptPayments ?? false,
     },
@@ -35,6 +36,7 @@ export const EditAccountForm = ({
           data: {
             id: account.id,
             name: value.name,
+            bankBik: value.bankBik,
             accountNumber: value.accountNumber,
             acceptPayments: value.acceptPayments,
           },
@@ -73,6 +75,35 @@ export const EditAccountForm = ({
                 aria-invalid={isInvalid}
                 autoComplete="off"
               />
+              {isInvalid && <FieldError errors={field.state.meta.errors} />}
+            </Field>
+          )
+        }}
+      </form.Field>
+
+      <form.Field name="bankBik">
+        {(field) => {
+          const isInvalid =
+            field.state.meta.isTouched && !field.state.meta.isValid
+          return (
+            <Field data-invalid={isInvalid}>
+              <FieldLabel htmlFor={field.name}>БИК</FieldLabel>
+              <Input
+                id={field.name}
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(e) =>
+                  field.handleChange(e.target.value.replace(/\D/g, ''))
+                }
+                aria-invalid={isInvalid}
+                autoComplete="off"
+                inputMode="numeric"
+                maxLength={9}
+                placeholder="Введите БИК банка"
+              />
+              <p className="text-xs text-muted-foreground">
+                Банковские реквизиты будут обновлены автоматически по БИК.
+              </p>
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
           )

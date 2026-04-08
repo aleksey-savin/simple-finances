@@ -1,8 +1,6 @@
 import { createFileRoute, Outlet, useNavigate } from '@tanstack/react-router'
-import { createServerFn } from '@tanstack/react-start'
-import { getRequest } from '@tanstack/react-start/server'
-import { auth } from 'utils/auth'
 
+import { fetchUsers } from '@/components/users/actions'
 import { roleLabels } from '@/utils/roleLabels'
 
 import { Button } from '@/components/ui/button'
@@ -22,19 +20,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { MoreHorizontalIcon } from 'lucide-react'
-
-const fetchUsers = createServerFn().handler(async () => {
-  const request = getRequest()
-  const data = await auth.api.listUsers({
-    query: {
-      limit: 100,
-      sortBy: 'name',
-      sortDirection: 'desc',
-    },
-    headers: request.headers,
-  })
-  return data
-})
 
 export const Route = createFileRoute('/users')({
   loader: () => fetchUsers(),

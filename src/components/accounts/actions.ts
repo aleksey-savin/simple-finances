@@ -6,6 +6,8 @@ import { and, eq, inArray } from 'drizzle-orm'
 import { auth } from 'utils/auth'
 import z from 'zod'
 
+import { decodeHtmlEntities } from '#/lib/html-entities'
+
 // ─── Query key ────────────────────────────────────────────────────────────────
 
 export const accountsQueryKey = ['accounts'] as const
@@ -83,6 +85,7 @@ export const deleteAccount = createServerFn({ method: 'POST' })
 
 export const addAccountFormSchema = z.object({
   name: z.string().min(2, 'Минимум 2 символа'),
+  bankBik: z.string().regex(/^\d{9}$/, 'БИК должен содержать 9 цифр'),
   accountNumber: z.string().trim(),
   acceptPayments: z.boolean(),
 })
@@ -97,10 +100,16 @@ export const addAccount = createServerFn({ method: 'POST' })
       throw new Error('Не авторизован')
     }
 
+    const bankDetails = await fetchBankDetailsByBik(data.bankBik)
+
     const [inserted] = await db
       .insert(currentAccount)
       .values({
         name: data.name,
+        bankName: bankDetails.name,
+        bankNameInitials: bankDetails.namemini,
+        bankBik: bankDetails.bik,
+        bankKs: bankDetails.ks,
         accountNumber: normalizeAccountNumber(data.accountNumber),
         acceptPayments: data.acceptPayments,
         createdBy: session.user.id,
@@ -120,6 +129,7 @@ export const addAccount = createServerFn({ method: 'POST' })
 export const updateAccountSchema = z.object({
   id: z.string(),
   name: z.string().min(2, 'Минимум 2 символа'),
+  bankBik: z.string().regex(/^\d{9}$/, 'БИК должен содержать 9 цифр'),
   accountNumber: z.string().trim(),
   acceptPayments: z.boolean(),
 })
@@ -127,19 +137,104 @@ export const updateAccountSchema = z.object({
 export const updateAccount = createServerFn({ method: 'POST' })
   .inputValidator(updateAccountSchema)
   .handler(async ({ data }) => {
+    const request = getRequest()
+    const session = await auth.api.getSession({ headers: request.headers })
+
+    if (!session?.user?.id) {
+      throw new Error('Не авторизован')
+    }
+
+    const bankDetails = await fetchBankDetailsByBik(data.bankBik)
+
     await db
       .update(currentAccount)
       .set({
         name: data.name,
+        bankName: bankDetails.name,
+        bankNameInitials: bankDetails.namemini,
+        bankBik: bankDetails.bik,
+        bankKs: bankDetails.ks,
         accountNumber: normalizeAccountNumber(data.accountNumber),
         acceptPayments: data.acceptPayments,
+        updatedBy: session.user.id,
       })
       .where(eq(currentAccount.id, data.id))
+  })
+
+export const correctAccountBalanceSchema = z.object({
+  accountId: z.string(),
+  balance: z.coerce.number().finite('Введите корректную сумму'),
+})
+
+export const correctAccountBalance = createServerFn({ method: 'POST' })
+  .inputValidator(correctAccountBalanceSchema)
+  .handler(async ({ data }) => {
+    const request = getRequest()
+    const session = await auth.api.getSession({ headers: request.headers })
+
+    if (!session?.user?.id) {
+      throw new Error('Не авторизован')
+    }
+
+    await db
+      .update(currentAccount)
+      .set({
+        balance: data.balance.toFixed(2),
+        updatedBy: session.user.id,
+      })
+      .where(eq(currentAccount.id, data.accountId))
+
+    return { ok: true }
   })
 
 function normalizeAccountNumber(value: string) {
   const normalized = value.trim()
   return normalized === '' ? null : normalized
+}
+
+type BIKInfoResponse = {
+  bik?: string
+  ks?: string
+  name?: string
+  namemini?: string
+}
+
+async function fetchBankDetailsByBik(bik: string) {
+  const response = await fetch(
+    `https://bik-info.ru/api.html?type=json&bik=${encodeURIComponent(bik)}`,
+    {
+      headers: {
+        Accept: 'application/json',
+      },
+    },
+  )
+
+  if (!response.ok) {
+    throw new Error('Не удалось получить реквизиты банка по БИК')
+  }
+
+  const payload = (await response.json()) as
+    | BIKInfoResponse
+    | BIKInfoResponse[]
+    | null
+
+  const result = Array.isArray(payload) ? payload[0] : payload
+
+  if (
+    !result?.bik ||
+    !result?.name ||
+    !result?.namemini ||
+    !result?.ks
+  ) {
+    throw new Error('Банк с таким БИК не найден')
+  }
+
+  return {
+    bik: result.bik,
+    ks: result.ks,
+    name: decodeHtmlEntities(result.name) ?? result.name,
+    namemini: decodeHtmlEntities(result.namemini) ?? result.namemini,
+  }
 }
 
 // ── Account members ───────────────────────────────────────────────────────────

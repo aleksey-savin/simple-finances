@@ -10,7 +10,7 @@ import {
   fetchTags,
   fetchTagTotals,
   removeIncomeTag,
-} from '#/routes/api/-tags'
+} from '#/components/tags/actions'
 
 import { buildReceivablesColumns } from './columns'
 import { ReceivablesSummaryCards } from './summary-cards'

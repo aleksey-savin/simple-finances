@@ -10,7 +10,7 @@ import {
   fetchTags,
   fetchTagTotals,
   removeExpenseTag,
-} from '#/routes/api/-tags'
+} from '#/components/tags/actions'
 
 import { buildPayablesColumns } from './columns'
 import { PayablesSummaryCards } from './summary-cards'

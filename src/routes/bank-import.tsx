@@ -324,34 +324,32 @@ function BankImportPage() {
   return (
     <>
       <div className="flex flex-col gap-6">
-        <div className="flex md:flex-row flex-col gap-6 w-full">
-          <AccountSelection
-            accounts={accounts}
-            selectedAccountId={selectedAccountId}
-            onAccountChange={(value) => {
-              void router.navigate({
-                to: '/bank-import',
-                search: {
-                  accountId: value || undefined,
-                  page: 1,
-                  pageSize,
-                  search,
-                  direction: directionFilter,
-                  status: statusFilter,
-                },
-                replace: true,
-              })
-            }}
-          />
-          <BankImport
-            accounts={accounts}
-            selectedAccountId={selectedAccountId}
-            isImporting={isImporting}
-            onFileChange={setSelectedFile}
-            onImport={handleImport}
-          />
-        </div>
+        <AccountSelection
+          accounts={accounts}
+          selectedAccountId={selectedAccountId}
+          onAccountChange={(value) => {
+            void router.navigate({
+              to: '/bank-import',
+              search: {
+                accountId: value || undefined,
+                page: 1,
+                pageSize,
+                search,
+                direction: directionFilter,
+                status: statusFilter,
+              },
+              replace: true,
+            })
+          }}
+        />
 
+        <BankImport
+          accounts={accounts}
+          selectedAccountId={selectedAccountId}
+          isImporting={isImporting}
+          onFileChange={setSelectedFile}
+          onImport={handleImport}
+        />
         {selectedAccountId && (
           <BankImportFilters
             search={search}

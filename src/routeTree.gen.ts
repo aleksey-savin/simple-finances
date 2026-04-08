@@ -16,6 +16,7 @@ import { Route as RecurringRouteImport } from './routes/recurring'
 import { Route as ReceivablesRouteImport } from './routes/receivables'
 import { Route as PayablesRouteImport } from './routes/payables'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as BankImportRouteImport } from './routes/bank-import'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UsersNewRouteImport } from './routes/users.new'
@@ -61,6 +62,11 @@ const PayablesRoute = PayablesRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BankImportRoute = BankImportRouteImport.update({
@@ -122,6 +128,7 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/bank-import': typeof BankImportRoute
+  '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/payables': typeof PayablesRoute
   '/receivables': typeof ReceivablesRoute
@@ -142,6 +149,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/bank-import': typeof BankImportRoute
+  '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/payables': typeof PayablesRoute
   '/receivables': typeof ReceivablesRoute
@@ -163,6 +171,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/bank-import': typeof BankImportRoute
+  '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/payables': typeof PayablesRoute
   '/receivables': typeof ReceivablesRoute
@@ -185,6 +194,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/bank-import'
+    | '/dashboard'
     | '/login'
     | '/payables'
     | '/receivables'
@@ -205,6 +215,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/bank-import'
+    | '/dashboard'
     | '/login'
     | '/payables'
     | '/receivables'
@@ -225,6 +236,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/bank-import'
+    | '/dashboard'
     | '/login'
     | '/payables'
     | '/receivables'
@@ -246,6 +258,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BankImportRoute: typeof BankImportRoute
+  DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
   PayablesRoute: typeof PayablesRoute
   ReceivablesRoute: typeof ReceivablesRoute
@@ -305,6 +318,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/bank-import': {
@@ -434,6 +454,7 @@ const UsersRouteWithChildren = UsersRoute._addFileChildren(UsersRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BankImportRoute: BankImportRoute,
+  DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
   PayablesRoute: PayablesRoute,
   ReceivablesRoute: ReceivablesRoute,

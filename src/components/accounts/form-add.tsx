@@ -14,13 +14,19 @@ export const AddAccountForm = () => {
   const router = useRouter()
   const queryClient = useQueryClient()
   const form = useForm({
-    defaultValues: { name: '', accountNumber: '', acceptPayments: false },
+    defaultValues: {
+      name: '',
+      bankBik: '',
+      accountNumber: '',
+      acceptPayments: false,
+    },
     validators: { onSubmit: addAccountFormSchema },
     onSubmit: async ({ value }) => {
       try {
         await addAccount({
           data: {
             name: value.name,
+            bankBik: value.bankBik,
             accountNumber: value.accountNumber,
             acceptPayments: value.acceptPayments,
           },
@@ -65,6 +71,40 @@ export const AddAccountForm = () => {
                   type="text"
                   required
                 />
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            )
+          }}
+        />
+
+        <form.Field
+          name="bankBik"
+          children={(field) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
+            return (
+              <Field data-invalid={isInvalid}>
+                <FieldLabel htmlFor={field.name}>БИК</FieldLabel>
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) =>
+                    field.handleChange(e.target.value.replace(/\D/g, ''))
+                  }
+                  aria-invalid={isInvalid}
+                  placeholder="Введите БИК банка"
+                  autoComplete="off"
+                  inputMode="numeric"
+                  maxLength={9}
+                  type="text"
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  Банк, коррсчёт и сокращение будут загружены автоматически по
+                  БИК.
+                </p>
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )

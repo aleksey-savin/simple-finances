@@ -98,14 +98,33 @@ export type ImportedBankTransactionView = Awaited<
 export const fetchBankImportContext = createServerFn().handler(async () => {
   const { userId } = await requireSessionUser()
   const accountIds = await getAccessibleAccountIds(userId)
+  const latestImportedAt = sql<Date | null>`max(${bankTransaction.bookedAt})`
 
   const [accounts, categories, counterparties] = await Promise.all([
     accountIds.length
-      ? db.query.currentAccount.findMany({
-          where: inArray(currentAccount.id, accountIds),
-          columns: { id: true, name: true, acceptPayments: true },
-          orderBy: (table, { asc }) => asc(table.name),
-        })
+      ? db
+          .select({
+            id: currentAccount.id,
+            name: currentAccount.name,
+            bankNameInitials: currentAccount.bankNameInitials,
+            balance: currentAccount.balance,
+            acceptPayments: currentAccount.acceptPayments,
+            lastImportedAt: latestImportedAt,
+          })
+          .from(currentAccount)
+          .leftJoin(
+            bankTransaction,
+            eq(bankTransaction.currentAccountId, currentAccount.id),
+          )
+          .where(inArray(currentAccount.id, accountIds))
+          .groupBy(
+            currentAccount.id,
+            currentAccount.name,
+            currentAccount.bankNameInitials,
+            currentAccount.balance,
+            currentAccount.acceptPayments,
+          )
+          .orderBy(asc(currentAccount.name))
       : [],
     db.query.category.findMany({
       columns: {
@@ -208,6 +227,7 @@ export const importBankStatement = createServerFn({ method: 'POST' })
     const importedIds = await db.transaction(async (tx) => {
       const nextIds: string[] = []
       const seenExternalIds = new Set<string>()
+      let balanceDelta = 0
 
       for (const document of parsed.documents) {
         const importKey = buildBankTransactionImportKey({
@@ -258,8 +278,22 @@ export const importBankStatement = createServerFn({ method: 'POST' })
         }
 
         existingExternalIds.add(importKey)
+        balanceDelta +=
+          document.direction === 'credit'
+            ? Number(document.amount)
+            : -Number(document.amount)
 
         nextIds.push(created.id)
+      }
+
+      if (balanceDelta !== 0) {
+        await tx
+          .update(currentAccount)
+          .set({
+            balance: sql`${currentAccount.balance} + ${balanceDelta.toFixed(2)}::numeric`,
+            updatedBy: userId,
+          })
+          .where(eq(currentAccount.id, data.currentAccountId))
       }
 
       return nextIds
@@ -501,6 +535,19 @@ export const deleteBankTransaction = createServerFn({ method: 'POST' })
       if (bankRow.settlements.length > 0) {
         throw new Error('Нельзя удалить уже разнесённую банковскую транзакцию')
       }
+
+      const signedAmount =
+        bankRow.direction === 'credit'
+          ? -Number(bankRow.amount)
+          : Number(bankRow.amount)
+
+      await tx
+        .update(currentAccount)
+        .set({
+          balance: sql`${currentAccount.balance} + ${signedAmount.toFixed(2)}::numeric`,
+          updatedBy: userId,
+        })
+        .where(eq(currentAccount.id, bankRow.currentAccountId))
 
       await tx
         .delete(bankTransaction)

@@ -1,11 +1,9 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router'
-import { createServerFn } from '@tanstack/react-start'
-import { getRequest } from '@tanstack/react-start/server'
-import { auth } from 'utils/auth'
 import { authClient } from 'utils/auth-client'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
+import { fetchUser } from '@/components/users/actions'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,17 +14,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-
-const fetchUser = createServerFn()
-  .inputValidator((userId: string) => userId)
-  .handler(async ({ data: userId }) => {
-    const request = getRequest()
-    const data = await auth.api.getUser({
-      query: { id: userId },
-      headers: request.headers,
-    })
-    return data
-  })
 
 export const Route = createFileRoute('/users/$id/ban')({
   loader: ({ params }) => fetchUser({ data: params.id }),

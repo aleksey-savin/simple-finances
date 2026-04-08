@@ -181,6 +181,10 @@ export const currentAccount = pgTable('current_account', {
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
   name: text().notNull(),
+  bankName: text('bank_name'),
+  bankNameInitials: text('bank_name_initials'),
+  bankBik: text('bank_bik'),
+  bankKs: text('bank_ks'),
   accountNumber: text('account_number'),
   balance: numeric().notNull().default('0'),
   acceptPayments: boolean('accept_payments').notNull().default(false),

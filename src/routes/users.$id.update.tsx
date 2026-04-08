@@ -1,20 +1,8 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router'
-import { createServerFn } from '@tanstack/react-start'
-import { getRequest } from '@tanstack/react-start/server'
-import { auth } from 'utils/auth'
 
+import { fetchUser } from '@/components/users/actions'
 import { ResponsiveDialog } from '@/components/ui/responsive-dialog'
 import UserForm from '@/components/user-form'
-
-const fetchUser = createServerFn()
-  .inputValidator((userId: string) => userId)
-  .handler(async ({ data: userId }) => {
-    const request = getRequest()
-    const [authUser] = await Promise.all([
-      auth.api.getUser({ query: { id: userId }, headers: request.headers }),
-    ])
-    return authUser
-  })
 
 export const Route = createFileRoute('/users/$id/update')({
   loader: ({ params }) =>

@@ -57,12 +57,10 @@ export function BankImportAttachDialog({
           {allocationDrafts.map((draft, index) => (
             <div
               key={index}
-              className="grid gap-3 rounded-lg border p-3 md:grid-cols-[1.6fr,0.7fr,auto]"
+              className="grid gap-3 border p-3 md:grid-cols-[1.6fr,0.7fr,auto]"
             >
               <Field>
-                <FieldLabel>
-                  {target ? getBankImportEntityLabel(target.direction) : 'Запись'}
-                </FieldLabel>
+                <FieldLabel>Наименование</FieldLabel>
                 <Select
                   value={draft.invoiceId}
                   onValueChange={(value) => {
@@ -91,7 +89,9 @@ export function BankImportAttachDialog({
                   <SelectTrigger className="w-full">
                     <SelectValue
                       placeholder={`Выберите ${
-                        target ? getBankImportEntityLabel(target.direction) : 'запись'
+                        target
+                          ? getBankImportEntityLabel(target.direction)
+                          : 'запись'
                       }`}
                     >
                       {draft.invoiceId

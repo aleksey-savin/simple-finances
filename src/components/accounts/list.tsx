@@ -15,8 +15,10 @@ import {
 
 import { EditAccountForm } from '.'
 import { DeleteAccount } from '.'
+import { BalanceCorrection } from '.'
 import { ShareAccount } from './share'
 import type { Account } from '#/types'
+import { decodeHtmlEntities } from '#/lib/html-entities'
 import { authClient } from 'utils/auth-client'
 
 function AccountRow({
@@ -42,6 +44,10 @@ function AccountRow({
 
         <ItemContent>
           <ItemTitle>{account.name}</ItemTitle>
+          <p className="text-sm text-muted-foreground">
+            {decodeHtmlEntities(account.bankNameInitials) ?? '-'} ·{' '}
+            {formatMoney(account.balance)} ₽
+          </p>
         </ItemContent>
 
         <ItemActions>
@@ -61,6 +67,7 @@ function AccountRow({
           >
             <Pencil className="size-3.5" />
           </Button>
+          <BalanceCorrection account={account} />
           <DeleteAccount accountId={account.id} />
         </ItemActions>
       </Item>
@@ -75,6 +82,13 @@ function AccountRow({
       )}
     </div>
   )
+}
+
+function formatMoney(value: string) {
+  return Number(value).toLocaleString('ru-RU', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
 }
 
 export const AccountsList = () => {
