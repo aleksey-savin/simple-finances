@@ -27,7 +27,7 @@ function RouteComponent() {
       onScopeChange={(scopeId) =>
         navigate({
           to: '/dashboard',
-          search: scopeId === 'personal' ? {} : { scope: scopeId },
+          search: { scope: scopeId },
         })
       }
     />
