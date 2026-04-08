@@ -140,6 +140,9 @@ export function DashboardPage({
                       <p className="text-sm text-muted-foreground">
                         {account.bankNameInitials ?? 'Банк не указан'}
                       </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatShortDate(account.lastImportedAt)}
+                      </p>
                     </div>
                     <Landmark className="size-4 text-muted-foreground" />
                   </div>
@@ -368,4 +371,10 @@ function formatMoney(value: number) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
+}
+
+function formatShortDate(value: string | null) {
+  if (!value) return '—'
+
+  return new Date(value).toLocaleDateString('ru-RU')
 }

@@ -1,5 +1,5 @@
 import type { Table } from '@tanstack/react-table'
-import { AlertTriangle, Search, X } from 'lucide-react'
+import { AlertTriangle, ChevronsDown, Rows3, Search, X } from 'lucide-react'
 
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
@@ -22,6 +22,11 @@ type PayablesToolbarProps = {
   counterparties: NamedEntity[]
   allTags: TagItem[]
   accentColor?: 'red' | 'orange'
+  groupingEnabled?: boolean
+  onToggleGrouping?: () => void
+  canToggleAll?: boolean
+  allExpanded?: boolean
+  onToggleAll?: () => void
 }
 
 const statusOptions: MultiSelectOption[] = [
@@ -46,6 +51,11 @@ export function PayablesToolbar({
   counterparties,
   allTags,
   accentColor = 'red',
+  groupingEnabled = true,
+  onToggleGrouping,
+  canToggleAll = false,
+  allExpanded = false,
+  onToggleAll,
 }: PayablesToolbarProps) {
   const rawGlobalFilter = table.getState().globalFilter
   const accountFilterValue = table.getColumn('account')?.getFilterValue()
@@ -209,6 +219,30 @@ export function PayablesToolbar({
             searchPlaceholder="Поиск тега…"
             emptyText="Теги не найдены"
           />
+        )}
+
+        {onToggleGrouping && (
+          <Button
+            variant={groupingEnabled ? 'secondary' : 'outline'}
+            size="sm"
+            className="h-8 gap-1.5"
+            onClick={onToggleGrouping}
+          >
+            <Rows3 className="size-3.5" />
+            {groupingEnabled ? 'Группировка вкл' : 'Группировка выкл'}
+          </Button>
+        )}
+
+        {canToggleAll && onToggleAll && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 gap-1.5"
+            onClick={onToggleAll}
+          >
+            <ChevronsDown className="size-3.5" />
+            {allExpanded ? 'Свернуть всё' : 'Показывать всё'}
+          </Button>
         )}
 
         <Button

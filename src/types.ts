@@ -202,6 +202,7 @@ export type DashboardAccountBalance = {
   name: string
   bankNameInitials: string | null
   balance: number
+  lastImportedAt: string | null
 }
 
 export type DashboardScope = {

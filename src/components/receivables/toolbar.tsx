@@ -1,5 +1,5 @@
 import type { Table } from '@tanstack/react-table'
-import { AlertTriangle, ChevronsDown, Search, X } from 'lucide-react'
+import { AlertTriangle, ChevronsDown, Rows3, Search, X } from 'lucide-react'
 
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
@@ -16,6 +16,8 @@ type ReceivablesToolbarProps = {
   categories: NamedEntity[]
   counterparties: NamedEntity[]
   allTags: TagItem[]
+  groupingEnabled?: boolean
+  onToggleGrouping?: () => void
   canToggleAll?: boolean
   allExpanded?: boolean
   onToggleAll?: () => void
@@ -35,6 +37,8 @@ export function ReceivablesToolbar({
   categories,
   counterparties,
   allTags,
+  groupingEnabled = true,
+  onToggleGrouping,
   canToggleAll = false,
   allExpanded = false,
   onToggleAll,
@@ -181,6 +185,18 @@ export function ReceivablesToolbar({
             searchPlaceholder="Поиск тега…"
             emptyText="Теги не найдены"
           />
+        )}
+
+        {onToggleGrouping && (
+          <Button
+            variant={groupingEnabled ? 'secondary' : 'outline'}
+            size="sm"
+            className="h-8 gap-1.5"
+            onClick={onToggleGrouping}
+          >
+            <Rows3 className="size-3.5" />
+            {groupingEnabled ? 'Группировка вкл' : 'Группировка выкл'}
+          </Button>
         )}
 
         {canToggleAll && onToggleAll && (

@@ -22,12 +22,35 @@ const dashboardScopeSchema = z.object({
 export const fetchDashboardData = createServerFn()
   .inputValidator(dashboardScopeSchema)
   .handler(async ({ data }) => {
+  const latestImportedAt = sql<Date | string | null>`max(${bankTransaction.bookedAt})`
   const accountsData = await fetchAccounts()
+  const latestImportedAtRows =
+    accountsData.length > 0
+      ? await db
+          .select({
+            id: currentAccount.id,
+            lastImportedAt: latestImportedAt,
+          })
+          .from(currentAccount)
+          .leftJoin(
+            bankTransaction,
+            eq(bankTransaction.currentAccountId, currentAccount.id),
+          )
+          .where(inArray(currentAccount.id, accountsData.map((account) => account.id)))
+          .groupBy(currentAccount.id)
+      : []
+  const lastImportedAtByAccountId = new Map(
+    latestImportedAtRows.map((row) => [
+      row.id,
+      serializeDateValue(row.lastImportedAt),
+    ]),
+  )
   const accounts = accountsData.map((account) => ({
     id: account.id,
     name: account.name,
     bankNameInitials: account.bankNameInitials,
     balance: Number(account.balance),
+    lastImportedAt: lastImportedAtByAccountId.get(account.id) ?? null,
   }))
   const accountIds = accounts.map((account) => account.id)
 
@@ -205,6 +228,11 @@ export const fetchDashboardData = createServerFn()
     },
   } satisfies DashboardLoaderData
   })
+
+function serializeDateValue(value: Date | string | null) {
+  if (!value) return null
+  return typeof value === 'string' ? value : value.toISOString()
+}
 
 async function buildBankSummary(accountIds: string[]) {
   if (accountIds.length === 0) {

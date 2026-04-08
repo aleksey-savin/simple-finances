@@ -32,6 +32,7 @@ export function ReceivablesTableSection({
   counterparties,
   allTags,
 }: ReceivablesTableSectionProps) {
+  const [groupingEnabled, setGroupingEnabled] = useState(true)
   const [expandedClientIds, setExpandedClientIds] = useState<Set<string>>(
     () => new Set(),
   )
@@ -56,6 +57,7 @@ export function ReceivablesTableSection({
       renderBody={(table) =>
         renderReceivablesTableBody(
           table,
+          groupingEnabled,
           expandedClientIds,
           setExpandedClientIds,
         )
@@ -67,7 +69,9 @@ export function ReceivablesTableSection({
           categories={categories}
           counterparties={counterparties}
           allTags={allTags}
-          canToggleAll={canToggleAll}
+          groupingEnabled={groupingEnabled}
+          onToggleGrouping={() => setGroupingEnabled((current) => !current)}
+          canToggleAll={groupingEnabled && canToggleAll}
           allExpanded={allExpanded}
           onToggleAll={() =>
             setExpandedClientIds(allExpanded ? new Set() : new Set(clientIds))
@@ -80,6 +84,7 @@ export function ReceivablesTableSection({
 
 function renderReceivablesTableBody(
   table: Table<IncomeRow>,
+  groupingEnabled: boolean,
   expandedClientIds: Set<string>,
   setExpandedClientIds: Dispatch<SetStateAction<Set<string>>>,
 ) {
@@ -96,6 +101,10 @@ function renderReceivablesTableBody(
         </TableCell>
       </TableRow>
     )
+  }
+
+  if (!groupingEnabled) {
+    return rows.map((row) => renderReceivableRow(row))
   }
 
   const groupedRows = groupReceivableRows(rows)
