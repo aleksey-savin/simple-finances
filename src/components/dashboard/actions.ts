@@ -1,237 +1,272 @@
 import { createServerFn } from '@tanstack/react-start'
+import { getRequest } from '@tanstack/react-start/server'
 import { Cron } from 'croner'
-import { desc, eq, inArray, sql } from 'drizzle-orm'
-import { z } from 'zod'
+import { and, desc, eq, gte, inArray, isNull, lt, lte, sql } from 'drizzle-orm'
 
-import { fetchAccounts } from '#/components/accounts/actions'
-import { fetchCompanies } from '#/components/companies/actions'
-import { fetchPayables } from '#/components/payables/actions'
-import { fetchReceivables } from '#/components/receivables/actions'
 import { db } from '#/db'
-import { bankTransaction, currentAccount, settlement } from '#/db/schema'
+import {
+  bankTransaction,
+  currentAccount,
+  invoice,
+  recurringRule,
+  settlement,
+} from '#/db/schema'
+import { getPaymentState } from '#/lib/invoice-payment'
+import { resolveScopedAccountIds } from '#/lib/company-scope'
+import { syncRecurringRulesForAccounts } from '#/lib/recurring'
 import type { DashboardLoaderData } from '#/types'
+import { auth } from 'utils/auth'
 
-const dashboardScopeSchema = z.object({
-  scope: z.string().optional(),
+export const fetchDashboardData = createServerFn().handler(async () => {
+  const request = getRequest()
+  const session = await auth.api.getSession({ headers: request.headers })
+
+  if (!session?.user?.id) throw new Error('Не авторизован')
+
+  const { accountIds } = await resolveScopedAccountIds(
+    session.user.id,
+    request.headers,
+  )
+
+  const empty = {
+    accounts: [],
+    totalBalance: 0,
+    bankSummary: {
+      totalCount: 0,
+      totalRemaining: 0,
+      incomingRemaining: 0,
+      outgoingRemaining: 0,
+    },
+    monthlyOutlook: {
+      receivablesAmount: 0,
+      receivablesCount: 0,
+      unissuedInvoicesAmount: 0,
+      unissuedInvoicesCount: 0,
+      currentMonthIncoming: 0,
+      previousPeriodDebt: 0,
+      previousPeriodDebtCount: 0,
+      plannedExpenses: 0,
+      plannedExpensesCount: 0,
+      expensesWithDebt: 0,
+      expensesWithDebtCount: 0,
+      netWithoutPreviousPeriodDebt: 0,
+      netWithPreviousPeriodDebt: 0,
+    },
+  } satisfies DashboardLoaderData
+
+  if (accountIds.length === 0) return empty
+
+  await syncRecurringRulesForAccounts(accountIds)
+
+  const now = new Date()
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  const monthEnd = new Date(
+    now.getFullYear(),
+    now.getMonth() + 1,
+    0,
+    23,
+    59,
+    59,
+    999,
+  )
+
+  const latestImportedAtSql = sql<
+    Date | string | null
+  >`max(${bankTransaction.bookedAt})`
+
+  const [
+    accountsData,
+    latestImportedAtRows,
+    receivableRows,
+    currentMonthPayableRows,
+    previousUnpaidPayableRows,
+  ] = await Promise.all([
+    db.query.currentAccount.findMany({
+      where: inArray(currentAccount.id, accountIds),
+      columns: {
+        id: true,
+        name: true,
+        bankNameInitials: true,
+        balance: true,
+      },
+    }),
+
+    db
+      .select({ id: currentAccount.id, lastImportedAt: latestImportedAtSql })
+      .from(currentAccount)
+      .leftJoin(
+        bankTransaction,
+        eq(bankTransaction.currentAccountId, currentAccount.id),
+      )
+      .where(inArray(currentAccount.id, accountIds))
+      .groupBy(currentAccount.id),
+
+    db.query.invoice.findMany({
+      where: and(
+        inArray(invoice.currentAccountId, accountIds),
+        eq(invoice.kind, 'receivable'),
+        isNull(invoice.paidAt),
+        isNull(invoice.archivedAt),
+      ),
+      columns: {
+        id: true,
+        amount: true,
+        currentAccountId: true,
+        paidAt: true,
+      },
+      with: {
+        settlements: { columns: { amount: true, settledAt: true } },
+      },
+    }),
+
+    db.query.invoice.findMany({
+      where: and(
+        inArray(invoice.currentAccountId, accountIds),
+        eq(invoice.kind, 'payable'),
+        gte(invoice.createdAt, monthStart),
+        lte(invoice.createdAt, monthEnd),
+        isNull(invoice.archivedAt),
+      ),
+      columns: {
+        id: true,
+        amount: true,
+        currentAccountId: true,
+        paidAt: true,
+      },
+      with: {
+        settlements: { columns: { amount: true, settledAt: true } },
+      },
+    }),
+
+    db.query.invoice.findMany({
+      where: and(
+        inArray(invoice.currentAccountId, accountIds),
+        eq(invoice.kind, 'payable'),
+        lt(invoice.createdAt, monthStart),
+        isNull(invoice.archivedAt),
+      ),
+      columns: {
+        id: true,
+        amount: true,
+        currentAccountId: true,
+        paidAt: true,
+      },
+      with: {
+        settlements: { columns: { amount: true, settledAt: true } },
+      },
+    }),
+  ])
+
+  const lastImportedAtByAccountId = new Map(
+    latestImportedAtRows.map((row) => [
+      row.id,
+      serializeDateValue(row.lastImportedAt),
+    ]),
+  )
+
+  const accounts = accountsData.map((account) => ({
+    id: account.id,
+    name: account.name,
+    bankNameInitials: account.bankNameInitials,
+    balance: Number(account.balance),
+    lastImportedAt: lastImportedAtByAccountId.get(account.id) ?? null,
+  }))
+
+  const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0)
+
+  // ── Receivables ────────────────────────────────────────────────────────────
+
+  const unpaidReceivables = receivableRows
+    .map((row) => ({
+      ...row,
+      paymentState: getPaymentState({
+        amount: row.amount,
+        paidAt: row.paidAt,
+        settlements: row.settlements,
+      }),
+    }))
+    .filter((row) => row.paymentState.status !== 'paid')
+
+  const receivablesAmount = unpaidReceivables.reduce(
+    (sum, row) => sum + row.paymentState.outstandingAmount,
+    0,
+  )
+  const receivablesCount = unpaidReceivables.length
+
+  // ── Projected (unissued) receivables from recurring rules ─────────────────
+
+  const projectedIncoming = await buildProjectedReceivablesSummary(
+    accountIds,
+    monthStart,
+    monthEnd,
+  )
+
+  const currentMonthIncoming = receivablesAmount + projectedIncoming.amount
+
+  // ── Payables ───────────────────────────────────────────────────────────────
+
+  const currentMonthPayables = currentMonthPayableRows.map((row) => ({
+    ...row,
+    paymentState: getPaymentState({
+      amount: row.amount,
+      paidAt: row.paidAt,
+      settlements: row.settlements,
+    }),
+  }))
+
+  const previousUnpaidPayables = previousUnpaidPayableRows
+    .map((row) => ({
+      ...row,
+      paymentState: getPaymentState({
+        amount: row.amount,
+        paidAt: row.paidAt,
+        settlements: row.settlements,
+      }),
+    }))
+    .filter((row) => row.paymentState.status !== 'paid')
+
+  const plannedExpenseRows = currentMonthPayables.filter(
+    (row) => row.paymentState.status !== 'paid',
+  )
+  const plannedExpenses = plannedExpenseRows.reduce(
+    (sum, row) => sum + row.paymentState.outstandingAmount,
+    0,
+  )
+  const previousPeriodDebt = previousUnpaidPayables.reduce(
+    (sum, row) => sum + row.paymentState.outstandingAmount,
+    0,
+  )
+  const expensesWithDebt = plannedExpenses + previousPeriodDebt
+
+  // ── Bank summary ───────────────────────────────────────────────────────────
+
+  const bankSummary = await buildBankSummary(accountIds)
+
+  return {
+    accounts,
+    totalBalance,
+    bankSummary,
+    monthlyOutlook: {
+      receivablesAmount,
+      receivablesCount,
+      unissuedInvoicesAmount: projectedIncoming.amount,
+      unissuedInvoicesCount: projectedIncoming.count,
+      currentMonthIncoming,
+      previousPeriodDebt,
+      previousPeriodDebtCount: previousUnpaidPayables.length,
+      plannedExpenses,
+      plannedExpensesCount: plannedExpenseRows.length,
+      expensesWithDebt,
+      expensesWithDebtCount:
+        plannedExpenseRows.length + previousUnpaidPayables.length,
+      netWithoutPreviousPeriodDebt: currentMonthIncoming - plannedExpenses,
+      netWithPreviousPeriodDebt:
+        currentMonthIncoming - plannedExpenses - previousPeriodDebt,
+    },
+  } satisfies DashboardLoaderData
 })
 
-export const fetchDashboardData = createServerFn()
-  .inputValidator(dashboardScopeSchema)
-  .handler(async ({ data }) => {
-    const latestImportedAt = sql<
-      Date | string | null
-    >`max(${bankTransaction.bookedAt})`
-    const accountsData = await fetchAccounts()
-    const latestImportedAtRows =
-      accountsData.length > 0
-        ? await db
-            .select({
-              id: currentAccount.id,
-              lastImportedAt: latestImportedAt,
-            })
-            .from(currentAccount)
-            .leftJoin(
-              bankTransaction,
-              eq(bankTransaction.currentAccountId, currentAccount.id),
-            )
-            .where(
-              inArray(
-                currentAccount.id,
-                accountsData.map((account) => account.id),
-              ),
-            )
-            .groupBy(currentAccount.id)
-        : []
-    const lastImportedAtByAccountId = new Map(
-      latestImportedAtRows.map((row) => [
-        row.id,
-        serializeDateValue(row.lastImportedAt),
-      ]),
-    )
-    const accounts = accountsData.map((account) => ({
-      id: account.id,
-      name: account.name,
-      bankNameInitials: account.bankNameInitials,
-      balance: Number(account.balance),
-      lastImportedAt: lastImportedAtByAccountId.get(account.id) ?? null,
-    }))
-    const accountIds = accounts.map((account) => account.id)
-
-    if (accountIds.length === 0) {
-      return {
-        scopes: [
-          {
-            id: 'personal',
-            name: 'Личные',
-            kind: 'personal',
-            accountCount: 0,
-            totalBalance: 0,
-          },
-        ],
-        selectedScopeId: 'personal',
-        accounts: [],
-        totalBalance: 0,
-        bankSummary: {
-          totalCount: 0,
-          totalRemaining: 0,
-          incomingRemaining: 0,
-          outgoingRemaining: 0,
-        },
-        monthlyOutlook: {
-          receivablesAmount: 0,
-          receivablesCount: 0,
-          unissuedInvoicesAmount: 0,
-          unissuedInvoicesCount: 0,
-          currentMonthIncoming: 0,
-          previousPeriodDebt: 0,
-          previousPeriodDebtCount: 0,
-          plannedExpenses: 0,
-          plannedExpensesCount: 0,
-          expensesWithDebt: 0,
-          expensesWithDebtCount: 0,
-          netWithoutPreviousPeriodDebt: 0,
-          netWithPreviousPeriodDebt: 0,
-        },
-      } satisfies DashboardLoaderData
-    }
-
-    const [companies, payablesData, receivablesData] = await Promise.all([
-      fetchCompanies(),
-      fetchPayables(),
-      fetchReceivables(),
-    ])
-
-    const companyAccountIds = new Set(
-      companies.flatMap((company) =>
-        company.accounts.map((account) => account.id),
-      ),
-    )
-    const personalAccounts = accounts.filter(
-      (account) => !companyAccountIds.has(account.id),
-    )
-    const companyScopes = companies.map((company) => {
-      const companyAccounts = accounts.filter((account) =>
-        company.accounts.some((item) => item.id === account.id),
-      )
-
-      return {
-        id: company.id,
-        name: company.name,
-        kind: 'company' as const,
-        accountCount: companyAccounts.length,
-        totalBalance: companyAccounts.reduce(
-          (sum, account) => sum + account.balance,
-          0,
-        ),
-        accountIds: companyAccounts.map((account) => account.id),
-      }
-    })
-    const scopes = [
-      ...companyScopes,
-      ...(personalAccounts.length > 0 || companyScopes.length === 0
-        ? [
-            {
-              id: 'personal',
-              name: 'Личные',
-              kind: 'personal' as const,
-              accountCount: personalAccounts.length,
-              totalBalance: personalAccounts.reduce(
-                (sum, account) => sum + account.balance,
-                0,
-              ),
-              accountIds: personalAccounts.map((account) => account.id),
-            },
-          ]
-        : []),
-    ]
-
-    const selectedScope =
-      scopes.find((scope) => scope.id === data.scope) ?? scopes[0]
-
-    const selectedAccountIds = selectedScope?.accountIds ?? []
-    const selectedAccountIdSet = new Set(selectedAccountIds)
-    const scopedAccounts = accounts.filter((account) =>
-      selectedAccountIdSet.has(account.id),
-    )
-    const scopedReceivables = receivablesData.rows.filter((row) =>
-      selectedAccountIdSet.has(row.currentAccountId),
-    )
-    const scopedCurrentMonthPayables = payablesData.currentMonth.filter((row) =>
-      selectedAccountIdSet.has(row.currentAccountId),
-    )
-    const scopedPreviousUnpaid = payablesData.previousUnpaid.filter((row) =>
-      selectedAccountIdSet.has(row.currentAccountId),
-    )
-
-    const bankSummary = await buildBankSummary(selectedAccountIds)
-
-    const totalBalance = scopedAccounts.reduce(
-      (sum, account) => sum + account.balance,
-      0,
-    )
-
-    const monthStart = new Date()
-    monthStart.setDate(1)
-    monthStart.setHours(0, 0, 0, 0)
-    const monthEnd = new Date()
-    monthEnd.setMonth(monthEnd.getMonth() + 1, 0)
-    monthEnd.setHours(23, 59, 59, 999)
-
-    const projectedIncoming = await buildProjectedReceivablesSummary(
-      selectedAccountIds,
-      monthStart,
-      monthEnd,
-    )
-
-    const currentReceivables = scopedReceivables.reduce(
-      (sum, row) => sum + row.outstandingAmount,
-      0,
-    )
-    const receivablesCount = scopedReceivables.length
-    const unissuedInvoicesAmount = projectedIncoming.amount
-    const unissuedInvoicesCount = projectedIncoming.count
-    const currentMonthIncoming = currentReceivables + projectedIncoming.amount
-
-    const previousPeriodDebtRows = scopedPreviousUnpaid
-    const previousPeriodDebt = previousPeriodDebtRows.reduce(
-      (sum, row) => sum + row.outstandingAmount,
-      0,
-    )
-
-    const plannedExpenseRows = scopedCurrentMonthPayables.filter(
-      (row) => row.paymentStatus !== 'paid',
-    )
-    const plannedExpenses = plannedExpenseRows.reduce(
-      (sum, row) => sum + row.outstandingAmount,
-      0,
-    )
-    const expensesWithDebt = plannedExpenses + previousPeriodDebt
-
-    return {
-      scopes: scopes.map(({ accountIds: _, ...scope }) => scope),
-      selectedScopeId: selectedScope?.id ?? 'personal',
-      accounts: scopedAccounts,
-      totalBalance,
-      bankSummary,
-      monthlyOutlook: {
-        receivablesAmount: currentReceivables,
-        receivablesCount,
-        unissuedInvoicesAmount,
-        unissuedInvoicesCount,
-        currentMonthIncoming,
-        previousPeriodDebt,
-        previousPeriodDebtCount: previousPeriodDebtRows.length,
-        plannedExpenses,
-        plannedExpensesCount: plannedExpenseRows.length,
-        expensesWithDebt,
-        expensesWithDebtCount:
-          plannedExpenseRows.length + previousPeriodDebtRows.length,
-        netWithoutPreviousPeriodDebt: currentMonthIncoming - plannedExpenses,
-        netWithPreviousPeriodDebt:
-          currentMonthIncoming - plannedExpenses - previousPeriodDebt,
-      },
-    } satisfies DashboardLoaderData
-  })
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
 function serializeDateValue(value: Date | string | null) {
   if (!value) return null
@@ -262,12 +297,7 @@ async function buildBankSummary(accountIds: string[]) {
   const rows = await db
     .select({
       id: bankTransaction.id,
-      currentAccountId: bankTransaction.currentAccountId,
-      currentAccountName: currentAccount.name,
       direction: bankTransaction.direction,
-      bookedAt: bankTransaction.bookedAt,
-      description: bankTransaction.description,
-      counterpartyName: bankTransaction.counterpartyNameRaw,
       amount: bankTransaction.amount,
       settledAmount: settledAmountSql,
     })
@@ -280,23 +310,13 @@ async function buildBankSummary(accountIds: string[]) {
     .orderBy(desc(bankTransaction.bookedAt), desc(bankTransaction.createdAt))
 
   const unresolvedRows = rows
-    .map((row) => {
-      const remainingAmount = Math.max(
+    .map((row) => ({
+      ...row,
+      remainingAmount: Math.max(
         Number(row.amount) - Number(row.settledAmount),
         0,
-      )
-
-      return {
-        id: row.id,
-        currentAccountId: row.currentAccountId,
-        currentAccountName: row.currentAccountName,
-        direction: row.direction,
-        bookedAt: row.bookedAt.toISOString(),
-        description: row.description,
-        counterpartyName: row.counterpartyName,
-        remainingAmount,
-      }
-    })
+      ),
+    }))
     .filter((row) => row.remainingAmount > 0)
 
   return {
@@ -319,11 +339,10 @@ async function buildProjectedReceivablesSummary(
   monthStart: Date,
   monthEnd: Date,
 ) {
-  if (accountIds.length === 0) {
-    return { amount: 0, count: 0 }
-  }
+  if (accountIds.length === 0) return { amount: 0, count: 0 }
 
   const now = new Date()
+
   const rules = await db.query.recurringRule.findMany({
     where: (table, { and }) =>
       and(
@@ -358,7 +377,7 @@ async function buildProjectedReceivablesSummary(
               )
             : null
 
-        if (dueDate && dueDate >= monthStart && dueDate <= monthEnd) {
+        if (!dueDate || (dueDate >= monthStart && dueDate <= monthEnd)) {
           amount += Number(rule.amount)
           count += 1
         }
@@ -366,7 +385,7 @@ async function buildProjectedReceivablesSummary(
         after = new Date(next.getTime() + 1)
       }
     } catch {
-      // Skip rules with invalid cron expressions.
+      // skip rules with invalid cron expressions
     }
   }
 

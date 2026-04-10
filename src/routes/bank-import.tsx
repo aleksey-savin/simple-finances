@@ -1,5 +1,6 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useDebounce } from '#/hooks/use-debounce'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
@@ -105,6 +106,34 @@ function BankImportPage() {
   const search = searchParams.search
   const directionFilter = searchParams.direction
   const statusFilter = searchParams.status
+
+  const [inputSearch, setInputSearch] = useState(search)
+  const debouncedSearch = useDebounce(inputSearch, 300)
+  const isFirstRender = useRef(true)
+
+  // Sync input when URL param is cleared externally (e.g. "clear filters")
+  useEffect(() => {
+    setInputSearch(search)
+  }, [search])
+
+  // Navigate only when debounced value settles, skip on first render
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      return
+    }
+    void router.navigate({
+      to: '/bank-import',
+      search: {
+        ...searchParams,
+        accountId: selectedAccountId || undefined,
+        page: 1,
+        pageSize,
+        search: debouncedSearch,
+      },
+      replace: true,
+    })
+  }, [debouncedSearch]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isImporting, setIsImporting] = useState(false)
@@ -352,20 +381,8 @@ function BankImportPage() {
         />
         {selectedAccountId && (
           <BankImportFilters
-            search={search}
-            onSearchChange={(value) => {
-              void router.navigate({
-                to: '/bank-import',
-                search: {
-                  ...searchParams,
-                  accountId: selectedAccountId || undefined,
-                  page: 1,
-                  pageSize,
-                  search: value,
-                },
-                replace: true,
-              })
-            }}
+            search={inputSearch}
+            onSearchChange={setInputSearch}
             directionFilter={directionFilter}
             onDirectionFilterChange={(value) => {
               void router.navigate({

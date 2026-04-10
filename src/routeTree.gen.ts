@@ -25,6 +25,7 @@ import { Route as ClientsRouteImport } from './routes/clients'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as BusinessLinesRouteImport } from './routes/business-lines'
 import { Route as BankImportRouteImport } from './routes/bank-import'
+import { Route as R403RouteImport } from './routes/403'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UsersNewRouteImport } from './routes/users.new'
 import { Route as TransactionsNewRouteImport } from './routes/transactions.new'
@@ -123,6 +124,11 @@ const BankImportRoute = BankImportRouteImport.update({
   path: '/bank-import',
   getParentRoute: () => rootRouteImport,
 } as any)
+const R403Route = R403RouteImport.update({
+  id: '/403',
+  path: '/403',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -211,6 +217,7 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/403': typeof R403Route
   '/bank-import': typeof BankImportRoute
   '/business-lines': typeof BusinessLinesRouteWithChildren
   '/categories': typeof CategoriesRouteWithChildren
@@ -246,6 +253,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/403': typeof R403Route
   '/bank-import': typeof BankImportRoute
   '/business-lines': typeof BusinessLinesRouteWithChildren
   '/categories': typeof CategoriesRouteWithChildren
@@ -282,6 +290,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/403': typeof R403Route
   '/bank-import': typeof BankImportRoute
   '/business-lines': typeof BusinessLinesRouteWithChildren
   '/categories': typeof CategoriesRouteWithChildren
@@ -319,6 +328,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/403'
     | '/bank-import'
     | '/business-lines'
     | '/categories'
@@ -354,6 +364,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/403'
     | '/bank-import'
     | '/business-lines'
     | '/categories'
@@ -389,6 +400,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/403'
     | '/bank-import'
     | '/business-lines'
     | '/categories'
@@ -425,6 +437,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  R403Route: typeof R403Route
   BankImportRoute: typeof BankImportRoute
   BusinessLinesRoute: typeof BusinessLinesRouteWithChildren
   CategoriesRoute: typeof CategoriesRouteWithChildren
@@ -556,6 +569,13 @@ declare module '@tanstack/react-router' {
       path: '/bank-import'
       fullPath: '/bank-import'
       preLoaderRoute: typeof BankImportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/403': {
+      id: '/403'
+      path: '/403'
+      fullPath: '/403'
+      preLoaderRoute: typeof R403RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -809,6 +829,7 @@ const UsersRouteWithChildren = UsersRoute._addFileChildren(UsersRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  R403Route: R403Route,
   BankImportRoute: BankImportRoute,
   BusinessLinesRoute: BusinessLinesRouteWithChildren,
   CategoriesRoute: CategoriesRouteWithChildren,

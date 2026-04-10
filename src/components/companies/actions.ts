@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
-import { eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { db } from '@/db'
@@ -30,9 +30,13 @@ export const fetchCompanies = createServerFn().handler(async () => {
         currentAccounts: {
           with: {
             currentAccount: {
-              columns: {
-                id: true,
-                name: true,
+              columns: { id: true, name: true },
+              with: {
+                members: {
+                  with: {
+                    user: { columns: { id: true, name: true, email: true } },
+                  },
+                },
               },
             },
           },
@@ -42,14 +46,36 @@ export const fetchCompanies = createServerFn().handler(async () => {
     })
     .then((rows) =>
       rows
-        .map((row) => ({
-          id: row.id,
-          name: row.name,
-          createdBy: row.createdBy,
-          accounts: row.currentAccounts
+        .map((row) => {
+          const accounts = row.currentAccounts
             .map((item) => item.currentAccount)
-            .filter((account) => accessibleAccountSet.has(account.id)),
-        }))
+            .filter((account) => accessibleAccountSet.has(account.id))
+
+          const seenUserIds = new Map<
+            string,
+            { userId: string; name: string; email: string; role: string }
+          >()
+          for (const item of row.currentAccounts) {
+            for (const cu of item.currentAccount.members) {
+              if (!seenUserIds.has(cu.userId)) {
+                seenUserIds.set(cu.userId, {
+                  userId: cu.userId,
+                  name: cu.user.name,
+                  email: cu.user.email,
+                  role: cu.role,
+                })
+              }
+            }
+          }
+
+          return {
+            id: row.id,
+            name: row.name,
+            createdBy: row.createdBy,
+            accounts,
+            members: [...seenUserIds.values()],
+          }
+        })
         .filter((row) => row.accounts.length > 0),
     )
 })
@@ -142,6 +168,107 @@ async function getAccessibleAccountIds(userId: string) {
 
   return memberships.map((membership) => membership.currentAccountId)
 }
+
+async function getCompanyAccountIds(companyId: string) {
+  const rows = await db.query.companyCurrentAccount.findMany({
+    where: eq(companyCurrentAccount.companyId, companyId),
+    columns: { currentAccountId: true },
+  })
+  return rows.map((r) => r.currentAccountId)
+}
+
+// ─── Members ──────────────────────────────────────────────────────────────────
+
+export const companyMembersQueryKey = (companyId: string) =>
+  ['company-members', companyId] as const
+
+export const fetchCompanyMembers = createServerFn()
+  .inputValidator(z.object({ companyId: z.string() }))
+  .handler(async ({ data }) => {
+    const accountIds = await getCompanyAccountIds(data.companyId)
+    if (accountIds.length === 0) return []
+
+    const rows = await db.query.currentAccountUser.findMany({
+      where: inArray(currentAccountUser.currentAccountId, accountIds),
+      with: {
+        user: { columns: { id: true, name: true, email: true } },
+      },
+    })
+
+    // Deduplicate by userId — a user may be in multiple accounts of the company
+    const seen = new Map<string, (typeof rows)[number]>()
+    for (const row of rows) {
+      if (!seen.has(row.userId)) seen.set(row.userId, row)
+    }
+
+    return [...seen.values()].map((row) => ({
+      userId: row.userId,
+      name: row.user.name,
+      email: row.user.email,
+      role: row.role,
+    }))
+  })
+
+const addCompanyMemberSchema = z.object({
+  companyId: z.string(),
+  userId: z.string(),
+  role: z.string().default('member'),
+})
+
+export const addCompanyMember = createServerFn({ method: 'POST' })
+  .inputValidator(addCompanyMemberSchema)
+  .handler(async ({ data }) => {
+    const request = getRequest()
+    const session = await auth.api.getSession({ headers: request.headers })
+    if (!session?.user?.id) throw new Error('Не авторизован')
+
+    const accountIds = await getCompanyAccountIds(data.companyId)
+    if (accountIds.length === 0)
+      throw new Error('У компании нет привязанных счетов')
+
+    const existing = await db.query.currentAccountUser.findFirst({
+      where: and(
+        eq(currentAccountUser.userId, data.userId),
+        inArray(currentAccountUser.currentAccountId, accountIds),
+      ),
+    })
+    if (existing)
+      throw new Error('Пользователь уже является участником компании')
+
+    await db.insert(currentAccountUser).values(
+      accountIds.map((accountId) => ({
+        currentAccountId: accountId,
+        userId: data.userId,
+        role: data.role,
+        invitedBy: session.user.id,
+      })),
+    )
+  })
+
+const removeCompanyMemberSchema = z.object({
+  companyId: z.string(),
+  userId: z.string(),
+})
+
+export const removeCompanyMember = createServerFn({ method: 'POST' })
+  .inputValidator(removeCompanyMemberSchema)
+  .handler(async ({ data }) => {
+    const request = getRequest()
+    const session = await auth.api.getSession({ headers: request.headers })
+    if (!session?.user?.id) throw new Error('Не авторизован')
+
+    const accountIds = await getCompanyAccountIds(data.companyId)
+    if (accountIds.length === 0) return
+
+    await db
+      .delete(currentAccountUser)
+      .where(
+        and(
+          eq(currentAccountUser.userId, data.userId),
+          inArray(currentAccountUser.currentAccountId, accountIds),
+        ),
+      )
+  })
 
 async function ensureAccountSelectionIsAvailable(
   userId: string,

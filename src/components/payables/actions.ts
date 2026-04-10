@@ -9,13 +9,8 @@ import type {
   TagsMap,
 } from '#/components/payables/types'
 import { db } from '#/db'
-import {
-  currentAccount,
-  currentAccountUser,
-  invoice,
-  invoiceTag,
-  recurringRule,
-} from '#/db/schema'
+import { currentAccount, invoice, invoiceTag, recurringRule } from '#/db/schema'
+import { resolveScopedAccountIds } from '#/lib/company-scope'
 import { getPaymentState } from '#/lib/invoice-payment'
 import { syncRecurringRulesForAccounts } from '#/lib/recurring'
 import { auth } from 'utils/auth'
@@ -28,13 +23,9 @@ export const fetchPayables = createServerFn().handler(async () => {
     throw new Error('Не авторизован')
   }
 
-  const memberships = await db
-    .select({ currentAccountId: currentAccountUser.currentAccountId })
-    .from(currentAccountUser)
-    .where(eq(currentAccountUser.userId, session.user.id))
-
-  const accountIds = memberships.map(
-    (membership) => membership.currentAccountId,
+  const { accountIds } = await resolveScopedAccountIds(
+    session.user.id,
+    request.headers,
   )
 
   if (accountIds.length === 0) {

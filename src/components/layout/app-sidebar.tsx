@@ -11,22 +11,39 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from '@/components/ui/sidebar'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
-import { Link } from '@tanstack/react-router'
+import { Link, useRouter } from '@tanstack/react-router'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { NavUser } from './nav-user'
 import {
   BanknoteArrowDown,
   BanknoteArrowUp,
   Building,
+  Building2,
   CalendarCheck,
+  Check,
+  ChevronsUpDown,
   FileSpreadsheet,
   Folder,
   LayoutDashboard,
   List,
   ReceiptRussianRuble,
   User,
+  UserRound,
   Wallet,
 } from 'lucide-react'
+import { fetchAppScopes } from '#/components/layout/actions'
+
+// Must match APP_SCOPE_COOKIE_NAME in lib/company-scope.ts
+const SCOPE_COOKIE_NAME = 'app_scope'
+
+export const appScopesQueryKey = ['app-scopes'] as const
 
 const navMain = [
   {
@@ -76,11 +93,13 @@ const navMain = [
         title: 'Бизнес-направления',
         icon: <Folder className="size-5" />,
         url: '/business-lines',
+        hideForPersonal: true,
       },
       {
         title: 'Договоры',
         icon: <FileSpreadsheet className="size-5" />,
         url: '/contracts',
+        hideForPersonal: true,
       },
       {
         title: 'Категории платежей',
@@ -126,24 +145,100 @@ const navMain = [
 // ---------------------------------------------------------------------------
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const router = useRouter()
+  const queryClient = useQueryClient()
+
+  const { data: scopeData } = useQuery({
+    queryKey: appScopesQueryKey,
+    queryFn: () => fetchAppScopes(),
+  })
+
+  const scopes = scopeData?.scopes ?? []
+  const selectedScope =
+    scopes.find((s) => s.id === scopeData?.selectedScopeId) ?? scopes[0]
+  const isPersonal = selectedScope?.kind === 'personal'
+
+  function handleScopeChange(scopeId: string) {
+    document.cookie = `${SCOPE_COOKIE_NAME}=${encodeURIComponent(scopeId)}; path=/; max-age=31536000; SameSite=Lax`
+    queryClient.invalidateQueries({ queryKey: appScopesQueryKey })
+    router.invalidate()
+  }
+
+  const filteredNavMain = navMain
+    .map((group) => ({
+      ...group,
+      items: group.items.filter(
+        (item) =>
+          !isPersonal || !('hideForPersonal' in item && item.hideForPersonal),
+      ),
+    }))
+    .filter((group) => group.items.length > 0)
+
   return (
     <Sidebar {...props}>
-      <SidebarHeader></SidebarHeader>
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton className="h-12 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
+                  <span className="flex min-w-0 items-center gap-2">
+                    {selectedScope?.kind === 'personal' ? (
+                      <UserRound className="size-4 shrink-0" />
+                    ) : (
+                      <Building2 className="size-4 shrink-0" />
+                    )}
+                    <span className="truncate font-semibold">
+                      {selectedScope?.name ?? '…'}
+                    </span>
+                  </span>
+                  <ChevronsUpDown className="ml-auto size-4 shrink-0 text-muted-foreground" />
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                className="w-[--radix-popper-anchor-width]"
+                align="start"
+              >
+                {scopes.map((scope) => (
+                  <DropdownMenuItem
+                    key={scope.id}
+                    onSelect={() => handleScopeChange(scope.id)}
+                    className="flex items-center gap-2"
+                  >
+                    {scope.kind === 'personal' ? (
+                      <UserRound className="size-4 text-muted-foreground" />
+                    ) : (
+                      <Building2 className="size-4 text-muted-foreground" />
+                    )}
+                    <span>{scope.name}</span>
+                    {scope.id === selectedScope?.id && (
+                      <Check className="ml-auto size-4" />
+                    )}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
+
       <SidebarContent>
-        {navMain.map((item) => (
-          <SidebarGroup key={item.title}>
-            {item.title && <SidebarGroupLabel>{item.title}</SidebarGroupLabel>}
+        {filteredNavMain.map((group) => (
+          <SidebarGroup key={group.title}>
+            {group.title && (
+              <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
+            )}
             <SidebarGroupContent>
               <SidebarMenu>
-                {item.items.map((child) => (
-                  <SidebarMenuItem key={child.title}>
+                {group.items.map((item) => (
+                  <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       asChild
                       className="flex items-center gap-2 text-base"
                     >
-                      <Link to={child.url}>
-                        {child.icon && <span>{child.icon}</span>}
-                        {child.title}
+                      <Link to={item.url}>
+                        {item.icon && <span>{item.icon}</span>}
+                        {item.title}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -153,6 +248,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarGroup>
         ))}
       </SidebarContent>
+
       <SidebarFooter>
         <NavUser />
       </SidebarFooter>

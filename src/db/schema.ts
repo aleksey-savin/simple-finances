@@ -250,6 +250,9 @@ export const category = pgTable('category', {
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
   name: text().notNull(),
+  companyId: text('company_id').references(() => company.id, {
+    onDelete: 'set null',
+  }),
   useForExpenses: boolean('use_for_expenses').notNull().default(false),
   useForIncome: boolean('use_for_income').notNull().default(false),
   isShared: boolean('is_shared').notNull().default(false),
@@ -914,7 +917,11 @@ export const contractRelations = relations(contract, ({ one }) => ({
   }),
 }))
 
-export const categoryRelations = relations(category, ({ many }) => ({
+export const categoryRelations = relations(category, ({ one, many }) => ({
+  company: one(company, {
+    fields: [category.companyId],
+    references: [company.id],
+  }),
   expenses: many(expense),
   incomes: many(income),
   invoices: many(invoice),

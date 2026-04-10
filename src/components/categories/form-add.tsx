@@ -1,21 +1,29 @@
 import { useForm } from '@tanstack/react-form'
-
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Field, FieldError, FieldLabel } from '../ui/field'
 import { Switch } from '../ui/switch'
-import { useRouter } from '@tanstack/react-router'
-import { useQueryClient } from '@tanstack/react-query'
+import { Combobox } from '../ui/combobox'
 import { addCategory, categoryFormSchema, categoriesQueryKey } from './actions'
+import { fetchCompanies, companiesQueryKey } from '../companies/actions'
 
 export const AddCategoryForm = () => {
   const router = useRouter()
   const queryClient = useQueryClient()
+
+  const { data: companies = [] } = useQuery({
+    queryKey: companiesQueryKey,
+    queryFn: () => fetchCompanies(),
+  })
+
   const form = useForm({
     defaultValues: {
       name: '',
+      companyId: null as string | null,
       useForIncome: false,
       useForExpenses: false,
       isShared: false,
@@ -23,14 +31,7 @@ export const AddCategoryForm = () => {
     validators: { onSubmit: categoryFormSchema },
     onSubmit: async ({ value }) => {
       try {
-        await addCategory({
-          data: {
-            name: value.name,
-            useForIncome: value.useForIncome,
-            useForExpenses: value.useForExpenses,
-            isShared: value.isShared,
-          },
-        })
+        await addCategory({ data: value })
         router.invalidate()
         queryClient.invalidateQueries({ queryKey: categoriesQueryKey })
         form.reset()
@@ -40,6 +41,7 @@ export const AddCategoryForm = () => {
       }
     },
   })
+
   return (
     <form
       id="add-category-form"
@@ -75,6 +77,29 @@ export const AddCategoryForm = () => {
             )
           }}
         />
+
+        <form.Field
+          name="companyId"
+          children={(field) => (
+            <Field>
+              <FieldLabel>Компания</FieldLabel>
+              <Combobox
+                options={companies.map((c) => ({ value: c.id, label: c.name }))}
+                value={field.state.value ?? ''}
+                onValueChange={(val) => field.handleChange(val || null)}
+                placeholder="Без привязки к компании"
+                searchPlaceholder="Поиск компании..."
+                emptyText="Нет компаний"
+                allowClear
+              />
+              <p className="text-xs text-muted-foreground">
+                Необязательно — категория будет видна в рамках выбранной
+                компании
+              </p>
+            </Field>
+          )}
+        />
+
         <div className="flex">
           <form.Field
             name="useForExpenses"
@@ -87,9 +112,9 @@ export const AddCategoryForm = () => {
                     <Switch
                       id={field.name}
                       checked={field.state.value}
-                      onCheckedChange={(val: boolean) => {
+                      onCheckedChange={(val: boolean) =>
                         field.handleChange(val)
-                      }}
+                      }
                     />
                     <FieldLabel htmlFor={field.name}>Расходы</FieldLabel>
                   </div>
@@ -109,9 +134,9 @@ export const AddCategoryForm = () => {
                     <Switch
                       id={field.name}
                       checked={field.state.value}
-                      onCheckedChange={(val: boolean) => {
+                      onCheckedChange={(val: boolean) =>
                         field.handleChange(val)
-                      }}
+                      }
                     />
                     <FieldLabel htmlFor={field.name}>Доход</FieldLabel>
                   </div>

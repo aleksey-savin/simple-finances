@@ -15,6 +15,7 @@ import {
   createRecurringEntry,
   syncRecurringRulesForAccounts,
 } from '#/lib/recurring'
+import { resolveScopedAccountIds } from '#/lib/company-scope'
 import type { RecurringLoaderData, RecurringMonthTotals } from '@/types'
 
 // ─── Fetch list (route loader) ────────────────────────────────────────────────
@@ -24,15 +25,10 @@ export const fetchRecurringData = createServerFn().handler(async () => {
   const session = await auth.api.getSession({ headers: request.headers })
   if (!session?.user?.id) throw new Error('Не авторизован')
 
-  const memberships = await db
-    .select({
-      currentAccountId: currentAccountUser.currentAccountId,
-      role: currentAccountUser.role,
-    })
-    .from(currentAccountUser)
-    .where(eq(currentAccountUser.userId, session.user.id))
-
-  const accountIds = memberships.map((m) => m.currentAccountId)
+  const { accountIds } = await resolveScopedAccountIds(
+    session.user.id,
+    request.headers,
+  )
 
   if (accountIds.length === 0) {
     const [categories, counterparties] = await Promise.all([

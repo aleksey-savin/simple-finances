@@ -1,4 +1,4 @@
-import { Pencil, Tag, Globe } from 'lucide-react'
+import { Pencil, Tag, Globe, Building2 } from 'lucide-react'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchCategories, categoriesQueryKey } from './actions'
@@ -66,6 +66,15 @@ function CategoryRow({
               <Badge variant="default" className="text-xs px-1.5 py-0 gap-1">
                 <Globe className="size-2.5" />
                 Общая
+              </Badge>
+            )}
+            {category.company && (
+              <Badge
+                variant="outline"
+                className="text-xs px-1.5 py-0 gap-1 text-muted-foreground"
+              >
+                <Building2 className="size-2.5" />
+                {category.company.name}
               </Badge>
             )}
           </div>

@@ -25,6 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { CompanyMembers } from '#/components/companies/members'
 
 export const Route = createFileRoute('/companies')({
   loader: () => fetchCompanies(),
@@ -105,6 +106,11 @@ function CompaniesPage() {
                           ? company.accounts.map((item) => item.name).join(', ')
                           : 'Счета не выбраны'}
                       </p>
+                      {company.members.length > 0 && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {company.members.map((m) => m.name).join(', ')}
+                        </p>
+                      )}
                     </div>
                     <div className="flex items-center gap-1">
                       <Button
@@ -128,6 +134,7 @@ function CompaniesPage() {
                   <TableRow>
                     <TableHead className="font-bold">Компания</TableHead>
                     <TableHead className="font-bold">Счета</TableHead>
+                    <TableHead className="font-bold">Участники</TableHead>
                     <TableHead className="w-24 text-right font-bold">
                       Действия
                     </TableHead>
@@ -155,6 +162,19 @@ function CompaniesPage() {
                           <span className="text-sm text-muted-foreground">
                             Счета не выбраны
                           </span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {company.members.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {company.members.map((member) => (
+                              <Badge key={member.userId} variant="outline" className="text-xs">
+                                {member.name}
+                              </Badge>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">—</span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -191,10 +211,13 @@ function CompaniesPage() {
             <DialogDescription>{editingCompany?.name}</DialogDescription>
           </DialogHeader>
           {editingCompany ? (
-            <EditCompanyForm
-              company={editingCompany}
-              onDone={() => setEditingId(null)}
-            />
+            <>
+              <EditCompanyForm
+                company={editingCompany}
+                onDone={() => setEditingId(null)}
+              />
+              <CompanyMembers companyId={editingCompany.id} />
+            </>
           ) : null}
         </DialogContent>
       </Dialog>

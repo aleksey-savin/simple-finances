@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Building2, Pencil } from 'lucide-react'
+import { CompanyMembers } from './members'
 import { useQuery } from '@tanstack/react-query'
 
 import type { Company } from '@/types'
@@ -62,6 +63,9 @@ function CompanyRow({
             company={company}
             onDone={() => setEditingId(null)}
           />
+          <div className="border-t pt-4 mt-2">
+            <CompanyMembers companyId={company.id} />
+          </div>
         </div>
       )}
     </div>

@@ -82,8 +82,10 @@ export type Account = Pick<
 
 export type Category = Pick<
   DBCategory,
-  'id' | 'name' | 'useForExpenses' | 'useForIncome' | 'isShared'
->
+  'id' | 'name' | 'companyId' | 'useForExpenses' | 'useForIncome' | 'isShared'
+> & {
+  company: Pick<DBCompany, 'id' | 'name'> | null
+}
 
 export type Counterparty = Pick<
   DBCounterparty,
@@ -98,6 +100,7 @@ export type Client = Pick<DBClient, 'id' | 'name' | 'createdBy'> & {
 
 export type Company = Pick<DBCompany, 'id' | 'name' | 'createdBy'> & {
   accounts: Pick<CurrentAccount, 'id' | 'name'>[]
+  members: { userId: string; name: string; email: string; role: string }[]
 }
 
 export type BusinessLine = Pick<DBBusinessLine, 'id' | 'name' | 'createdBy'> & {
@@ -260,8 +263,6 @@ export type DashboardMonthlyOutlook = {
 }
 
 export type DashboardLoaderData = {
-  scopes: DashboardScope[]
-  selectedScopeId: string
   accounts: DashboardAccountBalance[]
   totalBalance: number
   bankSummary: DashboardBankSummary

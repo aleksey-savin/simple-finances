@@ -2,18 +2,15 @@ import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
 import { eq, inArray, isNull } from 'drizzle-orm'
 
+import { resolveScopedAccountIds } from '#/lib/company-scope'
+
 import type {
   IncomeRow,
   ReceivablesLoaderData,
   TagsMap,
 } from '#/components/receivables/types'
 import { db } from '#/db'
-import {
-  clientCounterparty,
-  currentAccount,
-  currentAccountUser,
-  invoiceTag,
-} from '#/db/schema'
+import { clientCounterparty, currentAccount, invoiceTag } from '#/db/schema'
 import { getPaymentState } from '#/lib/invoice-payment'
 import { syncRecurringRulesForAccounts } from '#/lib/recurring'
 import { auth } from 'utils/auth'
@@ -26,13 +23,9 @@ export const fetchReceivables = createServerFn().handler(async () => {
     throw new Error('Не авторизован')
   }
 
-  const memberships = await db
-    .select({ currentAccountId: currentAccountUser.currentAccountId })
-    .from(currentAccountUser)
-    .where(eq(currentAccountUser.userId, session.user.id))
-
-  const accountIds = memberships.map(
-    (membership) => membership.currentAccountId,
+  const { accountIds } = await resolveScopedAccountIds(
+    session.user.id,
+    request.headers,
   )
 
   if (accountIds.length === 0) {

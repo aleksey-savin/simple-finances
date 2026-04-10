@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router'
 import { useState } from 'react'
 
-import { Globe, Pencil, Search, Tag, X } from 'lucide-react'
+import { Building2, Globe, Pencil, Search, Tag, X } from 'lucide-react'
 
 import { EditCategoryForm } from '@/components/categories'
 import { DeleteCategory } from '@/components/categories/delete'
@@ -54,6 +54,7 @@ function CategoriesPage() {
         category.useForExpenses ? 'расходы' : '',
         category.useForIncome ? 'доход' : '',
         category.isShared ? 'общая' : 'личная',
+        category.company?.name ?? '',
       ]
         .join(' ')
         .toLowerCase()
@@ -168,6 +169,12 @@ function CategoriesPage() {
                             Общая
                           </Badge>
                         )}
+                        {category.company && (
+                          <Badge variant="outline" className="gap-1">
+                            <Building2 className="size-3" />
+                            {category.company.name}
+                          </Badge>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
@@ -193,6 +200,7 @@ function CategoriesPage() {
                     <TableHead className="font-bold">Категория</TableHead>
                     <TableHead className="font-bold">Тип</TableHead>
                     <TableHead className="font-bold">Доступ</TableHead>
+                    <TableHead className="font-bold">Компания</TableHead>
                     <TableHead className="w-24 text-right font-bold">
                       Действия
                     </TableHead>
@@ -220,9 +228,10 @@ function CategoriesPage() {
                               Доходы
                             </Badge>
                           )}
-                          {!category.useForExpenses && !category.useForIncome && (
-                            <Badge variant="outline">Не используется</Badge>
-                          )}
+                          {!category.useForExpenses &&
+                            !category.useForIncome && (
+                              <Badge variant="outline">Не используется</Badge>
+                            )}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -233,6 +242,18 @@ function CategoriesPage() {
                           </Badge>
                         ) : (
                           <Badge variant="outline">Моя</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {category.company ? (
+                          <Badge variant="outline" className="gap-1">
+                            <Building2 className="size-3" />
+                            {category.company.name}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            —
+                          </span>
                         )}
                       </TableCell>
                       <TableCell>

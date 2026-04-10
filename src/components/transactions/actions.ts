@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
-import { eq, inArray, or } from 'drizzle-orm'
+import { and, eq, inArray, or } from 'drizzle-orm'
 import z from 'zod'
 
 import type { TagItem } from '#/components/ui/tag-picker'
@@ -14,6 +14,7 @@ import {
 } from '#/db/schema'
 import { getPaymentState } from '#/lib/invoice-payment'
 import { syncRecurringRulesForAccounts } from '#/lib/recurring'
+import { resolveScopedAccountIds } from '#/lib/company-scope'
 import { auth } from 'utils/auth'
 
 export const fetchTransactionsData = createServerFn().handler(async () => {
@@ -26,17 +27,24 @@ export const fetchTransactionsData = createServerFn().handler(async () => {
 
   const userId = session.user.id
 
-  const memberships = await db
-    .select({
-      currentAccountId: currentAccountUser.currentAccountId,
-      role: currentAccountUser.role,
-    })
-    .from(currentAccountUser)
-    .where(eq(currentAccountUser.userId, userId))
+  const { accountIds } = await resolveScopedAccountIds(userId, request.headers)
 
-  const accountIds = memberships.map(
-    (membership) => membership.currentAccountId,
-  )
+  const memberships =
+    accountIds.length > 0
+      ? await db
+          .select({
+            currentAccountId: currentAccountUser.currentAccountId,
+            role: currentAccountUser.role,
+          })
+          .from(currentAccountUser)
+          .where(
+            and(
+              eq(currentAccountUser.userId, userId),
+              inArray(currentAccountUser.currentAccountId, accountIds),
+            ),
+          )
+      : []
+
   const roleByAccountId = new Map(
     memberships.map((membership) => [
       membership.currentAccountId,

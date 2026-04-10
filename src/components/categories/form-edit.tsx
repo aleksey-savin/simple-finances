@@ -1,12 +1,13 @@
 import { useRouter } from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form'
+import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
 import { Field, FieldError, FieldLabel } from '../ui/field'
-
 import { Switch } from '../ui/switch'
+import { Combobox } from '../ui/combobox'
 
 import { useQueryClient } from '@tanstack/react-query'
 import type { Category } from '#/types'
@@ -15,6 +16,10 @@ import {
   categoryFormSchema,
   categoriesQueryKey,
 } from './actions'
+import {
+  fetchCompanies,
+  companiesQueryKey,
+} from '@/components/companies/actions'
 
 export const EditCategoryForm = ({
   category,
@@ -26,9 +31,17 @@ export const EditCategoryForm = ({
   const router = useRouter()
   const queryClient = useQueryClient()
 
+  const { data: companies = [] } = useQuery({
+    queryKey: companiesQueryKey,
+    queryFn: () => fetchCompanies(),
+  })
+
+  const companyOptions = companies.map((c) => ({ value: c.id, label: c.name }))
+
   const form = useForm({
     defaultValues: {
       name: category.name,
+      companyId: category.companyId ?? null,
       useForExpenses: category.useForExpenses,
       useForIncome: category.useForIncome,
       isShared: category.isShared,
@@ -77,6 +90,25 @@ export const EditCategoryForm = ({
           )
         }}
       </form.Field>
+
+      {companyOptions.length > 0 && (
+        <form.Field name="companyId">
+          {(field) => (
+            <Field>
+              <FieldLabel>Компания</FieldLabel>
+              <Combobox
+                options={companyOptions}
+                value={field.state.value ?? ''}
+                onValueChange={(val) =>
+                  field.handleChange(val === '' ? null : val)
+                }
+                placeholder="Не привязана"
+                allowClear
+              />
+            </Field>
+          )}
+        </form.Field>
+      )}
 
       <div className="flex gap-4 flex-wrap">
         <form.Field name="useForExpenses">

@@ -1,67 +1,19 @@
 import { Link } from '@tanstack/react-router'
-import {
-  ArrowDownLeft,
-  ArrowUpRight,
-  Building2,
-  Check,
-  Landmark,
-  Rows3,
-  UserRound,
-} from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, Landmark, Rows3 } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { Button } from '#/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import type { DashboardLoaderData } from '#/types'
 
-type DashboardPageProps = DashboardLoaderData & {
-  onScopeChange: (scopeId: string) => void
-}
-
 export function DashboardPage({
-  scopes,
-  selectedScopeId,
   accounts,
   totalBalance,
   bankSummary,
   monthlyOutlook,
-  onScopeChange,
-}: DashboardPageProps) {
+}: DashboardLoaderData) {
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        {scopes.map((scope) => {
-          const isSelected = scope.id === selectedScopeId
-
-          return (
-            <button
-              key={scope.id}
-              type="button"
-              onClick={() => onScopeChange(scope.id)}
-              className={`border p-4 text-left transition-colors ${
-                isSelected
-                  ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                  : 'bg-card hover:bg-muted/30'
-              }`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="space-y-1">
-                  <p className="font-medium">{scope.name}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {scope.kind === 'personal' ? (
-                    <UserRound className="size-4 text-muted-foreground" />
-                  ) : (
-                    <Building2 className="size-4 text-muted-foreground" />
-                  )}
-                  {isSelected && <Check className="size-4 text-primary" />}
-                </div>
-              </div>
-            </button>
-          )
-        })}
-      </div>
-
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <FormulaMetricCard
           title="Ожидаемые поступления"
