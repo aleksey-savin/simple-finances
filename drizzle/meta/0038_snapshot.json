@@ -1,6 +1,6 @@
 {
-  "id": "946b62c6-7fef-4645-98f1-e5e9502fcda5",
-  "prevId": "f038b464-ffdc-40cb-8807-76f07d954f4f",
+  "id": "f705e1d2-b5e2-45d8-9de2-2a173b381fe5",
+  "prevId": "946b62c6-7fef-4645-98f1-e5e9502fcda5",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1029,29 +1029,7 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "counterparty_name_unique": {
-          "name": "counterparty_name_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "name"
-          ]
-        },
-        "counterparty_fullName_unique": {
-          "name": "counterparty_fullName_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "fullName"
-          ]
-        },
-        "counterparty_tin_unique": {
-          "name": "counterparty_tin_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "tin"
-          ]
-        }
-      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

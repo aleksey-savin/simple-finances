@@ -260,6 +260,34 @@
       "when": 1775788855198,
       "tag": "0036_loving_night_nurse",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1775802050019,
+      "tag": "0037_superb_terror",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1775802780289,
+      "tag": "0038_elite_talos",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1775804191115,
+      "tag": "0039_flimsy_lilandra",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1775806257086,
+      "tag": "0040_premium_red_shift",
+      "breakpoints": true
     }
   ]
 }

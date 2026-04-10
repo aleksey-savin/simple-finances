@@ -33,7 +33,7 @@ export default function CounterParties() {
         </SheetHeader>
 
         <div className="px-4 pt-2 pb-4 shrink-0">
-          <AddCounterpartyForm />
+          <AddCounterpartyForm onDone={() => setOpen(false)} />
         </div>
         <Separator />
         <CounterpartiesList />

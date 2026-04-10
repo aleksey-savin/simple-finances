@@ -7,6 +7,7 @@ import type { TagItem } from '#/components/ui/tag-picker'
 import { db } from '#/db'
 import {
   category,
+  counterparty,
   currentAccount,
   currentAccountUser,
   invoice,
@@ -14,7 +15,10 @@ import {
 } from '#/db/schema'
 import { getPaymentState } from '#/lib/invoice-payment'
 import { syncRecurringRulesForAccounts } from '#/lib/recurring'
-import { resolveScopedAccountIds } from '#/lib/company-scope'
+import {
+  getScopedCounterpartyIds,
+  resolveScopedAccountIds,
+} from '#/lib/company-scope'
 import { auth } from 'utils/auth'
 
 export const fetchTransactionsData = createServerFn().handler(async () => {
@@ -27,7 +31,10 @@ export const fetchTransactionsData = createServerFn().handler(async () => {
 
   const userId = session.user.id
 
-  const { accountIds } = await resolveScopedAccountIds(userId, request.headers)
+  const { accountIds, selectedScope } = await resolveScopedAccountIds(
+    userId,
+    request.headers,
+  )
 
   const memberships =
     accountIds.length > 0
@@ -123,7 +130,9 @@ export const fetchTransactionsData = createServerFn().handler(async () => {
       db.query.category.findMany({
         where: or(eq(category.createdBy, userId), eq(category.isShared, true)),
       }),
-      db.query.counterparty.findMany({}),
+      getScopedCounterpartyIds(userId, selectedScope).then((ids) =>
+        ids.length > 0 ? db.query.counterparty.findMany({ where: inArray(counterparty.id, ids) }) : [],
+      ),
       db.query.currentAccount.findMany({
         where: inArray(currentAccount.id, accountIds),
         with: {

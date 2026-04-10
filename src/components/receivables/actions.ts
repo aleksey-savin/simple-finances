@@ -2,7 +2,10 @@ import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
 import { eq, inArray, isNull } from 'drizzle-orm'
 
-import { resolveScopedAccountIds } from '#/lib/company-scope'
+import {
+  getScopedCounterpartyIds,
+  resolveScopedAccountIds,
+} from '#/lib/company-scope'
 
 import type {
   IncomeRow,
@@ -10,7 +13,7 @@ import type {
   TagsMap,
 } from '#/components/receivables/types'
 import { db } from '#/db'
-import { clientCounterparty, currentAccount, invoiceTag } from '#/db/schema'
+import { clientCounterparty, counterparty, currentAccount, invoiceTag } from '#/db/schema'
 import { getPaymentState } from '#/lib/invoice-payment'
 import { syncRecurringRulesForAccounts } from '#/lib/recurring'
 import { auth } from 'utils/auth'
@@ -23,7 +26,7 @@ export const fetchReceivables = createServerFn().handler(async () => {
     throw new Error('Не авторизован')
   }
 
-  const { accountIds } = await resolveScopedAccountIds(
+  const { accountIds, selectedScope } = await resolveScopedAccountIds(
     session.user.id,
     request.headers,
   )
@@ -64,7 +67,14 @@ export const fetchReceivables = createServerFn().handler(async () => {
       where: inArray(currentAccount.id, accountIds),
       columns: { id: true, name: true },
     }),
-    db.query.counterparty.findMany({ columns: { id: true, name: true } }),
+    getScopedCounterpartyIds(session.user.id, selectedScope).then((ids) =>
+      ids.length > 0
+        ? db.query.counterparty.findMany({
+            where: inArray(counterparty.id, ids),
+            columns: { id: true, name: true },
+          })
+        : [],
+    ),
   ])
 
   const normalizedRows = rawRows

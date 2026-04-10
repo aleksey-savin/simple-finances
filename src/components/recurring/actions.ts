@@ -3,10 +3,11 @@ import { getRequest } from '@tanstack/react-start/server'
 import { z } from 'zod'
 import { db } from '@/db'
 import {
-  recurringRule,
-  currentAccountUser,
-  currentAccount,
   category,
+  counterparty,
+  currentAccount,
+  currentAccountUser,
+  recurringRule,
 } from '@/db/schema'
 import { eq, inArray, or } from 'drizzle-orm'
 import { Cron } from 'croner'
@@ -15,7 +16,10 @@ import {
   createRecurringEntry,
   syncRecurringRulesForAccounts,
 } from '#/lib/recurring'
-import { resolveScopedAccountIds } from '#/lib/company-scope'
+import {
+  getScopedCounterpartyIds,
+  resolveScopedAccountIds,
+} from '#/lib/company-scope'
 import type { RecurringLoaderData, RecurringMonthTotals } from '@/types'
 
 // ─── Fetch list (route loader) ────────────────────────────────────────────────
@@ -25,7 +29,7 @@ export const fetchRecurringData = createServerFn().handler(async () => {
   const session = await auth.api.getSession({ headers: request.headers })
   if (!session?.user?.id) throw new Error('Не авторизован')
 
-  const { accountIds } = await resolveScopedAccountIds(
+  const { accountIds, selectedScope } = await resolveScopedAccountIds(
     session.user.id,
     request.headers,
   )
@@ -38,9 +42,14 @@ export const fetchRecurringData = createServerFn().handler(async () => {
           eq(category.isShared, true),
         ),
       }),
-      db.query.counterparty.findMany({
-        columns: { id: true, name: true, linkedUserId: true },
-      }),
+      getScopedCounterpartyIds(session.user.id, selectedScope).then((ids) =>
+        ids.length > 0
+          ? db.query.counterparty.findMany({
+              where: inArray(counterparty.id, ids),
+              columns: { id: true, name: true, linkedUserId: true },
+            })
+          : [],
+      ),
     ])
     return {
       rules: [],
@@ -76,9 +85,14 @@ export const fetchRecurringData = createServerFn().handler(async () => {
     db.query.currentAccount.findMany({
       where: inArray(currentAccount.id, accountIds),
     }),
-    db.query.counterparty.findMany({
-      columns: { id: true, name: true, linkedUserId: true },
-    }),
+    getScopedCounterpartyIds(session.user.id, selectedScope).then((ids) =>
+      ids.length > 0
+        ? db.query.counterparty.findMany({
+            where: inArray(counterparty.id, ids),
+            columns: { id: true, name: true, linkedUserId: true },
+          })
+        : [],
+    ),
   ])
 
   return {

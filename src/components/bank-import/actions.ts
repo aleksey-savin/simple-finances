@@ -16,6 +16,7 @@ import { z } from 'zod'
 import { db } from '#/db'
 import {
   bankTransaction,
+  counterparty,
   currentAccount,
   currentAccountUser,
   invoice,
@@ -35,6 +36,10 @@ import {
   toMoneyCents,
 } from '#/lib/invoice-payment'
 import { auth } from 'utils/auth'
+import {
+  getScopedCounterpartyIds,
+  resolveSelectedScope,
+} from '#/lib/company-scope'
 
 const importBankStatementSchema = z.object({
   currentAccountId: z.string().min(1),
@@ -96,8 +101,15 @@ export type ImportedBankTransactionView = Awaited<
 >[number]
 
 export const fetchBankImportContext = createServerFn().handler(async () => {
+  const request = getRequest()
   const { userId } = await requireSessionUser()
-  const accountIds = await getAccessibleAccountIds(userId)
+  const { selectedScope, accountIds } = await resolveSelectedScope(
+    userId,
+    request.headers,
+  ).then((result) => ({
+    selectedScope: result.selectedScope,
+    accountIds: result.selectedScope.accountIds,
+  }))
   const latestImportedAt = sql<Date | null>`max(${bankTransaction.bookedAt})`
 
   const [accounts, categories, counterparties] = await Promise.all([
@@ -136,14 +148,15 @@ export const fetchBankImportContext = createServerFn().handler(async () => {
       },
       orderBy: (table, { asc }) => asc(table.name),
     }),
-    db.query.counterparty.findMany({
-      columns: {
-        id: true,
-        name: true,
-        tin: true,
-      },
-      orderBy: (table, { asc }) => asc(table.name),
-    }),
+    getScopedCounterpartyIds(userId, selectedScope).then((ids) =>
+      ids.length > 0
+        ? db.query.counterparty.findMany({
+            where: inArray(counterparty.id, ids),
+            columns: { id: true, name: true, tin: true },
+            orderBy: (t, { asc }) => asc(t.name),
+          })
+        : [],
+    ),
   ])
 
   return { accounts, categories, counterparties }
@@ -949,15 +962,6 @@ async function requireSessionUser() {
   }
 
   return { userId: session.user.id }
-}
-
-async function getAccessibleAccountIds(userId: string) {
-  const memberships = await db
-    .select({ currentAccountId: currentAccountUser.currentAccountId })
-    .from(currentAccountUser)
-    .where(eq(currentAccountUser.userId, userId))
-
-  return memberships.map((membership) => membership.currentAccountId)
 }
 
 async function assertAccountAccess(currentAccountId: string, userId: string) {

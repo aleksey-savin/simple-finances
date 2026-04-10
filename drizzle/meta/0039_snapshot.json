@@ -1,6 +1,6 @@
 {
-  "id": "946b62c6-7fef-4645-98f1-e5e9502fcda5",
-  "prevId": "f038b464-ffdc-40cb-8807-76f07d954f4f",
+  "id": "d798dc81-2c84-4206-b9a8-d227ac6c4b89",
+  "prevId": "f705e1d2-b5e2-45d8-9de2-2a173b381fe5",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -646,6 +646,111 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.company_counterparty": {
+      "name": "company_counterparty",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "company_id": {
+          "name": "company_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "counterparty_id": {
+          "name": "counterparty_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "company_counterparty_company_idx": {
+          "name": "company_counterparty_company_idx",
+          "columns": [
+            {
+              "expression": "company_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "company_counterparty_counterparty_idx": {
+          "name": "company_counterparty_counterparty_idx",
+          "columns": [
+            {
+              "expression": "counterparty_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "company_counterparty_company_id_company_id_fk": {
+          "name": "company_counterparty_company_id_company_id_fk",
+          "tableFrom": "company_counterparty",
+          "tableTo": "company",
+          "columnsFrom": [
+            "company_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "company_counterparty_counterparty_id_counterparty_id_fk": {
+          "name": "company_counterparty_counterparty_id_counterparty_id_fk",
+          "tableFrom": "company_counterparty",
+          "tableTo": "counterparty",
+          "columnsFrom": [
+            "counterparty_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "company_counterparty_unique": {
+          "name": "company_counterparty_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "company_id",
+            "counterparty_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.company_current_account": {
       "name": "company_current_account",
       "schema": "",
@@ -953,12 +1058,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "company_id": {
-          "name": "company_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "linked_user_id": {
           "name": "linked_user_id",
           "type": "text",
@@ -988,19 +1087,6 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "counterparty_company_id_company_id_fk": {
-          "name": "counterparty_company_id_company_id_fk",
-          "tableFrom": "counterparty",
-          "tableTo": "company",
-          "columnsFrom": [
-            "company_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
         "counterparty_linked_user_id_user_id_fk": {
           "name": "counterparty_linked_user_id_user_id_fk",
           "tableFrom": "counterparty",
@@ -1029,29 +1115,7 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "counterparty_name_unique": {
-          "name": "counterparty_name_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "name"
-          ]
-        },
-        "counterparty_fullName_unique": {
-          "name": "counterparty_fullName_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "fullName"
-          ]
-        },
-        "counterparty_tin_unique": {
-          "name": "counterparty_tin_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "tin"
-          ]
-        }
-      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -2798,6 +2862,111 @@
           "nullsNotDistinct": false,
           "columns": [
             "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.user_counterparty": {
+      "name": "user_counterparty",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "counterparty_id": {
+          "name": "counterparty_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "user_counterparty_user_idx": {
+          "name": "user_counterparty_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "user_counterparty_counterparty_idx": {
+          "name": "user_counterparty_counterparty_idx",
+          "columns": [
+            {
+              "expression": "counterparty_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "user_counterparty_user_id_user_id_fk": {
+          "name": "user_counterparty_user_id_user_id_fk",
+          "tableFrom": "user_counterparty",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "user_counterparty_counterparty_id_counterparty_id_fk": {
+          "name": "user_counterparty_counterparty_id_counterparty_id_fk",
+          "tableFrom": "user_counterparty",
+          "tableTo": "counterparty",
+          "columnsFrom": [
+            "counterparty_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "user_counterparty_unique": {
+          "name": "user_counterparty_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "user_id",
+            "counterparty_id"
           ]
         }
       },

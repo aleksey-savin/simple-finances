@@ -9,8 +9,11 @@ import type {
   TagsMap,
 } from '#/components/payables/types'
 import { db } from '#/db'
-import { currentAccount, invoice, invoiceTag, recurringRule } from '#/db/schema'
-import { resolveScopedAccountIds } from '#/lib/company-scope'
+import { counterparty, currentAccount, invoice, invoiceTag, recurringRule } from '#/db/schema'
+import {
+  getScopedCounterpartyIds,
+  resolveScopedAccountIds,
+} from '#/lib/company-scope'
 import { getPaymentState } from '#/lib/invoice-payment'
 import { syncRecurringRulesForAccounts } from '#/lib/recurring'
 import { auth } from 'utils/auth'
@@ -23,7 +26,7 @@ export const fetchPayables = createServerFn().handler(async () => {
     throw new Error('Не авторизован')
   }
 
-  const { accountIds } = await resolveScopedAccountIds(
+  const { accountIds, selectedScope } = await resolveScopedAccountIds(
     session.user.id,
     request.headers,
   )
@@ -112,7 +115,14 @@ export const fetchPayables = createServerFn().handler(async () => {
       where: inArray(currentAccount.id, accountIds),
       columns: { id: true, name: true },
     }),
-    db.query.counterparty.findMany({ columns: { id: true, name: true } }),
+    getScopedCounterpartyIds(session.user.id, selectedScope).then((ids) =>
+      ids.length > 0
+        ? db.query.counterparty.findMany({
+            where: inArray(counterparty.id, ids),
+            columns: { id: true, name: true },
+          })
+        : [],
+    ),
   ])
 
   const projected: ExpenseRow[] = []

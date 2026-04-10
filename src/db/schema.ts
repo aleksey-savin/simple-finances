@@ -268,9 +268,9 @@ export const counterparty = pgTable('counterparty', {
   id: text('id')
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
-  name: text().notNull().unique(),
-  fullName: text().unique(),
-  tin: text().unique(),
+  name: text().notNull(),
+  fullName: text(),
+  tin: text(),
   type: counterpartyTypeEnum('type'),
   linkedUserId: text('linked_user_id').references(() => user.id, {
     onDelete: 'set null',
@@ -290,6 +290,9 @@ export const client = pgTable('client', {
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
   name: text('name').notNull(),
+  companyId: text('company_id').references(() => company.id, {
+    onDelete: 'set null',
+  }),
   createdBy: text('created_by')
     .notNull()
     .references(() => user.id),
@@ -361,6 +364,51 @@ export const companyCurrentAccount = pgTable(
     unique('company_current_account_account_unique').on(table.currentAccountId),
     index('company_current_account_company_idx').on(table.companyId),
     index('company_current_account_account_idx').on(table.currentAccountId),
+  ],
+)
+
+export const companyCounterparty = pgTable(
+  'company_counterparty',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    companyId: text('company_id')
+      .notNull()
+      .references(() => company.id, { onDelete: 'cascade' }),
+    counterpartyId: text('counterparty_id')
+      .notNull()
+      .references(() => counterparty.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    unique('company_counterparty_unique').on(
+      table.companyId,
+      table.counterpartyId,
+    ),
+    index('company_counterparty_company_idx').on(table.companyId),
+    index('company_counterparty_counterparty_idx').on(table.counterpartyId),
+  ],
+)
+
+export const userCounterparty = pgTable(
+  'user_counterparty',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    counterpartyId: text('counterparty_id')
+      .notNull()
+      .references(() => counterparty.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    unique('user_counterparty_unique').on(table.userId, table.counterpartyId),
+    index('user_counterparty_user_idx').on(table.userId),
+    index('user_counterparty_counterparty_idx').on(table.counterpartyId),
   ],
 )
 
@@ -707,6 +755,7 @@ export const userRelations = relations(user, ({ many }) => ({
   companies: many(company),
   businessLines: many(businessLine),
   contracts: many(contract),
+  counterpartyLinks: many(userCounterparty),
 }))
 
 export const currentAccountRelations = relations(
@@ -840,6 +889,8 @@ export const counterpartyRelations = relations(
     recurringRules: many(recurringRule),
     contracts: many(contract),
     clientLinks: many(clientCounterparty),
+    companyLinks: many(companyCounterparty),
+    userLinks: many(userCounterparty),
     linkedUser: one(user, {
       fields: [counterparty.linkedUserId],
       references: [user.id],
@@ -847,8 +898,40 @@ export const counterpartyRelations = relations(
   }),
 )
 
+export const companyCounterpartyRelations = relations(
+  companyCounterparty,
+  ({ one }) => ({
+    company: one(company, {
+      fields: [companyCounterparty.companyId],
+      references: [company.id],
+    }),
+    counterparty: one(counterparty, {
+      fields: [companyCounterparty.counterpartyId],
+      references: [counterparty.id],
+    }),
+  }),
+)
+
+export const userCounterpartyRelations = relations(
+  userCounterparty,
+  ({ one }) => ({
+    user: one(user, {
+      fields: [userCounterparty.userId],
+      references: [user.id],
+    }),
+    counterparty: one(counterparty, {
+      fields: [userCounterparty.counterpartyId],
+      references: [counterparty.id],
+    }),
+  }),
+)
+
 export const clientRelations = relations(client, ({ one, many }) => ({
   counterparties: many(clientCounterparty),
+  company: one(company, {
+    fields: [client.companyId],
+    references: [company.id],
+  }),
   createdByUser: one(user, {
     fields: [client.createdBy],
     references: [user.id],
@@ -871,6 +954,8 @@ export const clientCounterpartyRelations = relations(
 
 export const companyRelations = relations(company, ({ one, many }) => ({
   currentAccounts: many(companyCurrentAccount),
+  counterpartyLinks: many(companyCounterparty),
+  clients: many(client),
   createdByUser: one(user, {
     fields: [company.createdBy],
     references: [user.id],

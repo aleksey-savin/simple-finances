@@ -1,10 +1,12 @@
-import { and, eq, inArray, isNotNull } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 
 import { db } from '#/db'
 import {
+  client,
+  clientCounterparty,
+  companyCounterparty,
   currentAccountUser,
-  invoice,
-  recurringRule,
+  userCounterparty,
 } from '#/db/schema'
 
 export const APP_SCOPE_COOKIE_NAME = 'app_scope'
@@ -123,33 +125,49 @@ export async function resolveScopedAccountIds(userId: string, headers: Headers) 
   }
 }
 
-export async function getScopedCounterpartyIds(accountIds: string[]) {
-  if (accountIds.length === 0) return []
+/**
+ * Returns the IDs of counterparties visible in the given scope,
+ * resolved through the junction tables.
+ */
+export async function getScopedCounterpartyIds(
+  userId: string,
+  scope: AppScope,
+): Promise<string[]> {
+  if (scope.kind === 'company') {
+    const [direct, fromClients] = await Promise.all([
+      db
+        .select({ counterpartyId: companyCounterparty.counterpartyId })
+        .from(companyCounterparty)
+        .where(eq(companyCounterparty.companyId, scope.id)),
+      db
+        .select({ counterpartyId: clientCounterparty.counterpartyId })
+        .from(clientCounterparty)
+        .innerJoin(client, eq(client.id, clientCounterparty.clientId))
+        .where(eq(client.companyId, scope.id)),
+    ])
+    return [
+      ...new Set([
+        ...direct.map((r) => r.counterpartyId),
+        ...fromClients.map((r) => r.counterpartyId),
+      ]),
+    ]
+  }
 
-  const [invoiceRows, recurringRows] = await Promise.all([
+  const [direct, fromClients] = await Promise.all([
     db
-      .select({ counterpartyId: invoice.counterpartyId })
-      .from(invoice)
-      .where(
-        and(
-          inArray(invoice.currentAccountId, accountIds),
-          isNotNull(invoice.counterpartyId),
-        ),
-      ),
+      .select({ counterpartyId: userCounterparty.counterpartyId })
+      .from(userCounterparty)
+      .where(eq(userCounterparty.userId, userId)),
     db
-      .select({ counterpartyId: recurringRule.counterpartyId })
-      .from(recurringRule)
-      .where(
-        and(
-          inArray(recurringRule.currentAccountId, accountIds),
-          isNotNull(recurringRule.counterpartyId),
-        ),
-      ),
+      .select({ counterpartyId: clientCounterparty.counterpartyId })
+      .from(clientCounterparty)
+      .innerJoin(client, eq(client.id, clientCounterparty.clientId))
+      .where(and(eq(client.createdBy, userId), isNull(client.companyId))),
   ])
-
-  const allIds = [...invoiceRows, ...recurringRows]
-    .map((row) => row.counterpartyId)
-    .filter((value): value is string => typeof value === 'string')
-
-  return [...new Set(allIds)]
+  return [
+    ...new Set([
+      ...direct.map((r) => r.counterpartyId),
+      ...fromClients.map((r) => r.counterpartyId),
+    ]),
+  ]
 }

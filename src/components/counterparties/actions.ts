@@ -1,23 +1,42 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
 import { z } from 'zod'
+import { and, count, eq, ilike, inArray, or } from 'drizzle-orm'
 import { db } from '@/db'
-import { counterparty, counterpartyTypeEnum, user } from '@/db/schema'
-import { eq } from 'drizzle-orm'
+import {
+  companyCounterparty,
+  counterparty,
+  counterpartyTypeEnum,
+  user,
+  userCounterparty,
+} from '@/db/schema'
 import { auth } from 'utils/auth'
+import {
+  getScopedCounterpartyIds,
+  resolveSelectedScope,
+} from '#/lib/company-scope'
 
-// ─── Query key ────────────────────────────────────────────────────────────────
+// ─── Query keys ───────────────────────────────────────────────────────────────
 
 export const counterpartiesQueryKey = ['counterparties'] as const
 
-// ─── Fetch ────────────────────────────────────────────────────────────────────
+// ─── Fetch scoped list ────────────────────────────────────────────────────────
 
 export const fetchCounterparties = createServerFn().handler(async () => {
   const request = getRequest()
   const session = await auth.api.getSession({ headers: request.headers })
   if (!session?.user?.id) throw new Error('Не авторизован')
 
+  const { selectedScope } = await resolveSelectedScope(
+    session.user.id,
+    request.headers,
+  )
+
+  const ids = await getScopedCounterpartyIds(session.user.id, selectedScope)
+  if (ids.length === 0) return []
+
   return db.query.counterparty.findMany({
+    where: inArray(counterparty.id, ids),
     columns: {
       id: true,
       name: true,
@@ -29,9 +48,235 @@ export const fetchCounterparties = createServerFn().handler(async () => {
     with: {
       linkedUser: { columns: { id: true, name: true, email: true } },
     },
-    orderBy: (counterparty, { asc }) => [asc(counterparty.name)],
+    orderBy: (t, { asc }) => [asc(t.name)],
   })
 })
+
+// ─── Search global registry (find-or-create) ─────────────────────────────────
+
+export const searchCounterparties = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ query: z.string() }))
+  .handler(async ({ data }) => {
+    const request = getRequest()
+    const session = await auth.api.getSession({ headers: request.headers })
+    if (!session?.user?.id) throw new Error('Не авторизован')
+
+    const { selectedScope } = await resolveSelectedScope(
+      session.user.id,
+      request.headers,
+    )
+
+    const q = data.query.trim()
+    if (q.length < 2) return []
+
+    const pattern = `%${q}%`
+    const results = await db.query.counterparty.findMany({
+      where: or(
+        ilike(counterparty.name, pattern),
+        ilike(counterparty.tin, pattern),
+      ),
+      columns: { id: true, name: true, fullName: true, type: true, tin: true },
+      orderBy: (t, { asc }) => [asc(t.name)],
+      limit: 15,
+    })
+
+    const scopeIds = new Set(
+      await getScopedCounterpartyIds(session.user.id, selectedScope),
+    )
+
+    return results.map((r) => ({ ...r, inScope: scopeIds.has(r.id) }))
+  })
+
+// ─── Add existing counterparty to current scope ───────────────────────────────
+
+export const addCounterpartyToScope = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ counterpartyId: z.string() }))
+  .handler(async ({ data }) => {
+    const request = getRequest()
+    const session = await auth.api.getSession({ headers: request.headers })
+    if (!session?.user?.id) throw new Error('Не авторизован')
+
+    const { selectedScope } = await resolveSelectedScope(
+      session.user.id,
+      request.headers,
+    )
+
+    if (selectedScope.kind === 'company') {
+      await db
+        .insert(companyCounterparty)
+        .values({
+          companyId: selectedScope.id,
+          counterpartyId: data.counterpartyId,
+        })
+        .onConflictDoNothing()
+    } else {
+      await db
+        .insert(userCounterparty)
+        .values({
+          userId: session.user.id,
+          counterpartyId: data.counterpartyId,
+        })
+        .onConflictDoNothing()
+    }
+  })
+
+// ─── Create new counterparty and add to current scope ────────────────────────
+
+export const addCounterpartySchema = z.object({
+  name: z.string().min(2, 'Минимум 2 символа'),
+  fullName: z.string().optional(),
+  type: z.enum(counterpartyTypeEnum.enumValues).optional(),
+  tin: z.string().optional(),
+  linkedUserId: z.string().optional(),
+})
+
+export const addCounterparty = createServerFn({ method: 'POST' })
+  .inputValidator(addCounterpartySchema)
+  .handler(async ({ data }) => {
+    const request = getRequest()
+    const session = await auth.api.getSession({ headers: request.headers })
+    if (!session?.user?.id) throw new Error('Не авторизован')
+
+    const { selectedScope } = await resolveSelectedScope(
+      session.user.id,
+      request.headers,
+    )
+
+    const [inserted] = await db
+      .insert(counterparty)
+      .values({
+        name: data.name,
+        fullName: data.fullName,
+        type: data.type,
+        tin: data.tin,
+        linkedUserId: data.linkedUserId,
+        createdBy: session.user.id,
+      })
+      .returning({ id: counterparty.id })
+
+    if (selectedScope.kind === 'company') {
+      await db
+        .insert(companyCounterparty)
+        .values({ companyId: selectedScope.id, counterpartyId: inserted.id })
+    } else {
+      await db
+        .insert(userCounterparty)
+        .values({ userId: session.user.id, counterpartyId: inserted.id })
+    }
+
+    return inserted.id
+  })
+
+// ─── Remove counterparty from current scope ───────────────────────────────────
+
+export const removeCounterpartyFromScope = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ counterpartyId: z.string() }))
+  .handler(async ({ data }) => {
+    const request = getRequest()
+    const session = await auth.api.getSession({ headers: request.headers })
+    if (!session?.user?.id) throw new Error('Не авторизован')
+
+    const { selectedScope } = await resolveSelectedScope(
+      session.user.id,
+      request.headers,
+    )
+
+    if (selectedScope.kind === 'company') {
+      await db
+        .delete(companyCounterparty)
+        .where(
+          and(
+            eq(companyCounterparty.companyId, selectedScope.id),
+            eq(companyCounterparty.counterpartyId, data.counterpartyId),
+          ),
+        )
+    } else {
+      await db
+        .delete(userCounterparty)
+        .where(
+          and(
+            eq(userCounterparty.userId, session.user.id),
+            eq(userCounterparty.counterpartyId, data.counterpartyId),
+          ),
+        )
+    }
+  })
+
+// ─── Update counterparty fields ───────────────────────────────────────────────
+
+export const updateCounterpartySchema = addCounterpartySchema.extend({
+  id: z.string(),
+})
+
+export const updateCounterparty = createServerFn({ method: 'POST' })
+  .inputValidator(updateCounterpartySchema)
+  .handler(async ({ data }) => {
+    const request = getRequest()
+    const session = await auth.api.getSession({ headers: request.headers })
+    if (!session?.user?.id) throw new Error('Не авторизован')
+
+    const { selectedScope } = await resolveSelectedScope(
+      session.user.id,
+      request.headers,
+    )
+
+    // Count how many scopes reference this counterparty
+    const [[companyRefs], [userRefs]] = await Promise.all([
+      db.select({ n: count() }).from(companyCounterparty).where(eq(companyCounterparty.counterpartyId, data.id)),
+      db.select({ n: count() }).from(userCounterparty).where(eq(userCounterparty.counterpartyId, data.id)),
+    ])
+    const totalRefs = (companyRefs?.n ?? 0) + (userRefs?.n ?? 0)
+
+    if (totalRefs <= 1) {
+      // Only this scope uses it — update in place
+      await db
+        .update(counterparty)
+        .set({
+          name: data.name,
+          fullName: data.fullName ?? null,
+          type: data.type,
+          tin: data.tin ?? null,
+          linkedUserId: data.linkedUserId ?? null,
+        })
+        .where(eq(counterparty.id, data.id))
+      return
+    }
+
+    // Shared — fork: create a new counterparty and redirect this scope's junction entry
+    const [forked] = await db
+      .insert(counterparty)
+      .values({
+        name: data.name,
+        fullName: data.fullName,
+        type: data.type,
+        tin: data.tin,
+        linkedUserId: data.linkedUserId ?? null,
+        createdBy: session.user.id,
+      })
+      .returning({ id: counterparty.id })
+
+    if (selectedScope.kind === 'company') {
+      await db
+        .update(companyCounterparty)
+        .set({ counterpartyId: forked.id })
+        .where(
+          and(
+            eq(companyCounterparty.companyId, selectedScope.id),
+            eq(companyCounterparty.counterpartyId, data.id),
+          ),
+        )
+    } else {
+      await db
+        .update(userCounterparty)
+        .set({ counterpartyId: forked.id })
+        .where(
+          and(
+            eq(userCounterparty.userId, session.user.id),
+            eq(userCounterparty.counterpartyId, data.id),
+          ),
+        )
+    }
+  })
 
 // ─── Search user by email ─────────────────────────────────────────────────────
 
@@ -50,77 +295,4 @@ export const searchUserByEmail = createServerFn({ method: 'POST' })
     })
 
     return found ?? null
-  })
-
-// ─── Delete ───────────────────────────────────────────────────────────────────
-
-const deleteCounterpartySchema = z.object({ id: z.string() })
-
-export const deleteCounterparty = createServerFn({ method: 'POST' })
-  .inputValidator(deleteCounterpartySchema)
-  .handler(async ({ data }) => {
-    await db.delete(counterparty).where(eq(counterparty.id, data.id))
-  })
-
-// ─── Add ──────────────────────────────────────────────────────────────────────
-
-export const addCounterpartySchema = z.object({
-  name: z.string().min(2, 'Минимум 2 символа'),
-  fullName: z.string().optional(),
-  type: z.enum(counterpartyTypeEnum.enumValues).optional(),
-  tin: z.string().optional(),
-  linkedUserId: z.string().optional(),
-})
-
-export const addCounterparty = createServerFn({ method: 'POST' })
-  .inputValidator(addCounterpartySchema)
-  .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-
-    if (!session?.user?.id) {
-      throw new Error('Не авторизован')
-    }
-
-    const [inserted] = await db
-      .insert(counterparty)
-      .values({
-        name: data.name,
-        fullName: data.fullName,
-        type: data.type,
-        tin: data.tin,
-        linkedUserId: data.linkedUserId,
-        createdBy: session.user.id,
-      })
-      .returning({ id: counterparty.id })
-
-    return inserted.id
-  })
-
-// ─── Update ───────────────────────────────────────────────────────────────────
-
-export const updateCounterpartySchema = addCounterpartySchema.extend({
-  id: z.string(),
-})
-
-export const updateCounterparty = createServerFn({ method: 'POST' })
-  .inputValidator(updateCounterpartySchema)
-  .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-
-    if (!session?.user?.id) {
-      throw new Error('Не авторизован')
-    }
-
-    await db
-      .update(counterparty)
-      .set({
-        name: data.name,
-        fullName: data.fullName,
-        type: data.type,
-        tin: data.tin,
-        linkedUserId: data.linkedUserId ?? null,
-      })
-      .where(eq(counterparty.id, data.id))
   })

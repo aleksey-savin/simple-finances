@@ -23,7 +23,7 @@ function NewCounterpartyPage() {
       title="Новый контрагент"
       description="Создайте контрагента и при необходимости привяжите пользователя."
     >
-      <AddCounterpartyForm />
+      <AddCounterpartyForm onDone={handleClose} />
     </ResponsiveDialog>
   )
 }

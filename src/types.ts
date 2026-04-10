@@ -94,7 +94,7 @@ export type Counterparty = Pick<
   linkedUser: Pick<User, 'id' | 'name' | 'email'> | null
 }
 
-export type Client = Pick<DBClient, 'id' | 'name' | 'createdBy'> & {
+export type Client = Pick<DBClient, 'id' | 'name' | 'createdBy' | 'companyId'> & {
   counterparties: Pick<DBCounterparty, 'id' | 'name'>[]
 }
 

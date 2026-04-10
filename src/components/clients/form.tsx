@@ -9,7 +9,12 @@ import {
   fetchCounterparties,
   counterpartiesQueryKey,
 } from '@/components/counterparties/actions'
+import {
+  fetchCompanies,
+  companiesQueryKey,
+} from '@/components/companies/actions'
 import { Button } from '@/components/ui/button'
+import { Combobox } from '@/components/ui/combobox'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import {
@@ -37,6 +42,10 @@ export const ClientForm = ({ client: current, onDone }: ClientFormProps) => {
     queryKey: counterpartiesQueryKey,
     queryFn: () => fetchCounterparties(),
   })
+  const { data: companies = [] } = useQuery({
+    queryKey: companiesQueryKey,
+    queryFn: () => fetchCompanies(),
+  })
 
   const counterpartyOptions: MultiSelectOption[] = counterparties.map(
     (counterparty) => ({
@@ -49,6 +58,7 @@ export const ClientForm = ({ client: current, onDone }: ClientFormProps) => {
   const form = useForm({
     defaultValues: {
       name: current?.name ?? '',
+      companyId: current?.companyId ?? '',
       counterpartiesIds: current?.counterparties.map((item) => item.id) ?? [],
     },
     validators: { onSubmit: uiFormSchema },
@@ -59,6 +69,7 @@ export const ClientForm = ({ client: current, onDone }: ClientFormProps) => {
             data: {
               id: current.id,
               name: value.name,
+              companyId: value.companyId || undefined,
               counterpartiesIds: value.counterpartiesIds,
             },
           })
@@ -72,6 +83,7 @@ export const ClientForm = ({ client: current, onDone }: ClientFormProps) => {
         await addClient({
           data: {
             name: value.name,
+            companyId: value.companyId || undefined,
             counterpartiesIds: value.counterpartiesIds,
           },
         })
@@ -131,6 +143,24 @@ export const ClientForm = ({ client: current, onDone }: ClientFormProps) => {
           }}
         </form.Field>
 
+        <form.Field name="companyId">
+          {(field) => (
+            <Field>
+              <FieldLabel>Компания</FieldLabel>
+              <Combobox
+                options={companies.map((c) => ({ value: c.id, label: c.name }))}
+                value={field.state.value}
+                onValueChange={(val) => field.handleChange(val)}
+                onBlur={field.handleBlur}
+                placeholder="Без компании"
+                searchPlaceholder="Поиск компании…"
+                allowClear
+                clearLabel="Без компании"
+              />
+            </Field>
+          )}
+        </form.Field>
+
         <form.Field name="counterpartiesIds">
           {(field) => {
             const isInvalid =
@@ -154,7 +184,7 @@ export const ClientForm = ({ client: current, onDone }: ClientFormProps) => {
           }}
         </form.Field>
 
-        <Button type="submit">{isEdit ? 'Сохранить' : 'Создать'}</Button>
+<Button type="submit">{isEdit ? 'Сохранить' : 'Создать'}</Button>
       </div>
     </form>
   )
