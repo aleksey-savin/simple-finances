@@ -2,13 +2,13 @@ import { createFileRoute, getRouteApi, useRouter } from '@tanstack/react-router'
 import { Cron } from 'croner'
 import { toast } from 'sonner'
 import { ResponsiveDialog } from '#/components/ui/responsive-dialog'
-import { RecurringForm } from '#/components/reccuring/form'
-import type { RuleFormValues } from '#/components/reccuring/form'
-import { CRON_PRESETS } from '#/components/reccuring/constants'
+import { RecurringForm } from '#/components/recurring/form'
+import type { RuleFormValues } from '#/components/recurring/form'
+import { CRON_PRESETS } from '#/components/recurring/constants'
 import {
   fetchRuleById,
   updateRecurringRule,
-} from '#/components/reccuring/actions'
+} from '#/components/recurring/actions'
 
 const recurringRoute = getRouteApi('/recurring')
 

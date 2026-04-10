@@ -9,14 +9,14 @@ import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { RefreshCw, Search, X } from 'lucide-react'
-import { RuleCard } from '#/components/reccuring/card'
-import { RecurringSummaryCards } from '#/components/reccuring/summary-cards'
-import { RuleTableRow } from '#/components/reccuring/table-row'
+import { RuleCard } from '#/components/recurring/card'
+import { RecurringSummaryCards } from '#/components/recurring/summary-cards'
+import { RuleTableRow } from '#/components/recurring/table-row'
 import {
   createRecurringNow,
   fetchRecurringData,
   toggleRecurringRule,
-} from '#/components/reccuring/actions'
+} from '#/components/recurring/actions'
 import { Button } from '#/components/ui/button'
 import { Card } from '#/components/ui/card'
 import { Input } from '#/components/ui/input'
@@ -33,7 +33,7 @@ import {
 } from '#/components/ui/table'
 import { ToggleGroup, ToggleGroupItem } from '#/components/ui/toggle-group'
 import type { RuleWithRelations } from '@/types'
-import { getCronLabel } from '#/components/reccuring/utils'
+import { getCronLabel } from '#/components/recurring/utils'
 
 // ─── Route ────────────────────────────────────────────────────────────────────
 

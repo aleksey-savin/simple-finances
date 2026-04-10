@@ -17,19 +17,16 @@ import { NavUser } from './nav-user'
 import {
   BanknoteArrowDown,
   BanknoteArrowUp,
+  Building,
   CalendarCheck,
   FileSpreadsheet,
+  Folder,
   LayoutDashboard,
+  List,
+  ReceiptRussianRuble,
   User,
   Wallet,
 } from 'lucide-react'
-import Accounts from '../accounts'
-import BusinessLines from '../business-lines'
-import Contracts from '../contracts'
-import Clients from '../clients'
-import Companies from '../companies'
-import CounterParties from '../counterparties'
-import Categories from '../categories'
 
 const navMain = [
   {
@@ -40,6 +37,11 @@ const navMain = [
         icon: <LayoutDashboard className="size-5" />,
         url: '/dashboard',
       },
+    ],
+  },
+  {
+    title: 'Финансы',
+    items: [
       {
         title: 'Все операции',
         icon: <Wallet className="size-5" />,
@@ -55,11 +57,6 @@ const navMain = [
         icon: <FileSpreadsheet className="size-5" />,
         url: '/bank-import',
       },
-    ],
-  },
-  {
-    title: 'Отчёты',
-    items: [
       {
         title: 'Дебиторка',
         icon: <BanknoteArrowUp className="size-5" />,
@@ -69,6 +66,46 @@ const navMain = [
         title: 'Платежи и обязательства',
         icon: <BanknoteArrowDown className="size-5" />,
         url: '/payables',
+      },
+    ],
+  },
+  {
+    title: 'Справочники',
+    items: [
+      {
+        title: 'Бизнес-направления',
+        icon: <Folder className="size-5" />,
+        url: '/business-lines',
+      },
+      {
+        title: 'Договоры',
+        icon: <FileSpreadsheet className="size-5" />,
+        url: '/contracts',
+      },
+      {
+        title: 'Категории платежей',
+        icon: <List className="size-5" />,
+        url: '/categories',
+      },
+      {
+        title: 'Клиенты',
+        icon: <User className="size-5" />,
+        url: '/clients',
+      },
+      {
+        title: 'Контрагенты',
+        icon: <ReceiptRussianRuble className="size-5" />,
+        url: '/counterparties',
+      },
+      {
+        title: 'Мои компании',
+        icon: <Building className="size-5" />,
+        url: '/companies',
+      },
+      {
+        title: 'Расчётные счета',
+        icon: <Wallet className="size-5" />,
+        url: '/current-accounts',
       },
     ],
   },
@@ -117,15 +154,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         ))}
       </SidebarContent>
       <SidebarFooter>
-        <div className="flex flex-col w-auto sm:hidden gap-2 mx-4">
-          <Accounts />
-          <Companies />
-          <BusinessLines />
-          <Contracts />
-          <Clients />
-          <CounterParties />
-          <Categories />
-        </div>
         <NavUser />
       </SidebarFooter>
       <SidebarRail />

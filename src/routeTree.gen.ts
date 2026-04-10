@@ -17,11 +17,25 @@ import { Route as ReceivablesRouteImport } from './routes/receivables'
 import { Route as PayablesRouteImport } from './routes/payables'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as CurrentAccountsRouteImport } from './routes/current-accounts'
+import { Route as CounterpartiesRouteImport } from './routes/counterparties'
+import { Route as ContractsRouteImport } from './routes/contracts'
+import { Route as CompaniesRouteImport } from './routes/companies'
+import { Route as ClientsRouteImport } from './routes/clients'
+import { Route as CategoriesRouteImport } from './routes/categories'
+import { Route as BusinessLinesRouteImport } from './routes/business-lines'
 import { Route as BankImportRouteImport } from './routes/bank-import'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UsersNewRouteImport } from './routes/users.new'
 import { Route as TransactionsNewRouteImport } from './routes/transactions.new'
 import { Route as RecurringNewRouteImport } from './routes/recurring.new'
+import { Route as CurrentAccountsNewRouteImport } from './routes/current-accounts.new'
+import { Route as CounterpartiesNewRouteImport } from './routes/counterparties.new'
+import { Route as ContractsNewRouteImport } from './routes/contracts.new'
+import { Route as CompaniesNewRouteImport } from './routes/companies.new'
+import { Route as ClientsNewRouteImport } from './routes/clients.new'
+import { Route as CategoriesNewRouteImport } from './routes/categories.new'
+import { Route as BusinessLinesNewRouteImport } from './routes/business-lines.new'
 import { Route as UsersIdUpdateRouteImport } from './routes/users.$id.update'
 import { Route as UsersIdUnbanRouteImport } from './routes/users.$id.unban'
 import { Route as UsersIdDeleteRouteImport } from './routes/users.$id.delete'
@@ -69,6 +83,41 @@ const DashboardRoute = DashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CurrentAccountsRoute = CurrentAccountsRouteImport.update({
+  id: '/current-accounts',
+  path: '/current-accounts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CounterpartiesRoute = CounterpartiesRouteImport.update({
+  id: '/counterparties',
+  path: '/counterparties',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContractsRoute = ContractsRouteImport.update({
+  id: '/contracts',
+  path: '/contracts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompaniesRoute = CompaniesRouteImport.update({
+  id: '/companies',
+  path: '/companies',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClientsRoute = ClientsRouteImport.update({
+  id: '/clients',
+  path: '/clients',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CategoriesRoute = CategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BusinessLinesRoute = BusinessLinesRouteImport.update({
+  id: '/business-lines',
+  path: '/business-lines',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BankImportRoute = BankImportRouteImport.update({
   id: '/bank-import',
   path: '/bank-import',
@@ -93,6 +142,41 @@ const RecurringNewRoute = RecurringNewRouteImport.update({
   id: '/new',
   path: '/new',
   getParentRoute: () => RecurringRoute,
+} as any)
+const CurrentAccountsNewRoute = CurrentAccountsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => CurrentAccountsRoute,
+} as any)
+const CounterpartiesNewRoute = CounterpartiesNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => CounterpartiesRoute,
+} as any)
+const ContractsNewRoute = ContractsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => ContractsRoute,
+} as any)
+const CompaniesNewRoute = CompaniesNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => CompaniesRoute,
+} as any)
+const ClientsNewRoute = ClientsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => ClientsRoute,
+} as any)
+const CategoriesNewRoute = CategoriesNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => CategoriesRoute,
+} as any)
+const BusinessLinesNewRoute = BusinessLinesNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => BusinessLinesRoute,
 } as any)
 const UsersIdUpdateRoute = UsersIdUpdateRouteImport.update({
   id: '/$id/update',
@@ -128,6 +212,13 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/bank-import': typeof BankImportRoute
+  '/business-lines': typeof BusinessLinesRouteWithChildren
+  '/categories': typeof CategoriesRouteWithChildren
+  '/clients': typeof ClientsRouteWithChildren
+  '/companies': typeof CompaniesRouteWithChildren
+  '/contracts': typeof ContractsRouteWithChildren
+  '/counterparties': typeof CounterpartiesRouteWithChildren
+  '/current-accounts': typeof CurrentAccountsRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/payables': typeof PayablesRoute
@@ -136,6 +227,13 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/transactions': typeof TransactionsRouteWithChildren
   '/users': typeof UsersRouteWithChildren
+  '/business-lines/new': typeof BusinessLinesNewRoute
+  '/categories/new': typeof CategoriesNewRoute
+  '/clients/new': typeof ClientsNewRoute
+  '/companies/new': typeof CompaniesNewRoute
+  '/contracts/new': typeof ContractsNewRoute
+  '/counterparties/new': typeof CounterpartiesNewRoute
+  '/current-accounts/new': typeof CurrentAccountsNewRoute
   '/recurring/new': typeof RecurringNewRoute
   '/transactions/new': typeof TransactionsNewRoute
   '/users/new': typeof UsersNewRoute
@@ -149,6 +247,13 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/bank-import': typeof BankImportRoute
+  '/business-lines': typeof BusinessLinesRouteWithChildren
+  '/categories': typeof CategoriesRouteWithChildren
+  '/clients': typeof ClientsRouteWithChildren
+  '/companies': typeof CompaniesRouteWithChildren
+  '/contracts': typeof ContractsRouteWithChildren
+  '/counterparties': typeof CounterpartiesRouteWithChildren
+  '/current-accounts': typeof CurrentAccountsRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/payables': typeof PayablesRoute
@@ -157,6 +262,13 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/transactions': typeof TransactionsRouteWithChildren
   '/users': typeof UsersRouteWithChildren
+  '/business-lines/new': typeof BusinessLinesNewRoute
+  '/categories/new': typeof CategoriesNewRoute
+  '/clients/new': typeof ClientsNewRoute
+  '/companies/new': typeof CompaniesNewRoute
+  '/contracts/new': typeof ContractsNewRoute
+  '/counterparties/new': typeof CounterpartiesNewRoute
+  '/current-accounts/new': typeof CurrentAccountsNewRoute
   '/recurring/new': typeof RecurringNewRoute
   '/transactions/new': typeof TransactionsNewRoute
   '/users/new': typeof UsersNewRoute
@@ -171,6 +283,13 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/bank-import': typeof BankImportRoute
+  '/business-lines': typeof BusinessLinesRouteWithChildren
+  '/categories': typeof CategoriesRouteWithChildren
+  '/clients': typeof ClientsRouteWithChildren
+  '/companies': typeof CompaniesRouteWithChildren
+  '/contracts': typeof ContractsRouteWithChildren
+  '/counterparties': typeof CounterpartiesRouteWithChildren
+  '/current-accounts': typeof CurrentAccountsRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/payables': typeof PayablesRoute
@@ -179,6 +298,13 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/transactions': typeof TransactionsRouteWithChildren
   '/users': typeof UsersRouteWithChildren
+  '/business-lines/new': typeof BusinessLinesNewRoute
+  '/categories/new': typeof CategoriesNewRoute
+  '/clients/new': typeof ClientsNewRoute
+  '/companies/new': typeof CompaniesNewRoute
+  '/contracts/new': typeof ContractsNewRoute
+  '/counterparties/new': typeof CounterpartiesNewRoute
+  '/current-accounts/new': typeof CurrentAccountsNewRoute
   '/recurring/new': typeof RecurringNewRoute
   '/transactions/new': typeof TransactionsNewRoute
   '/users/new': typeof UsersNewRoute
@@ -194,6 +320,13 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/bank-import'
+    | '/business-lines'
+    | '/categories'
+    | '/clients'
+    | '/companies'
+    | '/contracts'
+    | '/counterparties'
+    | '/current-accounts'
     | '/dashboard'
     | '/login'
     | '/payables'
@@ -202,6 +335,13 @@ export interface FileRouteTypes {
     | '/signup'
     | '/transactions'
     | '/users'
+    | '/business-lines/new'
+    | '/categories/new'
+    | '/clients/new'
+    | '/companies/new'
+    | '/contracts/new'
+    | '/counterparties/new'
+    | '/current-accounts/new'
     | '/recurring/new'
     | '/transactions/new'
     | '/users/new'
@@ -215,6 +355,13 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/bank-import'
+    | '/business-lines'
+    | '/categories'
+    | '/clients'
+    | '/companies'
+    | '/contracts'
+    | '/counterparties'
+    | '/current-accounts'
     | '/dashboard'
     | '/login'
     | '/payables'
@@ -223,6 +370,13 @@ export interface FileRouteTypes {
     | '/signup'
     | '/transactions'
     | '/users'
+    | '/business-lines/new'
+    | '/categories/new'
+    | '/clients/new'
+    | '/companies/new'
+    | '/contracts/new'
+    | '/counterparties/new'
+    | '/current-accounts/new'
     | '/recurring/new'
     | '/transactions/new'
     | '/users/new'
@@ -236,6 +390,13 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/bank-import'
+    | '/business-lines'
+    | '/categories'
+    | '/clients'
+    | '/companies'
+    | '/contracts'
+    | '/counterparties'
+    | '/current-accounts'
     | '/dashboard'
     | '/login'
     | '/payables'
@@ -244,6 +405,13 @@ export interface FileRouteTypes {
     | '/signup'
     | '/transactions'
     | '/users'
+    | '/business-lines/new'
+    | '/categories/new'
+    | '/clients/new'
+    | '/companies/new'
+    | '/contracts/new'
+    | '/counterparties/new'
+    | '/current-accounts/new'
     | '/recurring/new'
     | '/transactions/new'
     | '/users/new'
@@ -258,6 +426,13 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BankImportRoute: typeof BankImportRoute
+  BusinessLinesRoute: typeof BusinessLinesRouteWithChildren
+  CategoriesRoute: typeof CategoriesRouteWithChildren
+  ClientsRoute: typeof ClientsRouteWithChildren
+  CompaniesRoute: typeof CompaniesRouteWithChildren
+  ContractsRoute: typeof ContractsRouteWithChildren
+  CounterpartiesRoute: typeof CounterpartiesRouteWithChildren
+  CurrentAccountsRoute: typeof CurrentAccountsRouteWithChildren
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
   PayablesRoute: typeof PayablesRoute
@@ -327,6 +502,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/current-accounts': {
+      id: '/current-accounts'
+      path: '/current-accounts'
+      fullPath: '/current-accounts'
+      preLoaderRoute: typeof CurrentAccountsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/counterparties': {
+      id: '/counterparties'
+      path: '/counterparties'
+      fullPath: '/counterparties'
+      preLoaderRoute: typeof CounterpartiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contracts': {
+      id: '/contracts'
+      path: '/contracts'
+      fullPath: '/contracts'
+      preLoaderRoute: typeof ContractsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/companies': {
+      id: '/companies'
+      path: '/companies'
+      fullPath: '/companies'
+      preLoaderRoute: typeof CompaniesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clients': {
+      id: '/clients'
+      path: '/clients'
+      fullPath: '/clients'
+      preLoaderRoute: typeof ClientsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/categories': {
+      id: '/categories'
+      path: '/categories'
+      fullPath: '/categories'
+      preLoaderRoute: typeof CategoriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/business-lines': {
+      id: '/business-lines'
+      path: '/business-lines'
+      fullPath: '/business-lines'
+      preLoaderRoute: typeof BusinessLinesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/bank-import': {
       id: '/bank-import'
       path: '/bank-import'
@@ -361,6 +585,55 @@ declare module '@tanstack/react-router' {
       fullPath: '/recurring/new'
       preLoaderRoute: typeof RecurringNewRouteImport
       parentRoute: typeof RecurringRoute
+    }
+    '/current-accounts/new': {
+      id: '/current-accounts/new'
+      path: '/new'
+      fullPath: '/current-accounts/new'
+      preLoaderRoute: typeof CurrentAccountsNewRouteImport
+      parentRoute: typeof CurrentAccountsRoute
+    }
+    '/counterparties/new': {
+      id: '/counterparties/new'
+      path: '/new'
+      fullPath: '/counterparties/new'
+      preLoaderRoute: typeof CounterpartiesNewRouteImport
+      parentRoute: typeof CounterpartiesRoute
+    }
+    '/contracts/new': {
+      id: '/contracts/new'
+      path: '/new'
+      fullPath: '/contracts/new'
+      preLoaderRoute: typeof ContractsNewRouteImport
+      parentRoute: typeof ContractsRoute
+    }
+    '/companies/new': {
+      id: '/companies/new'
+      path: '/new'
+      fullPath: '/companies/new'
+      preLoaderRoute: typeof CompaniesNewRouteImport
+      parentRoute: typeof CompaniesRoute
+    }
+    '/clients/new': {
+      id: '/clients/new'
+      path: '/new'
+      fullPath: '/clients/new'
+      preLoaderRoute: typeof ClientsNewRouteImport
+      parentRoute: typeof ClientsRoute
+    }
+    '/categories/new': {
+      id: '/categories/new'
+      path: '/new'
+      fullPath: '/categories/new'
+      preLoaderRoute: typeof CategoriesNewRouteImport
+      parentRoute: typeof CategoriesRoute
+    }
+    '/business-lines/new': {
+      id: '/business-lines/new'
+      path: '/new'
+      fullPath: '/business-lines/new'
+      preLoaderRoute: typeof BusinessLinesNewRouteImport
+      parentRoute: typeof BusinessLinesRoute
     }
     '/users/$id/update': {
       id: '/users/$id/update'
@@ -406,6 +679,89 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface BusinessLinesRouteChildren {
+  BusinessLinesNewRoute: typeof BusinessLinesNewRoute
+}
+
+const BusinessLinesRouteChildren: BusinessLinesRouteChildren = {
+  BusinessLinesNewRoute: BusinessLinesNewRoute,
+}
+
+const BusinessLinesRouteWithChildren = BusinessLinesRoute._addFileChildren(
+  BusinessLinesRouteChildren,
+)
+
+interface CategoriesRouteChildren {
+  CategoriesNewRoute: typeof CategoriesNewRoute
+}
+
+const CategoriesRouteChildren: CategoriesRouteChildren = {
+  CategoriesNewRoute: CategoriesNewRoute,
+}
+
+const CategoriesRouteWithChildren = CategoriesRoute._addFileChildren(
+  CategoriesRouteChildren,
+)
+
+interface ClientsRouteChildren {
+  ClientsNewRoute: typeof ClientsNewRoute
+}
+
+const ClientsRouteChildren: ClientsRouteChildren = {
+  ClientsNewRoute: ClientsNewRoute,
+}
+
+const ClientsRouteWithChildren =
+  ClientsRoute._addFileChildren(ClientsRouteChildren)
+
+interface CompaniesRouteChildren {
+  CompaniesNewRoute: typeof CompaniesNewRoute
+}
+
+const CompaniesRouteChildren: CompaniesRouteChildren = {
+  CompaniesNewRoute: CompaniesNewRoute,
+}
+
+const CompaniesRouteWithChildren = CompaniesRoute._addFileChildren(
+  CompaniesRouteChildren,
+)
+
+interface ContractsRouteChildren {
+  ContractsNewRoute: typeof ContractsNewRoute
+}
+
+const ContractsRouteChildren: ContractsRouteChildren = {
+  ContractsNewRoute: ContractsNewRoute,
+}
+
+const ContractsRouteWithChildren = ContractsRoute._addFileChildren(
+  ContractsRouteChildren,
+)
+
+interface CounterpartiesRouteChildren {
+  CounterpartiesNewRoute: typeof CounterpartiesNewRoute
+}
+
+const CounterpartiesRouteChildren: CounterpartiesRouteChildren = {
+  CounterpartiesNewRoute: CounterpartiesNewRoute,
+}
+
+const CounterpartiesRouteWithChildren = CounterpartiesRoute._addFileChildren(
+  CounterpartiesRouteChildren,
+)
+
+interface CurrentAccountsRouteChildren {
+  CurrentAccountsNewRoute: typeof CurrentAccountsNewRoute
+}
+
+const CurrentAccountsRouteChildren: CurrentAccountsRouteChildren = {
+  CurrentAccountsNewRoute: CurrentAccountsNewRoute,
+}
+
+const CurrentAccountsRouteWithChildren = CurrentAccountsRoute._addFileChildren(
+  CurrentAccountsRouteChildren,
+)
 
 interface RecurringRouteChildren {
   RecurringNewRoute: typeof RecurringNewRoute
@@ -454,6 +810,13 @@ const UsersRouteWithChildren = UsersRoute._addFileChildren(UsersRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BankImportRoute: BankImportRoute,
+  BusinessLinesRoute: BusinessLinesRouteWithChildren,
+  CategoriesRoute: CategoriesRouteWithChildren,
+  ClientsRoute: ClientsRouteWithChildren,
+  CompaniesRoute: CompaniesRouteWithChildren,
+  ContractsRoute: ContractsRouteWithChildren,
+  CounterpartiesRoute: CounterpartiesRouteWithChildren,
+  CurrentAccountsRoute: CurrentAccountsRouteWithChildren,
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
   PayablesRoute: PayablesRoute,

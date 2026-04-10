@@ -18,6 +18,13 @@ const ROUTE_LABELS: Record<string, { label: string; showAddButton: boolean }> =
     recurring: { label: 'Запланированные платежи', showAddButton: true },
     receivables: { label: 'Дебиторская задолженность', showAddButton: false },
     payables: { label: 'Платежи и обязательства', showAddButton: false },
+    companies: { label: 'Мои компании', showAddButton: true },
+    clients: { label: 'Клиенты', showAddButton: true },
+    counterparties: { label: 'Контрагенты', showAddButton: true },
+    contracts: { label: 'Договоры', showAddButton: true },
+    'business-lines': { label: 'Бизнес-направления', showAddButton: true },
+    'current-accounts': { label: 'Расчётные счета', showAddButton: true },
+    categories: { label: 'Категории', showAddButton: true },
     users: { label: 'Пользователи', showAddButton: true },
   }
 
@@ -27,6 +34,27 @@ const CHILD_LABELS: Record<string, Record<string, string>> = {
   recurring: {
     new: 'Новое правило',
     edit: 'Редактировать правило',
+  },
+  companies: {
+    new: 'Новая компания',
+  },
+  clients: {
+    new: 'Новый клиент',
+  },
+  counterparties: {
+    new: 'Новый контрагент',
+  },
+  contracts: {
+    new: 'Новый договор',
+  },
+  'business-lines': {
+    new: 'Новое направление',
+  },
+  'current-accounts': {
+    new: 'Новый расчётный счёт',
+  },
+  categories: {
+    new: 'Новая категория',
   },
   users: {
     new: 'Новый пользователь',

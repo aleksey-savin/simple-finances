@@ -24,11 +24,18 @@ function formatAmount(value: string) {
   }).format(parsed)
 }
 
-function formatSignedAt(value: string) {
+function formatSignedAt(value: string | Date | null | undefined) {
+  if (!value) return '—'
+
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return '—'
+    return new Intl.DateTimeFormat('ru-RU').format(value)
+  }
+
   const [year, month, day] = value.split('-').map(Number)
-  if (!year || !month || !day) return value
+  if (!year || !month || !day) return value || '—'
   const date = new Date(year, month - 1, day)
-  if (Number.isNaN(date.getTime())) return value
+  if (Number.isNaN(date.getTime())) return value || '—'
   return new Intl.DateTimeFormat('ru-RU').format(date)
 }
 

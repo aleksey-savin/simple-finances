@@ -24,13 +24,8 @@ export const AppHeader = () => {
         <AppBreadCrumbs />
       </div>
       <div className="hidden sm:flex gap-2 items-center">
-        <Accounts />
-        <Companies />
-        <BusinessLines />
-        <Contracts />
-        <Clients />
-        <Counterparties />
         <Categories />
+        <Counterparties />
         <ModeToggle />
       </div>
     </header>

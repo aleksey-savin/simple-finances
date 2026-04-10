@@ -383,9 +383,11 @@ export const contract = pgTable(
       .primaryKey()
       .$defaultFn(() => crypto.randomUUID()),
     name: text('name').notNull(),
-    number: text('number').notNull(),
-    signedAt: date('signed_at').notNull(),
-    contractType: contractTypeEnum('contract_type').notNull(),
+    number: text('number'),
+    signedAt: date('signed_at'),
+    contractType: contractTypeEnum('contract_type')
+      .notNull()
+      .default('customer'),
     fileUrl: text('file_url').notNull(),
     businessLineId: text('business_line_id')
       .notNull()

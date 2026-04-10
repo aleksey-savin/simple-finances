@@ -246,6 +246,20 @@
       "when": 1775783735052,
       "tag": "0034_narrow_piledriver",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1775788749901,
+      "tag": "0035_clever_lake",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1775788855198,
+      "tag": "0036_loving_night_nurse",
+      "breakpoints": true
     }
   ]
 }

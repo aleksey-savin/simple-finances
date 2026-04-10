@@ -3,9 +3,9 @@ import { Cron } from 'croner'
 import { toast } from 'sonner'
 
 import { ResponsiveDialog } from '#/components/ui/responsive-dialog'
-import { RecurringForm } from '#/components/reccuring/form'
-import type { RuleFormValues } from '#/components/reccuring/form'
-import { createRecurringRule } from '#/components/reccuring/actions'
+import { RecurringForm } from '#/components/recurring/form'
+import type { RuleFormValues } from '#/components/recurring/form'
+import { createRecurringRule } from '#/components/recurring/actions'
 
 const recurringRoute = getRouteApi('/recurring')
 
