@@ -123,7 +123,7 @@ export const CategoriesList = () => {
 
   return (
     <>
-      <div className="px-6 py-3 shrink-0 flex flex-col gap-2">
+      <div className="px-4 py-3 shrink-0 flex flex-col gap-2">
         <p className="text-sm font-medium text-muted-foreground">
           Категории ({sorted.length} из {categories.length})
         </p>
@@ -162,9 +162,9 @@ export const CategoriesList = () => {
           </ToggleGroupItem>
         </ToggleGroup>
       </div>
-      <div className="flex-1 overflow-y-auto px-6 pb-4">
+      <div className="flex-1 overflow-y-auto px-4 pb-4">
         {sorted.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-6">
+          <p className="text-sm text-muted-foreground text-center py-4">
             Нет категорий
           </p>
         ) : (

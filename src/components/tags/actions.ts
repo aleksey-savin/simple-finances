@@ -204,7 +204,9 @@ export const fetchTagTotals = createServerFn().handler(async () => {
     .from(currentAccountUser)
     .where(eq(currentAccountUser.userId, session.user.id))
 
-  const accountIds = memberships.map((membership) => membership.currentAccountId)
+  const accountIds = memberships.map(
+    (membership) => membership.currentAccountId,
+  )
   if (accountIds.length === 0) return []
 
   const allTags = await db.query.tag.findMany({

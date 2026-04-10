@@ -167,7 +167,8 @@ async function ensureAccountSelectionIsAvailable(
       : []
 
   const unavailableLink = existingLinks.find(
-    (link) => currentCompanyId === undefined || link.companyId !== currentCompanyId,
+    (link) =>
+      currentCompanyId === undefined || link.companyId !== currentCompanyId,
   )
 
   if (unavailableLink) {

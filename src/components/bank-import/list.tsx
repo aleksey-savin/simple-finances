@@ -53,9 +53,9 @@ export function BankImportList({
 
   if (isMobile) {
     return (
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4">
         {rows.map((row) => (
-          <Card key={row.id} className="flex flex-col gap-6 p-6">
+          <Card key={row.id} className="flex flex-col gap-4 p-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex flex-col gap-2">
                 <div className="flex flex-wrap items-center gap-2">
@@ -164,7 +164,7 @@ export function BankImportList({
   }
 
   return (
-    <Card className="hidden sm:block p-6">
+    <Card className="hidden sm:block p-4">
       <Table>
         <TableHeader>
           <TableRow>

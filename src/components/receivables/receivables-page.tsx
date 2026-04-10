@@ -32,9 +32,8 @@ export function ReceivablesPage({
 }: ReceivablesLoaderData) {
   const [tagsMap, setTagsMap] = useState<TagsMap>(initialTagsMap)
   const [allTags, setAllTags] = useState<TagItem[]>(initialAllTags)
-  const [tagTotals, setTagTotals] = useState<ReceivablesTagTotal[]>(
-    initialTagTotals,
-  )
+  const [tagTotals, setTagTotals] =
+    useState<ReceivablesTagTotal[]>(initialTagTotals)
 
   const refreshTagData = async () => {
     const [totals, tags] = await Promise.all([fetchTagTotals(), fetchTags()])

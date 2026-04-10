@@ -26,7 +26,7 @@ export default function Companies() {
         </Button>
       </SheetTrigger>
       <SheetContent className="flex flex-col gap-0 overflow-hidden">
-        <SheetHeader className="px-6 pt-6 pb-2">
+        <SheetHeader className="px-4 pt-6 pb-2">
           <SheetTitle className="flex items-center gap-2">
             <Building2 className="size-4" />
             Компании
@@ -36,7 +36,7 @@ export default function Companies() {
           </SheetDescription>
         </SheetHeader>
 
-        <div className="shrink-0 px-6 pt-2 pb-4">
+        <div className="shrink-0 px-4 pt-2 pb-4">
           <AddCompanyForm />
         </div>
         <Separator />

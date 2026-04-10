@@ -74,14 +74,14 @@ export const ClientsList = () => {
 
   return (
     <>
-      <div className="shrink-0 px-6 py-3">
+      <div className="shrink-0 px-4 py-3">
         <p className="text-sm font-medium text-muted-foreground">
           Все клиенты ({clients.length})
         </p>
       </div>
-      <div className="flex-1 overflow-y-auto px-6 pb-4">
+      <div className="flex-1 overflow-y-auto px-4 pb-4">
         {clients.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">
+          <p className="py-4 text-center text-sm text-muted-foreground">
             Нет добавленных клиентов
           </p>
         ) : (

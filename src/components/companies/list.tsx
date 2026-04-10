@@ -58,7 +58,10 @@ function CompanyRow({
 
       {isEditing && (
         <div className="-mt-0.5 rounded-b-md border border-t-0 bg-muted/30 px-4 pb-4">
-          <EditCompanyForm company={company} onDone={() => setEditingId(null)} />
+          <EditCompanyForm
+            company={company}
+            onDone={() => setEditingId(null)}
+          />
         </div>
       )}
     </div>
@@ -74,14 +77,14 @@ export const CompaniesList = () => {
 
   return (
     <>
-      <div className="shrink-0 px-6 py-3">
+      <div className="shrink-0 px-4 py-3">
         <p className="text-sm font-medium text-muted-foreground">
           Все компании ({companies.length})
         </p>
       </div>
-      <div className="flex-1 overflow-y-auto px-6 pb-4">
+      <div className="flex-1 overflow-y-auto px-4 pb-4">
         {companies.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">
+          <p className="py-4 text-center text-sm text-muted-foreground">
             Нет добавленных компаний
           </p>
         ) : (

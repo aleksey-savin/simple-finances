@@ -19,7 +19,7 @@ export function BankImport({
   onImport: () => void
 }) {
   return (
-    <Card className="flex flex-col gap-6 p-6 w-full">
+    <Card className="flex flex-col gap-4 p-4 w-full">
       <div className="flex flex-col gap-1">
         <h1 className="text-xl font-semibold">Импорт</h1>
       </div>

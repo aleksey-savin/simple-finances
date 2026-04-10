@@ -1,11 +1,5 @@
 import { Button } from '#/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '#/components/ui/select'
+import { Combobox } from '#/components/ui/combobox'
 
 export function BankImportPagination({
   currentPage,
@@ -33,21 +27,19 @@ export function BankImportPagination({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-2">
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">На странице</span>
-          <Select
+          <Combobox
+            options={[
+              { value: '25', label: '25' },
+              { value: '50', label: '50' },
+              { value: '100', label: '100' },
+            ]}
             value={String(pageSize)}
             onValueChange={(value) =>
               onPageSizeChange(Number(value) as 25 | 50 | 100)
             }
-          >
-            <SelectTrigger className="w-24">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="25">25</SelectItem>
-              <SelectItem value="50">50</SelectItem>
-              <SelectItem value="100">100</SelectItem>
-            </SelectContent>
-          </Select>
+            placeholder="Размер"
+            className="w-24"
+          />
         </div>
         <Button
           variant="outline"

@@ -220,12 +220,7 @@ async function fetchBankDetailsByBik(bik: string) {
 
   const result = Array.isArray(payload) ? payload[0] : payload
 
-  if (
-    !result?.bik ||
-    !result?.name ||
-    !result?.namemini ||
-    !result?.ks
-  ) {
+  if (!result?.bik || !result?.name || !result?.namemini || !result?.ks) {
     throw new Error('Банк с таким БИК не найден')
   }
 

@@ -1,2 +1,6 @@
-// Canonical definition moved to src/types.ts
-export type { RuleWithRelations } from '@/types'
+// Canonical definitions moved to src/types.ts
+export type {
+  RecurringLoaderData,
+  RecurringMonthTotals,
+  RuleWithRelations,
+} from '@/types'

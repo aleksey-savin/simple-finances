@@ -225,6 +225,27 @@
       "when": 1775629412811,
       "tag": "0031_icy_magneto",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1775783320773,
+      "tag": "0032_strong_rafael_vega",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1775783345247,
+      "tag": "0033_opposite_golden_guardian",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1775783735052,
+      "tag": "0034_narrow_piledriver",
+      "breakpoints": true
     }
   ]
 }

@@ -181,7 +181,8 @@ export function buildPayablesColumns({
       id: 'tags',
       enableSorting: false,
       size: 40,
-      accessorFn: (row) => (tagsMap[row.id] ?? []).map((tag) => tag.id).join(','),
+      accessorFn: (row) =>
+        (tagsMap[row.id] ?? []).map((tag) => tag.id).join(','),
       filterFn: (row, _id, value: string[]) => {
         if (value.length === 0) return true
         return (tagsMap[row.original.id] ?? []).some((tag) =>

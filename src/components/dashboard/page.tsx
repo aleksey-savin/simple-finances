@@ -28,7 +28,7 @@ export function DashboardPage({
   onScopeChange,
 }: DashboardPageProps) {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {scopes.map((scope) => {
           const isSelected = scope.id === selectedScopeId
@@ -110,7 +110,7 @@ export function DashboardPage({
         />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
+      <div className="grid gap-4 xl:grid-cols-[1.2fr_1fr]">
         <Card>
           <CardHeader className="flex flex-row items-start justify-between gap-4">
             <div className="space-y-1">
@@ -128,7 +128,7 @@ export function DashboardPage({
           </CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-2">
             {accounts.length === 0 ? (
-              <div className="border border-dashed bg-muted/10 p-6 text-sm text-muted-foreground">
+              <div className="border border-dashed bg-muted/10 p-4 text-sm text-muted-foreground">
                 В выбранном scope нет счетов
               </div>
             ) : (

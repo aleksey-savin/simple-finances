@@ -1,6 +1,7 @@
 export { DeleteRule } from './delete'
 export { RuleCard } from './card'
 export { RecurringForm, ruleFormSchema } from './form'
+export { RecurringSummaryCards } from './summary-cards'
 export { CRON_PRESETS } from './constants'
 export type { RuleFormValues } from './form'
 export type { RuleWithRelations } from '@/types'

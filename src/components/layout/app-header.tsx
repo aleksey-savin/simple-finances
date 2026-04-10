@@ -6,7 +6,9 @@ import Accounts from '../accounts'
 import Categories from '../categories'
 import Clients from '../clients'
 import Companies from '../companies'
+import Contracts from '../contracts'
 import Counterparties from '../counterparties'
+import BusinessLines from '../business-lines'
 
 export const AppHeader = () => {
   return (
@@ -24,6 +26,8 @@ export const AppHeader = () => {
       <div className="hidden sm:flex gap-2 items-center">
         <Accounts />
         <Companies />
+        <BusinessLines />
+        <Contracts />
         <Clients />
         <Counterparties />
         <Categories />

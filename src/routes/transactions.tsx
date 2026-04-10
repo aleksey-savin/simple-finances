@@ -24,7 +24,10 @@ import {
   TableHeader,
   TableRow,
 } from '#/components/ui/table'
-import { fetchTransactionsData, togglePaid } from '#/components/transactions/actions'
+import {
+  fetchTransactionsData,
+  togglePaid,
+} from '#/components/transactions/actions'
 
 import { createFileRoute, Outlet, useRouter } from '@tanstack/react-router'
 import { format, isSameYear, isToday, isYesterday } from 'date-fns'
@@ -385,12 +388,12 @@ function App() {
   }, [router, searchParams, currentPage, safePage, pageSize])
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       {/* ── Summary cards ──────────────────────────────────────────────────── */}
       <InvoiceSummary feed={filteredFeed} />
 
       {/* ── Filter bar ─────────────────────────────────────────────────────── */}
-      <Card className="flex flex-col gap-6 p-6">
+      <Card className="flex flex-col gap-4 p-4">
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
@@ -401,7 +404,7 @@ function App() {
             className="pl-9"
           />
         </div>
-        <div className="flex flex-wrap w-full lg:justify-between items-center gap-6">
+        <div className="flex flex-wrap w-full lg:justify-between items-center gap-4">
           {/* Type */}
           <ToggleGroup variant="outline" type="single" defaultValue="all">
             {(['all', 'receivable', 'payable'] as const).map((t) => (
@@ -629,7 +632,7 @@ function App() {
             ))}
           </div>
 
-          <Card className="hidden sm:block p-6">
+          <Card className="hidden sm:block p-4">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -687,7 +690,7 @@ function App() {
             </Table>
           </Card>
 
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted-foreground">
               Страница {safePage} из {totalPages} · всего страниц {totalPages} ·
               всего записей {filteredFeed.length}

@@ -29,10 +29,7 @@ type CompanyFormProps =
   | { company?: undefined; onDone?: undefined }
   | { company: Company; onDone: () => void }
 
-export const CompanyForm = ({
-  company: current,
-  onDone,
-}: CompanyFormProps) => {
+export const CompanyForm = ({ company: current, onDone }: CompanyFormProps) => {
   const router = useRouter()
   const queryClient = useQueryClient()
   const isEdit = current !== undefined
@@ -45,7 +42,9 @@ export const CompanyForm = ({
     queryFn: () => fetchCompanies(),
   })
 
-  const selectedAccountIds = new Set(current?.accounts.map((item) => item.id) ?? [])
+  const selectedAccountIds = new Set(
+    current?.accounts.map((item) => item.id) ?? [],
+  )
   const assignedAccountIds = new Set(
     companies
       .filter((company) => company.id !== current?.id)
@@ -55,12 +54,15 @@ export const CompanyForm = ({
   const accountOptions: MultiSelectOption[] = accounts
     .filter(
       (account) =>
-        selectedAccountIds.has(account.id) || !assignedAccountIds.has(account.id),
+        selectedAccountIds.has(account.id) ||
+        !assignedAccountIds.has(account.id),
     )
     .map((account) => ({
       value: account.id,
       label: account.name,
-      keywords: account.bankNameInitials ? [account.bankNameInitials] : undefined,
+      keywords: account.bankNameInitials
+        ? [account.bankNameInitials]
+        : undefined,
     }))
 
   const form = useForm({
@@ -108,7 +110,7 @@ export const CompanyForm = ({
       className={
         isEdit
           ? 'flex flex-col gap-3 pt-2'
-          : 'flex-1 flex flex-col gap-6 min-h-0'
+          : 'flex-1 flex flex-col gap-4 min-h-0'
       }
       onSubmit={(event) => {
         event.preventDefault()
@@ -119,7 +121,7 @@ export const CompanyForm = ({
         className={
           isEdit
             ? 'flex flex-col gap-3'
-            : 'grid flex-1 auto-rows-min gap-6 px-4'
+            : 'grid flex-1 auto-rows-min gap-4 px-4'
         }
       >
         <form.Field name="name">

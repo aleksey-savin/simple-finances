@@ -6,16 +6,10 @@ import { ArrowRight, Loader2 } from 'lucide-react'
 import { CRON_PRESETS } from '@/components/reccuring/constants'
 import { fetchPaymentAccounts } from '@/components/invoices'
 import { Button } from '@/components/ui/button'
+import { Combobox } from '@/components/ui/combobox'
 import { DialogFooter } from '@/components/ui/dialog'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import type { Category } from '@/types'
 import type { CurrentAccount } from '#/db/types'
 
@@ -220,25 +214,16 @@ export const RecurringForm = ({
               return (
                 <Field data-invalid={isInvalid}>
                   <FieldLabel>Категория</FieldLabel>
-                  <Select
+                  <Combobox
+                    options={filtered.map((c) => ({
+                      value: c.id,
+                      label: c.name,
+                    }))}
                     value={field.state.value}
                     onValueChange={field.handleChange}
-                  >
-                    <SelectTrigger
-                      className="w-full"
-                      onBlur={field.handleBlur}
-                      aria-invalid={isInvalid}
-                    >
-                      <SelectValue placeholder="Выберите категорию" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filtered.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    placeholder="Выберите категорию"
+                    onBlur={field.handleBlur}
+                  />
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               )
@@ -258,7 +243,14 @@ export const RecurringForm = ({
                     {(paymentCategoryField) => (
                       <Field>
                         <FieldLabel>Контрагент</FieldLabel>
-                        <Select
+                        <Combobox
+                          options={[
+                            { value: '__none__', label: 'Не указан' },
+                            ...counterparties.map((c) => ({
+                              value: c.id,
+                              label: c.name,
+                            })),
+                          ]}
                           value={field.state.value || '__none__'}
                           onValueChange={(v) => {
                             const val = v === '__none__' ? '' : v
@@ -273,19 +265,8 @@ export const RecurringForm = ({
                               field.handleChange(val)
                             }
                           }}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Выберите контрагента (необязательно)" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__none__">Не указан</SelectItem>
-                            {counterparties.map((c) => (
-                              <SelectItem key={c.id} value={c.id}>
-                                {c.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          placeholder="Выберите контрагента (необязательно)"
+                        />
                       </Field>
                     )}
                   </form.Field>
@@ -322,25 +303,16 @@ export const RecurringForm = ({
                         <FieldLabel htmlFor={field.name}>
                           Счёт получателя
                         </FieldLabel>
-                        <Select
+                        <Combobox
+                          options={paymentAccounts.map((a) => ({
+                            value: a.id,
+                            label: a.name,
+                          }))}
                           value={field.state.value}
                           onValueChange={(val) => field.handleChange(val)}
-                        >
-                          <SelectTrigger
-                            id={field.name}
-                            className="w-full"
-                            onBlur={field.handleBlur}
-                          >
-                            <SelectValue placeholder="Выберите счёт" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {paymentAccounts.map((a) => (
-                              <SelectItem key={a.id} value={a.id}>
-                                {a.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          placeholder="Выберите счёт"
+                          onBlur={field.handleBlur}
+                        />
                       </Field>
                     )}
                   </form.Field>
@@ -355,25 +327,16 @@ export const RecurringForm = ({
                               <FieldLabel htmlFor={field.name}>
                                 Категория дохода
                               </FieldLabel>
-                              <Select
+                              <Combobox
+                                options={paymentIncomeCategories.map((c) => ({
+                                  value: c.id,
+                                  label: c.name,
+                                }))}
                                 value={field.state.value}
                                 onValueChange={(val) => field.handleChange(val)}
-                              >
-                                <SelectTrigger
-                                  id={field.name}
-                                  className="w-full"
-                                  onBlur={field.handleBlur}
-                                >
-                                  <SelectValue placeholder="Выберите категорию" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {paymentIncomeCategories.map((c) => (
-                                    <SelectItem key={c.id} value={c.id}>
-                                      {c.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                                placeholder="Выберите категорию"
+                                onBlur={field.handleBlur}
+                              />
                             </Field>
                           )}
                         </form.Field>
@@ -395,25 +358,16 @@ export const RecurringForm = ({
           return (
             <Field data-invalid={isInvalid}>
               <FieldLabel>Счёт</FieldLabel>
-              <Select
+              <Combobox
+                options={accounts.map((a) => ({
+                  value: a.id,
+                  label: a.name,
+                }))}
                 value={field.state.value}
                 onValueChange={field.handleChange}
-              >
-                <SelectTrigger
-                  className="w-full"
-                  onBlur={field.handleBlur}
-                  aria-invalid={isInvalid}
-                >
-                  <SelectValue placeholder="Выберите счёт" />
-                </SelectTrigger>
-                <SelectContent>
-                  {accounts.map((a) => (
-                    <SelectItem key={a.id} value={a.id}>
-                      {a.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Выберите счёт"
+                onBlur={field.handleBlur}
+              />
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
           )
@@ -425,21 +379,15 @@ export const RecurringForm = ({
         {(field) => (
           <Field>
             <FieldLabel>Расписание</FieldLabel>
-            <Select
+            <Combobox
+              options={CRON_PRESETS.map((p) => ({
+                value: p.value,
+                label: p.label,
+              }))}
               value={field.state.value}
               onValueChange={field.handleChange}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Выберите расписание" />
-              </SelectTrigger>
-              <SelectContent>
-                {CRON_PRESETS.map((p) => (
-                  <SelectItem key={p.value} value={p.value}>
-                    {p.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder="Выберите расписание"
+            />
           </Field>
         )}
       </form.Field>

@@ -25,14 +25,14 @@ export default function CounterParties() {
         </Button>
       </SheetTrigger>
       <SheetContent className="flex flex-col gap-0 overflow-hidden">
-        <SheetHeader className="px-6 pt-6 pb-2">
+        <SheetHeader className="px-4 pt-6 pb-2">
           <SheetTitle>Получатели платежа</SheetTitle>
           <SheetDescription>
             Добавьте и управляйте получателями платежей
           </SheetDescription>
         </SheetHeader>
 
-        <div className="px-6 pt-2 pb-4 shrink-0">
+        <div className="px-4 pt-2 pb-4 shrink-0">
           <AddCounterpartyForm />
         </div>
         <Separator />

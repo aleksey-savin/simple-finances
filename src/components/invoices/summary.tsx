@@ -74,7 +74,7 @@ export function InvoiceSummary({ feed }: Props) {
   }, [feed])
 
   return (
-    <div className="flex gap-6">
+    <div className="flex gap-4">
       <Card className="gap-2 px-4 py-4 sm:width-fit">
         <CardHeader className="p-0">
           <CardTitle className="font-medium">Расходы</CardTitle>

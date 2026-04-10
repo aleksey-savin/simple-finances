@@ -2,8 +2,10 @@ import type {
   Category as DBCategory,
   Client as DBClient,
   Company as DBCompany,
+  Contract as DBContract,
   Invoice as DBInvoice,
   Counterparty as DBCounterparty,
+  BusinessLine as DBBusinessLine,
   CurrentAccount,
   CurrentAccountUser,
   User,
@@ -96,6 +98,27 @@ export type Client = Pick<DBClient, 'id' | 'name' | 'createdBy'> & {
 
 export type Company = Pick<DBCompany, 'id' | 'name' | 'createdBy'> & {
   accounts: Pick<CurrentAccount, 'id' | 'name'>[]
+}
+
+export type BusinessLine = Pick<DBBusinessLine, 'id' | 'name' | 'createdBy'> & {
+  contracts: Pick<DBContract, 'id' | 'name'>[]
+}
+
+export type Contract = Pick<
+  DBContract,
+  | 'id'
+  | 'name'
+  | 'number'
+  | 'signedAt'
+  | 'contractType'
+  | 'fileUrl'
+  | 'amount'
+  | 'businessLineId'
+  | 'counterpartyId'
+  | 'createdBy'
+> & {
+  businessLine: Pick<DBBusinessLine, 'id' | 'name'>
+  counterparty: Pick<DBCounterparty, 'id' | 'name'>
 }
 
 export type NamedEntity = {
@@ -271,4 +294,19 @@ export type RuleWithRelations = Pick<
   category: { id: string; name: string }
   currentAccount: { id: string; name: string }
   counterparty: { id: string; name: string } | null
+}
+
+export type RecurringMonthTotals = {
+  income: number
+  incomeCount: number
+  expenses: number
+  expensesCount: number
+}
+
+export type RecurringLoaderData = {
+  rules: RuleWithRelations[]
+  categories: NamedEntity[]
+  accounts: NamedEntity[]
+  counterparties: NamedEntity[]
+  currentMonthTotals: RecurringMonthTotals
 }

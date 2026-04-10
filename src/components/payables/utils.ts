@@ -1,10 +1,6 @@
 import type { FilterFn } from '@tanstack/react-table'
 
-import type {
-  ExpenseRow,
-  ExpenseStatus,
-  PayablesPeriodGroup,
-} from './types'
+import type { ExpenseRow, ExpenseStatus, PayablesPeriodGroup } from './types'
 
 export function formatDate(d: string | Date | null | undefined) {
   if (!d) return null
@@ -115,12 +111,12 @@ export function getPayablesSummary(
     0,
   )
 
-  const overdueCount = [...currentMonth.filter((row) => !row.isProjected), ...previousUnpaid]
-    .filter(
-      (row) =>
-        row.paymentStatus !== 'paid' && getDueMeta(row.dueDate).isOverdue,
-    )
-    .length
+  const overdueCount = [
+    ...currentMonth.filter((row) => !row.isProjected),
+    ...previousUnpaid,
+  ].filter(
+    (row) => row.paymentStatus !== 'paid' && getDueMeta(row.dueDate).isOverdue,
+  ).length
 
   const projectedCount = currentMonth.filter((row) => row.isProjected).length
 

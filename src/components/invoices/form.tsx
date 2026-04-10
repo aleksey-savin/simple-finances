@@ -10,17 +10,11 @@ import type { Invoice } from '@/db/types'
 import { addInvoice, fetchPaymentAccounts, updateInvoice } from './actions'
 
 import { Button } from '@/components/ui/button'
+import { Combobox } from '@/components/ui/combobox'
 import { DialogFooter } from '@/components/ui/dialog'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Item, ItemContent, ItemHeader } from '@/components/ui/item'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 
 const uiFormSchema = z.object({
   amount: z
@@ -256,28 +250,18 @@ export function InvoiceForm({
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
             return (
-              <Field data-invalid={isInvalid}>
+                <Field data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Категория</FieldLabel>
-                <Select
+                <Combobox
+                  options={filteredCategories.map((category) => ({
+                    value: category.id,
+                    label: category.name,
+                  }))}
                   value={field.state.value}
                   onValueChange={(value) => field.handleChange(value)}
-                >
-                  <SelectTrigger
-                    id={field.name}
-                    aria-invalid={isInvalid}
-                    className="w-full"
-                    onBlur={field.handleBlur}
-                  >
-                    <SelectValue placeholder="Выберите категорию" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {filteredCategories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Выберите категорию"
+                  onBlur={field.handleBlur}
+                />
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
@@ -289,28 +273,18 @@ export function InvoiceForm({
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
             return (
-              <Field data-invalid={isInvalid}>
+                <Field data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Счёт</FieldLabel>
-                <Select
+                <Combobox
+                  options={accounts.map((account) => ({
+                    value: account.id,
+                    label: account.name,
+                  }))}
                   value={field.state.value}
                   onValueChange={(value) => field.handleChange(value)}
-                >
-                  <SelectTrigger
-                    id={field.name}
-                    aria-invalid={isInvalid}
-                    className="w-full"
-                    onBlur={field.handleBlur}
-                  >
-                    <SelectValue placeholder="Выберите счёт" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {accounts.map((account) => (
-                      <SelectItem key={account.id} value={account.id}>
-                        {account.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Выберите счёт"
+                  onBlur={field.handleBlur}
+                />
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
@@ -327,7 +301,14 @@ export function InvoiceForm({
                   {(paymentCategoryField) => (
                     <Field className="sm:w-1/2 sm:pe-2">
                       <FieldLabel htmlFor={field.name}>Контрагент</FieldLabel>
-                      <Select
+                      <Combobox
+                        options={[
+                          { value: '__none__', label: 'Не указан' },
+                          ...counterparties.map((counterparty) => ({
+                            value: counterparty.id,
+                            label: counterparty.name,
+                          })),
+                        ]}
                         value={field.state.value || '__none__'}
                         onValueChange={(value) =>
                           handleCounterpartyChange(
@@ -337,26 +318,9 @@ export function InvoiceForm({
                             () => paymentCategoryField.handleChange(''),
                           )
                         }
-                      >
-                        <SelectTrigger
-                          id={field.name}
-                          className="w-full"
-                          onBlur={field.handleBlur}
-                        >
-                          <SelectValue placeholder="Выберите контрагента" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__none__">Не указан</SelectItem>
-                          {counterparties.map((counterparty) => (
-                            <SelectItem
-                              key={counterparty.id}
-                              value={counterparty.id}
-                            >
-                              {counterparty.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        placeholder="Выберите контрагента"
+                        onBlur={field.handleBlur}
+                      />
                     </Field>
                   )}
                 </form.Field>
@@ -388,25 +352,16 @@ export function InvoiceForm({
                     <FieldLabel htmlFor={field.name}>
                       Счёт получателя
                     </FieldLabel>
-                    <Select
+                    <Combobox
+                      options={paymentAccounts.map((account) => ({
+                        value: account.id,
+                        label: account.name,
+                      }))}
                       value={field.state.value}
                       onValueChange={(value) => field.handleChange(value)}
-                    >
-                      <SelectTrigger
-                        id={field.name}
-                        className="w-full"
-                        onBlur={field.handleBlur}
-                      >
-                        <SelectValue placeholder="Выберите счёт" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {paymentAccounts.map((account) => (
-                          <SelectItem key={account.id} value={account.id}>
-                            {account.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      placeholder="Выберите счёт"
+                      onBlur={field.handleBlur}
+                    />
                   </Field>
                 )}
               </form.Field>
@@ -422,28 +377,16 @@ export function InvoiceForm({
                           <FieldLabel htmlFor={field.name}>
                             Категория дохода
                           </FieldLabel>
-                          <Select
+                          <Combobox
+                            options={sharedReceivableCategories.map((category) => ({
+                              value: category.id,
+                              label: category.name,
+                            }))}
                             value={field.state.value}
                             onValueChange={(value) => field.handleChange(value)}
-                          >
-                            <SelectTrigger
-                              id={field.name}
-                              className="w-full"
-                              onBlur={field.handleBlur}
-                            >
-                              <SelectValue placeholder="Выберите категорию" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {sharedReceivableCategories.map((category) => (
-                                <SelectItem
-                                  key={category.id}
-                                  value={category.id}
-                                >
-                                  {category.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                            placeholder="Выберите категорию"
+                            onBlur={field.handleBlur}
+                          />
                         </Field>
                       )}
                     </form.Field>

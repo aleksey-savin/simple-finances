@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 
 import { RefreshCw, Search, X } from 'lucide-react'
 import { RuleCard } from '#/components/reccuring/card'
+import { RecurringSummaryCards } from '#/components/reccuring/summary-cards'
 import { RuleTableRow } from '#/components/reccuring/table-row'
 import {
   createRecurringNow,
@@ -50,7 +51,8 @@ export type { RuleWithRelations } from '@/types'
 function RecurringPage() {
   const router = useRouter()
   const navigate = useNavigate()
-  const { rules, categories, accounts, counterparties } = Route.useLoaderData()
+  const { rules, categories, accounts, counterparties, currentMonthTotals } =
+    Route.useLoaderData()
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<
     'all' | 'payable' | 'receivable'
@@ -169,14 +171,16 @@ function RecurringPage() {
 
   return (
     <>
+      <RecurringSummaryCards currentMonthTotals={currentMonthTotals} />
+
       {rules.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
           <RefreshCw className="size-10 opacity-30" />
           <p className="text-sm">Нет ни одного правила. Создайте первое!</p>
         </div>
       ) : (
-        <div className="flex flex-col gap-6">
-          <Card className="flex flex-col gap-6 p-6">
+        <div className="flex flex-col gap-4">
+          <Card className="flex flex-col gap-4 p-4">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -250,7 +254,7 @@ function RecurringPage() {
           </Card>
 
           {filteredRules.length === 0 ? (
-            <Card className="p-6 text-center text-sm text-muted-foreground">
+            <Card className="p-4 text-center text-sm text-muted-foreground">
               Ничего не найдено
             </Card>
           ) : (
@@ -272,7 +276,7 @@ function RecurringPage() {
                 ))}
               </div>
 
-              <Card className="hidden p-6 sm:block">
+              <Card className="hidden p-4 sm:block">
                 <Table>
                   <TableHeader>
                     <TableRow>

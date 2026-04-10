@@ -1,4 +1,3 @@
-import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import {
   Dialog,
@@ -11,12 +10,9 @@ import {
 import { Field, FieldLabel } from '#/components/ui/field'
 import { Input } from '#/components/ui/input'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '#/components/ui/select'
+  Combobox,
+  type ComboboxOption,
+} from '#/components/ui/combobox'
 import type { ImportedBankTransactionView } from '#/components/bank-import/actions'
 import { getBankImportEntityLabel } from '#/components/bank-import/labels'
 import { Link2, Loader2 } from 'lucide-react'
@@ -43,6 +39,20 @@ export function BankImportAttachDialog({
   onAllocationDraftsChange: (value: BankImportAllocationDraft[]) => void
   onSubmit: () => void
 }) {
+  const candidateOptions: ComboboxOption[] =
+    target?.suggestedInvoices.map((candidate) => ({
+      value: candidate.id,
+      label: candidate.description,
+      description: [
+        candidate.counterpartyName ?? 'Без контрагента',
+        `Остаток ${formatMoney(candidate.outstandingAmount)} ₽`,
+        candidate.reasons.length > 0 ? candidate.reasons.join(', ') : '',
+      ]
+        .filter(Boolean)
+        .join(' · '),
+      keywords: [candidate.score],
+    })) ?? []
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-4xl">
@@ -61,7 +71,8 @@ export function BankImportAttachDialog({
             >
               <Field>
                 <FieldLabel>Наименование</FieldLabel>
-                <Select
+                <Combobox
+                  options={candidateOptions}
                   value={draft.invoiceId}
                   onValueChange={(value) => {
                     const candidate = target?.suggestedInvoices.find(
@@ -85,59 +96,15 @@ export function BankImportAttachDialog({
                       }),
                     )
                   }}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue
-                      placeholder={`Выберите ${
-                        target
-                          ? getBankImportEntityLabel(target.direction)
-                          : 'запись'
-                      }`}
-                    >
-                      {draft.invoiceId
-                        ? (target?.suggestedInvoices.find(
-                            (item) => item.id === draft.invoiceId,
-                          )?.description ?? '')
-                        : undefined}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {target?.suggestedInvoices.length === 0 && (
-                      <div className="px-2 py-3 text-sm text-muted-foreground">
-                        Подходящие{' '}
-                        {target
-                          ? getBankImportEntityLabel(target.direction, 'plural')
-                          : 'записи'}{' '}
-                        для рекомендации не найдены.
-                      </div>
-                    )}
-                    {target?.suggestedInvoices.map((candidate) => (
-                      <SelectItem key={candidate.id} value={candidate.id}>
-                        <div className="flex min-w-0 flex-col gap-1 py-1">
-                          <div className="flex items-center gap-2">
-                            <span className="truncate font-medium">
-                              {candidate.description}
-                            </span>
-                            <Badge variant="outline" className="shrink-0">
-                              {candidate.score}
-                            </Badge>
-                          </div>
-                          <span className="text-xs text-muted-foreground">
-                            {candidate.counterpartyName ?? 'Без контрагента'}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            Остаток {formatMoney(candidate.outstandingAmount)} ₽
-                          </span>
-                          {candidate.reasons.length > 0 && (
-                            <span className="text-xs text-muted-foreground">
-                              {candidate.reasons.join(', ')}
-                            </span>
-                          )}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder={`Выберите ${
+                    target ? getBankImportEntityLabel(target.direction) : 'запись'
+                  }`}
+                  emptyText={`Подходящие ${
+                    target
+                      ? getBankImportEntityLabel(target.direction, 'plural')
+                      : 'записи'
+                  } для рекомендации не найдены.`}
+                />
               </Field>
 
               <Field>

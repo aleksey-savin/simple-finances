@@ -8,13 +8,7 @@ import {
   FieldLabel,
 } from '@/components/ui/field'
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Combobox } from '@/components/ui/combobox'
 
 import { Input } from '@/components/ui/input'
 
@@ -177,26 +171,17 @@ const UserForm = ({
                   <FieldLabel htmlFor="role">Роль</FieldLabel>
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </FieldContent>
-                <Select
-                  name={field.name}
+                <Combobox
+                  options={roles.map((role) => ({
+                    value: role,
+                    label: roleLabels[role ?? 'user'],
+                  }))}
                   value={field.state.value}
                   onValueChange={field.handleChange}
-                >
-                  <SelectTrigger
-                    id="role"
-                    aria-invalid={isInvalid}
-                    className="min-w-30"
-                  >
-                    <SelectValue placeholder="Выберите роль" />
-                  </SelectTrigger>
-                  <SelectContent position="item-aligned">
-                    {roles.map((role) => (
-                      <SelectItem key={role} value={role}>
-                        {roleLabels[role ?? 'user']}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Выберите роль"
+                  className="min-w-30"
+                  onBlur={field.handleBlur}
+                />
               </Field>
             )
           }}

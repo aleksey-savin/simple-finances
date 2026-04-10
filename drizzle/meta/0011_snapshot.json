@@ -109,13 +109,9 @@
         "account_user_id_user_id_fk": {
           "name": "account_user_id_user_id_fk",
           "tableFrom": "account",
-          "columnsFrom": [
-            "user_id"
-          ],
+          "columnsFrom": ["user_id"],
           "tableTo": "user",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -168,13 +164,9 @@
         "category_user_id_user_id_fk": {
           "name": "category_user_id_user_id_fk",
           "tableFrom": "category",
-          "columnsFrom": [
-            "user_id"
-          ],
+          "columnsFrom": ["user_id"],
           "tableTo": "user",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }
@@ -183,9 +175,7 @@
       "uniqueConstraints": {
         "category_name_unique": {
           "name": "category_name_unique",
-          "columns": [
-            "name"
-          ],
+          "columns": ["name"],
           "nullsNotDistinct": false
         }
       },
@@ -228,13 +218,9 @@
         "current_account_user_id_user_id_fk": {
           "name": "current_account_user_id_user_id_fk",
           "tableFrom": "current_account",
-          "columnsFrom": [
-            "user_id"
-          ],
+          "columnsFrom": ["user_id"],
           "tableTo": "user",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }
@@ -331,39 +317,27 @@
         "current_account_user_current_account_id_current_account_id_fk": {
           "name": "current_account_user_current_account_id_current_account_id_fk",
           "tableFrom": "current_account_user",
-          "columnsFrom": [
-            "current_account_id"
-          ],
+          "columnsFrom": ["current_account_id"],
           "tableTo": "current_account",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         },
         "current_account_user_user_id_user_id_fk": {
           "name": "current_account_user_user_id_user_id_fk",
           "tableFrom": "current_account_user",
-          "columnsFrom": [
-            "user_id"
-          ],
+          "columnsFrom": ["user_id"],
           "tableTo": "user",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         },
         "current_account_user_invited_by_user_id_fk": {
           "name": "current_account_user_invited_by_user_id_fk",
           "tableFrom": "current_account_user",
-          "columnsFrom": [
-            "invited_by"
-          ],
+          "columnsFrom": ["invited_by"],
           "tableTo": "user",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "set null"
         }
@@ -372,10 +346,7 @@
       "uniqueConstraints": {
         "current_account_user_unique": {
           "name": "current_account_user_unique",
-          "columns": [
-            "current_account_id",
-            "user_id"
-          ],
+          "columns": ["current_account_id", "user_id"],
           "nullsNotDistinct": false
         }
       },
@@ -448,39 +419,27 @@
         "expense_category_id_category_id_fk": {
           "name": "expense_category_id_category_id_fk",
           "tableFrom": "expense",
-          "columnsFrom": [
-            "category_id"
-          ],
+          "columnsFrom": ["category_id"],
           "tableTo": "category",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         },
         "expense_current_account_id_current_account_id_fk": {
           "name": "expense_current_account_id_current_account_id_fk",
           "tableFrom": "expense",
-          "columnsFrom": [
-            "current_account_id"
-          ],
+          "columnsFrom": ["current_account_id"],
           "tableTo": "current_account",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         },
         "expense_user_id_user_id_fk": {
           "name": "expense_user_id_user_id_fk",
           "tableFrom": "expense",
-          "columnsFrom": [
-            "user_id"
-          ],
+          "columnsFrom": ["user_id"],
           "tableTo": "user",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }
@@ -556,39 +515,27 @@
         "income_category_id_category_id_fk": {
           "name": "income_category_id_category_id_fk",
           "tableFrom": "income",
-          "columnsFrom": [
-            "category_id"
-          ],
+          "columnsFrom": ["category_id"],
           "tableTo": "category",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         },
         "income_current_account_id_current_account_id_fk": {
           "name": "income_current_account_id_current_account_id_fk",
           "tableFrom": "income",
-          "columnsFrom": [
-            "current_account_id"
-          ],
+          "columnsFrom": ["current_account_id"],
           "tableTo": "current_account",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         },
         "income_user_id_user_id_fk": {
           "name": "income_user_id_user_id_fk",
           "tableFrom": "income",
-          "columnsFrom": [
-            "user_id"
-          ],
+          "columnsFrom": ["user_id"],
           "tableTo": "user",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }
@@ -680,13 +627,9 @@
         "session_user_id_user_id_fk": {
           "name": "session_user_id_user_id_fk",
           "tableFrom": "session",
-          "columnsFrom": [
-            "user_id"
-          ],
+          "columnsFrom": ["user_id"],
           "tableTo": "user",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -695,9 +638,7 @@
       "uniqueConstraints": {
         "session_token_unique": {
           "name": "session_token_unique",
-          "columns": [
-            "token"
-          ],
+          "columns": ["token"],
           "nullsNotDistinct": false
         }
       },
@@ -787,9 +728,7 @@
       "uniqueConstraints": {
         "user_email_unique": {
           "name": "user_email_unique",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "nullsNotDistinct": false
         }
       },

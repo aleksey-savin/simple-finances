@@ -34,9 +34,14 @@ export const fetchTransactionsData = createServerFn().handler(async () => {
     .from(currentAccountUser)
     .where(eq(currentAccountUser.userId, userId))
 
-  const accountIds = memberships.map((membership) => membership.currentAccountId)
+  const accountIds = memberships.map(
+    (membership) => membership.currentAccountId,
+  )
   const roleByAccountId = new Map(
-    memberships.map((membership) => [membership.currentAccountId, membership.role]),
+    memberships.map((membership) => [
+      membership.currentAccountId,
+      membership.role,
+    ]),
   )
 
   if (accountIds.length === 0) {

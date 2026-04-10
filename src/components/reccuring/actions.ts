@@ -15,6 +15,7 @@ import {
   createRecurringEntry,
   syncRecurringRulesForAccounts,
 } from '#/lib/recurring'
+import type { RecurringLoaderData, RecurringMonthTotals } from '@/types'
 
 // ─── Fetch list (route loader) ────────────────────────────────────────────────
 
@@ -45,7 +46,18 @@ export const fetchRecurringData = createServerFn().handler(async () => {
         columns: { id: true, name: true, linkedUserId: true },
       }),
     ])
-    return { rules: [], categories, accounts: [], counterparties }
+    return {
+      rules: [],
+      categories,
+      accounts: [],
+      counterparties,
+      currentMonthTotals: {
+        income: 0,
+        incomeCount: 0,
+        expenses: 0,
+        expensesCount: 0,
+      },
+    } satisfies RecurringLoaderData
   }
 
   await syncRecurringRulesForAccounts(accountIds)
@@ -73,7 +85,13 @@ export const fetchRecurringData = createServerFn().handler(async () => {
     }),
   ])
 
-  return { rules, categories, accounts, counterparties }
+  return {
+    rules,
+    categories,
+    accounts,
+    counterparties,
+    currentMonthTotals: buildCurrentMonthTotals(rules),
+  } satisfies RecurringLoaderData
 })
 
 // ─── Fetch single rule (edit loader) ─────────────────────────────────────────
@@ -273,3 +291,57 @@ export const deleteRecurringRule = createServerFn({ method: 'POST' })
 
     await db.delete(recurringRule).where(eq(recurringRule.id, data.id))
   })
+
+function buildCurrentMonthTotals(
+  rules: Array<{
+    type: string
+    amount: string
+    cronExpression: string
+    isActive: boolean
+  }>,
+): RecurringMonthTotals {
+  const now = new Date()
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  const monthEnd = new Date(
+    now.getFullYear(),
+    now.getMonth() + 1,
+    0,
+    23,
+    59,
+    59,
+    999,
+  )
+
+  let income = 0
+  let incomeCount = 0
+  let expenses = 0
+  let expensesCount = 0
+
+  for (const rule of rules) {
+    if (!rule.isActive) continue
+
+    try {
+      const schedule = new Cron(rule.cronExpression, { paused: true })
+      let cursor = new Date(monthStart.getTime() - 1)
+
+      for (let guard = 0; guard < 500; guard++) {
+        const next = schedule.nextRun(cursor)
+        if (!next || next > monthEnd) break
+
+        if (rule.type === 'receivable') {
+          income += Number(rule.amount)
+          incomeCount += 1
+        } else if (rule.type === 'payable') {
+          expenses += Number(rule.amount)
+          expensesCount += 1
+        }
+
+        cursor = new Date(next.getTime() + 1)
+      }
+    } catch {
+      // Skip rules with invalid cron expressions.
+    }
+  }
+
+  return { income, incomeCount, expenses, expensesCount }
+}

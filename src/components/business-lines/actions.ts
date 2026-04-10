@@ -1,0 +1,102 @@
+import { createServerFn } from '@tanstack/react-start'
+import { getRequest } from '@tanstack/react-start/server'
+import { eq } from 'drizzle-orm'
+import { z } from 'zod'
+
+import { db } from '@/db'
+import { businessLine, contract } from '@/db/schema'
+import { auth } from 'utils/auth'
+
+export const businessLinesQueryKey = ['business-lines'] as const
+
+export const fetchBusinessLines = createServerFn().handler(async () => {
+  const request = getRequest()
+  const session = await auth.api.getSession({ headers: request.headers })
+  if (!session?.user?.id) throw new Error('Не авторизован')
+
+  return db.query.businessLine
+    .findMany({
+      columns: {
+        id: true,
+        name: true,
+        createdBy: true,
+      },
+      with: {
+        contracts: {
+          columns: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: (table, { asc }) => asc(table.name),
+    })
+    .then((rows) =>
+      rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        createdBy: row.createdBy,
+        contracts: row.contracts,
+      })),
+    )
+})
+
+const businessLineSchema = z.object({
+  name: z.string().min(2, 'Минимум 2 символа'),
+})
+
+export const addBusinessLineSchema = businessLineSchema
+
+export const addBusinessLine = createServerFn({ method: 'POST' })
+  .inputValidator(addBusinessLineSchema)
+  .handler(async ({ data }) => {
+    const request = getRequest()
+    const session = await auth.api.getSession({ headers: request.headers })
+    if (!session?.user?.id) throw new Error('Не авторизован')
+
+    await db.insert(businessLine).values({
+      name: data.name,
+      createdBy: session.user.id,
+    })
+  })
+
+export const updateBusinessLineSchema = businessLineSchema.extend({
+  id: z.string(),
+})
+
+export const updateBusinessLine = createServerFn({ method: 'POST' })
+  .inputValidator(updateBusinessLineSchema)
+  .handler(async ({ data }) => {
+    const request = getRequest()
+    const session = await auth.api.getSession({ headers: request.headers })
+    if (!session?.user?.id) throw new Error('Не авторизован')
+
+    await db
+      .update(businessLine)
+      .set({
+        name: data.name,
+      })
+      .where(eq(businessLine.id, data.id))
+  })
+
+const deleteBusinessLineSchema = z.object({ id: z.string() })
+
+export const deleteBusinessLine = createServerFn({ method: 'POST' })
+  .inputValidator(deleteBusinessLineSchema)
+  .handler(async ({ data }) => {
+    const existingContract = await db.query.contract.findFirst({
+      where: eq(contract.businessLineId, data.id),
+      columns: {
+        id: true,
+        name: true,
+      },
+    })
+
+    if (existingContract) {
+      throw new Error(
+        `Нельзя удалить направление: договор «${existingContract.name}» ещё привязан`,
+      )
+    }
+
+    await db.delete(businessLine).where(eq(businessLine.id, data.id))
+  })

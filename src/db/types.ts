@@ -7,10 +7,13 @@ import type {
   clientCounterparty,
   company,
   companyCurrentAccount,
+  contract,
+  contractTypeEnum,
   counterparty,
   counterpartyTypeEnum,
   currentAccount,
   currentAccountUser,
+  businessLine,
   expense,
   expenseTag,
   invoice,
@@ -32,6 +35,7 @@ export type CounterpartyType = (typeof counterpartyTypeEnum.enumValues)[number]
 export type InvoiceKind = (typeof invoiceKindEnum.enumValues)[number]
 export type BankTransactionDirection =
   (typeof bankTransactionDirectionEnum.enumValues)[number]
+export type ContractType = (typeof contractTypeEnum.enumValues)[number]
 
 // ─── Auth (managed by better-auth, no Insert/Update needed) ──────────────────
 
@@ -95,7 +99,20 @@ export type CompanyInsert = typeof company.$inferInsert
 export type CompanyUpdate = Partial<CompanyInsert> & { id: string }
 
 export type CompanyCurrentAccount = typeof companyCurrentAccount.$inferSelect
-export type CompanyCurrentAccountInsert = typeof companyCurrentAccount.$inferInsert
+export type CompanyCurrentAccountInsert =
+  typeof companyCurrentAccount.$inferInsert
+
+// ─── Business Line ────────────────────────────────────────────────────────────
+
+export type BusinessLine = typeof businessLine.$inferSelect
+export type BusinessLineInsert = typeof businessLine.$inferInsert
+export type BusinessLineUpdate = Partial<BusinessLineInsert> & { id: string }
+
+// ─── Contract ─────────────────────────────────────────────────────────────────
+
+export type Contract = typeof contract.$inferSelect
+export type ContractInsert = typeof contract.$inferInsert
+export type ContractUpdate = Partial<ContractInsert> & { id: string }
 
 // ─── Expense ──────────────────────────────────────────────────────────────────
 

@@ -14,34 +14,36 @@ export const fetchClients = createServerFn().handler(async () => {
   const session = await auth.api.getSession({ headers: request.headers })
   if (!session?.user?.id) throw new Error('Не авторизован')
 
-  return db.query.client.findMany({
-    columns: {
-      id: true,
-      name: true,
-      createdBy: true,
-    },
-    with: {
-      counterparties: {
-        columns: {},
-        with: {
-          counterparty: {
-            columns: {
-              id: true,
-              name: true,
+  return db.query.client
+    .findMany({
+      columns: {
+        id: true,
+        name: true,
+        createdBy: true,
+      },
+      with: {
+        counterparties: {
+          columns: {},
+          with: {
+            counterparty: {
+              columns: {
+                id: true,
+                name: true,
+              },
             },
           },
         },
       },
-    },
-    orderBy: (table, { asc }) => asc(table.name),
-  }).then((rows) =>
-    rows.map((row) => ({
-      id: row.id,
-      name: row.name,
-      createdBy: row.createdBy,
-      counterparties: row.counterparties.map((item) => item.counterparty),
-    })),
-  )
+      orderBy: (table, { asc }) => asc(table.name),
+    })
+    .then((rows) =>
+      rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        createdBy: row.createdBy,
+        counterparties: row.counterparties.map((item) => item.counterparty),
+      })),
+    )
 })
 
 const clientSchema = z.object({

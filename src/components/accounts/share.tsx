@@ -18,12 +18,9 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+  Combobox,
+  type ComboboxOption,
+} from '@/components/ui/combobox'
 import { Separator } from '@/components/ui/separator'
 import type { Member } from '#/types'
 
@@ -34,6 +31,11 @@ const roleLabel: Record<string, string> = {
   editor: 'Редактор',
   viewer: 'Читатель',
 }
+
+const roleOptions: ComboboxOption[] = [
+  { value: 'editor', label: 'Редактор' },
+  { value: 'viewer', label: 'Читатель' },
+]
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -150,18 +152,13 @@ export function ShareAccount({
               onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
               className="flex-1"
             />
-            <Select
+            <Combobox
+              options={roleOptions}
               value={role}
               onValueChange={(v) => setRole(v as 'editor' | 'viewer')}
-            >
-              <SelectTrigger className="w-36">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="editor">Редактор</SelectItem>
-                <SelectItem value="viewer">Читатель</SelectItem>
-              </SelectContent>
-            </Select>
+              placeholder="Выберите роль"
+              className="w-36"
+            />
           </div>
           <Button
             onClick={handleAdd}

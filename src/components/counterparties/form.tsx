@@ -18,15 +18,9 @@ import {
 } from './actions'
 
 import { Button } from '@/components/ui/button'
+import { Combobox } from '@/components/ui/combobox'
 import { Input } from '@/components/ui/input'
 import { Field, FieldError, FieldLabel } from '../ui/field'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../ui/select'
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -170,7 +164,7 @@ export const CounterpartyForm = ({
       className={
         isEdit
           ? 'flex flex-col gap-3 pt-2'
-          : 'flex-1 flex flex-col gap-6 min-h-0'
+          : 'flex-1 flex flex-col gap-4 min-h-0'
       }
       onSubmit={(e) => {
         e.preventDefault()
@@ -181,7 +175,7 @@ export const CounterpartyForm = ({
         className={
           isEdit
             ? 'flex flex-col gap-3'
-            : 'grid flex-1 auto-rows-min gap-6 px-4'
+            : 'grid flex-1 auto-rows-min gap-4 px-4'
         }
       >
         {/* Name */}
@@ -246,30 +240,22 @@ export const CounterpartyForm = ({
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
             return (
-              <Field data-invalid={isInvalid}>
+                <Field data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Тип</FieldLabel>
-                <Select
-                  value={field.state.value || undefined}
+                <Combobox
+                  options={counterpartyTypeEnum.enumValues.map((val) => ({
+                    value: val,
+                    label: val,
+                  }))}
+                  value={field.state.value}
                   onValueChange={(val) =>
-                    field.handleChange(val as CounterpartyType)
+                    field.handleChange(val as CounterpartyType | '')
                   }
-                >
-                  <SelectTrigger
-                    id={field.name}
-                    aria-invalid={isInvalid}
-                    className="w-full"
-                    onBlur={field.handleBlur}
-                  >
-                    <SelectValue placeholder="Выберите тип" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {counterpartyTypeEnum.enumValues.map((val) => (
-                      <SelectItem key={val} value={val}>
-                        {val}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Выберите тип"
+                  onBlur={field.handleBlur}
+                  allowClear
+                  clearLabel="Очистить тип"
+                />
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )

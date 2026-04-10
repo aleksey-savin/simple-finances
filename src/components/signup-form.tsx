@@ -61,7 +61,7 @@ export function SignupForm({
     },
   })
   return (
-    <div className={cn('flex flex-col gap-6', className)} {...props}>
+    <div className={cn('flex flex-col gap-4', className)} {...props}>
       <Card>
         <CardHeader className="text-center">
           <CardTitle className="text-xl">Привет!</CardTitle>
@@ -180,7 +180,7 @@ export function SignupForm({
           </form>
         </CardContent>
       </Card>
-      <FieldDescription className="px-6 text-center">
+      <FieldDescription className="px-4 text-center">
         Продолжая, вы соглашаетесь с <a href="#">Условиями использования</a> и{' '}
         <a href="#">Политикой конфиденциальности</a>.
       </FieldDescription>

@@ -96,7 +96,7 @@ export function TagSummaryPanel({ totals, className }: TagSummaryPanelProps) {
       {!collapsed && (
         <div className="max-h-80 overflow-y-auto">
           {totals.length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center py-6 px-4">
+            <p className="text-xs text-muted-foreground text-center py-4 px-4">
               Нет тегов с активными платежами
             </p>
           ) : (

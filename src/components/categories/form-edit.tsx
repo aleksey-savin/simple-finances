@@ -78,7 +78,7 @@ export const EditCategoryForm = ({
         }}
       </form.Field>
 
-      <div className="flex gap-6 flex-wrap">
+      <div className="flex gap-4 flex-wrap">
         <form.Field name="useForExpenses">
           {(field) => (
             <div className="flex items-center gap-2">

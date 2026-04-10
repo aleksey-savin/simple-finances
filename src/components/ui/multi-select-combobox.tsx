@@ -127,7 +127,7 @@ export function MultiSelectCombobox({
 
           <div className="max-h-64 overflow-y-auto">
             {filteredOptions.length === 0 ? (
-              <div className="px-2 py-6 text-center text-sm text-muted-foreground">
+              <div className="px-2 py-4 text-center text-sm text-muted-foreground">
                 {emptyText}
               </div>
             ) : (

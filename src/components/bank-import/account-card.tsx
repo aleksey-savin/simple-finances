@@ -22,8 +22,8 @@ export function AccountSelection({
   onAccountChange: (value: string) => void
 }) {
   return (
-    <Card className="w-full p-6">
-      <div className="flex flex-col gap-6">
+    <Card className="w-full p-4">
+      <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
           <h1 className="text-xl font-semibold">Выбор расчётного счёта</h1>
           <p className="text-sm text-muted-foreground">
@@ -31,7 +31,7 @@ export function AccountSelection({
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-6">
+        <div className="flex flex-wrap gap-4">
           {accounts.map((account) => {
             const isSelected = account.id === selectedAccountId
 

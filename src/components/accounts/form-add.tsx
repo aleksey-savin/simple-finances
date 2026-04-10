@@ -44,13 +44,13 @@ export const AddAccountForm = () => {
   return (
     <form
       id="add-account-form"
-      className="flex-1 flex flex-col gap-6 min-h-0"
+      className="flex-1 flex flex-col gap-4 min-h-0"
       onSubmit={(e) => {
         e.preventDefault()
         form.handleSubmit()
       }}
     >
-      <div className="grid flex-1 auto-rows-min gap-6 px-4">
+      <div className="grid flex-1 auto-rows-min gap-4 px-4">
         <form.Field
           name="name"
           children={(field) => {

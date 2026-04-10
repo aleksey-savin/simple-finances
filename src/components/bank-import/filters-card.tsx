@@ -28,7 +28,7 @@ export function BankImportFilters({
   onClearFilters: () => void
 }) {
   return (
-    <Card className="flex flex-col gap-6 p-6">
+    <Card className="flex flex-col gap-4 p-4">
       <h1 className="text-xl font-semibold">Фильтр</h1>
       <div className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />

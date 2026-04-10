@@ -26,14 +26,14 @@ export default function Clients() {
         </Button>
       </SheetTrigger>
       <SheetContent className="flex flex-col gap-0 overflow-hidden">
-        <SheetHeader className="px-6 pt-6 pb-2">
+        <SheetHeader className="px-4 pt-6 pb-2">
           <SheetTitle>Клиенты</SheetTitle>
           <SheetDescription>
             Добавьте и управляйте клиентами для аналитики
           </SheetDescription>
         </SheetHeader>
 
-        <div className="shrink-0 px-6 pt-2 pb-4">
+        <div className="shrink-0 px-4 pt-2 pb-4">
           <AddClientForm />
         </div>
         <Separator />

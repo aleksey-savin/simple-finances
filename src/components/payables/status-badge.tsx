@@ -43,10 +43,7 @@ export function PayablesStatusBadge({ row }: { row: ExpenseRow }) {
 
   if (isOverdue) {
     return (
-      <Badge
-        variant="destructive"
-        className="gap-1 whitespace-nowrap text-xs"
-      >
+      <Badge variant="destructive" className="gap-1 whitespace-nowrap text-xs">
         <AlertTriangle className="size-3" />
         Просрочен
       </Badge>

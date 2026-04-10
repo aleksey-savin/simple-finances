@@ -10,7 +10,9 @@ export function ReceivablesDueDateCell({ row }: { row: IncomeRow }) {
 
   return (
     <div className="flex flex-col gap-0.5">
-      <span className={`text-sm font-medium ${isOverdue ? 'text-destructive' : ''}`}>
+      <span
+        className={`text-sm font-medium ${isOverdue ? 'text-destructive' : ''}`}
+      >
         {formatDate(row.dueDate)}
       </span>
       {isOverdue && (

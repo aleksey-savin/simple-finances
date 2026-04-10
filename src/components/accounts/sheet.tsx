@@ -31,17 +31,17 @@ const Accounts = () => {
         </Button>
       </SheetTrigger>
       <SheetContent className="flex flex-col gap-0 overflow-hidden">
-        <SheetHeader className="px-6 pt-6 pb-2">
+        <SheetHeader className="px-4 pt-6 pb-2">
           <SheetTitle>Счета</SheetTitle>
           <SheetDescription>Управление счетами.</SheetDescription>
         </SheetHeader>
 
-        <div className="px-6 pt-2 pb-4 shrink-0">
+        <div className="px-4 pt-2 pb-4 shrink-0">
           <AddAccountForm />
         </div>
         <Separator />
         <AccountsList />
-        <SheetFooter className="px-6 py-4 border-t">
+        <SheetFooter className="px-4 py-4 border-t">
           <SheetClose asChild>
             <Button variant="outline" className="w-full">
               Закрыть

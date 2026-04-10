@@ -1,6 +1,7 @@
 import { relations } from 'drizzle-orm'
 import {
   boolean,
+  date,
   foreignKey,
   index,
   integer,
@@ -38,6 +39,11 @@ export const bankTransactionDirectionEnum = pgEnum(
   'bank_transaction_direction',
   ['debit', 'credit'],
 )
+
+export const contractTypeEnum = pgEnum('contract_type', [
+  'customer',
+  'supplier',
+])
 
 export const expenseTag = pgTable(
   'expense_tag',
@@ -355,6 +361,54 @@ export const companyCurrentAccount = pgTable(
   ],
 )
 
+export const businessLine = pgTable('business_line', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  name: text('name').notNull(),
+  createdBy: text('created_by')
+    .notNull()
+    .references(() => user.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at')
+    .defaultNow()
+    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .notNull(),
+})
+
+export const contract = pgTable(
+  'contract',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    name: text('name').notNull(),
+    number: text('number').notNull(),
+    signedAt: date('signed_at').notNull(),
+    contractType: contractTypeEnum('contract_type').notNull(),
+    fileUrl: text('file_url').notNull(),
+    businessLineId: text('business_line_id')
+      .notNull()
+      .references(() => businessLine.id),
+    counterpartyId: text('counterparty_id')
+      .notNull()
+      .references(() => counterparty.id),
+    amount: numeric('amount').array().notNull(),
+    createdBy: text('created_by')
+      .notNull()
+      .references(() => user.id),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index('contract_business_line_idx').on(table.businessLineId),
+    index('contract_counterparty_idx').on(table.counterpartyId),
+  ],
+)
+
 export const expense = pgTable(
   'expense',
   {
@@ -646,6 +700,8 @@ export const userRelations = relations(user, ({ many }) => ({
   currentAccountUsers: many(currentAccountUser),
   clients: many(client),
   companies: many(company),
+  businessLines: many(businessLine),
+  contracts: many(contract),
 }))
 
 export const currentAccountRelations = relations(
@@ -777,6 +833,7 @@ export const counterpartyRelations = relations(
     incomes: many(income),
     invoices: many(invoice),
     recurringRules: many(recurringRule),
+    contracts: many(contract),
     clientLinks: many(clientCounterparty),
     linkedUser: one(user, {
       fields: [counterparty.linkedUserId],
@@ -828,6 +885,32 @@ export const companyCurrentAccountRelations = relations(
     }),
   }),
 )
+
+export const businessLineRelations = relations(
+  businessLine,
+  ({ one, many }) => ({
+    contracts: many(contract),
+    createdByUser: one(user, {
+      fields: [businessLine.createdBy],
+      references: [user.id],
+    }),
+  }),
+)
+
+export const contractRelations = relations(contract, ({ one }) => ({
+  businessLine: one(businessLine, {
+    fields: [contract.businessLineId],
+    references: [businessLine.id],
+  }),
+  counterparty: one(counterparty, {
+    fields: [contract.counterpartyId],
+    references: [counterparty.id],
+  }),
+  createdByUser: one(user, {
+    fields: [contract.createdBy],
+    references: [user.id],
+  }),
+}))
 
 export const categoryRelations = relations(category, ({ many }) => ({
   expenses: many(expense),

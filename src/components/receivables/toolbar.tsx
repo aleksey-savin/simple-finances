@@ -46,15 +46,21 @@ export function ReceivablesToolbar({
   const rawGlobalFilter = table.getState().globalFilter
   const accountFilterValue = table.getColumn('account')?.getFilterValue()
   const categoryFilterValue = table.getColumn('category')?.getFilterValue()
-  const counterpartyFilterValue =
-    table.getColumn('counterparty')?.getFilterValue()
+  const counterpartyFilterValue = table
+    .getColumn('counterparty')
+    ?.getFilterValue()
   const overdueFilterValue = table.getColumn('dueDate')?.getFilterValue()
   const statusFilterValue = table.getColumn('status')?.getFilterValue()
   const tagFilterValue = table.getColumn('tags')?.getFilterValue()
 
-  const globalFilter = typeof rawGlobalFilter === 'string' ? rawGlobalFilter : ''
-  const accountFilter = Array.isArray(accountFilterValue) ? accountFilterValue : []
-  const categoryFilter = Array.isArray(categoryFilterValue) ? categoryFilterValue : []
+  const globalFilter =
+    typeof rawGlobalFilter === 'string' ? rawGlobalFilter : ''
+  const accountFilter = Array.isArray(accountFilterValue)
+    ? accountFilterValue
+    : []
+  const categoryFilter = Array.isArray(categoryFilterValue)
+    ? categoryFilterValue
+    : []
   const counterpartyFilter = Array.isArray(counterpartyFilterValue)
     ? counterpartyFilterValue
     : []
