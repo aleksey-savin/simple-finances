@@ -14,6 +14,7 @@ import { Route as TransactionsRouteImport } from './routes/transactions'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as RecurringRouteImport } from './routes/recurring'
 import { Route as ReceivablesRouteImport } from './routes/receivables'
+import { Route as PriceRevisionsRouteImport } from './routes/price-revisions'
 import { Route as PayablesRouteImport } from './routes/payables'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -27,9 +28,12 @@ import { Route as BusinessLinesRouteImport } from './routes/business-lines'
 import { Route as BankImportRouteImport } from './routes/bank-import'
 import { Route as R403RouteImport } from './routes/403'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PriceRevisionsIndexRouteImport } from './routes/price-revisions.index'
 import { Route as UsersNewRouteImport } from './routes/users.new'
 import { Route as TransactionsNewRouteImport } from './routes/transactions.new'
 import { Route as RecurringNewRouteImport } from './routes/recurring.new'
+import { Route as PriceRevisionsNewRouteImport } from './routes/price-revisions.new'
+import { Route as PriceRevisionsIdRouteImport } from './routes/price-revisions.$id'
 import { Route as CurrentAccountsNewRouteImport } from './routes/current-accounts.new'
 import { Route as CounterpartiesNewRouteImport } from './routes/counterparties.new'
 import { Route as ContractsNewRouteImport } from './routes/contracts.new'
@@ -67,6 +71,11 @@ const RecurringRoute = RecurringRouteImport.update({
 const ReceivablesRoute = ReceivablesRouteImport.update({
   id: '/receivables',
   path: '/receivables',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PriceRevisionsRoute = PriceRevisionsRouteImport.update({
+  id: '/price-revisions',
+  path: '/price-revisions',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PayablesRoute = PayablesRouteImport.update({
@@ -134,6 +143,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PriceRevisionsIndexRoute = PriceRevisionsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PriceRevisionsRoute,
+} as any)
 const UsersNewRoute = UsersNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -148,6 +162,16 @@ const RecurringNewRoute = RecurringNewRouteImport.update({
   id: '/new',
   path: '/new',
   getParentRoute: () => RecurringRoute,
+} as any)
+const PriceRevisionsNewRoute = PriceRevisionsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => PriceRevisionsRoute,
+} as any)
+const PriceRevisionsIdRoute = PriceRevisionsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => PriceRevisionsRoute,
 } as any)
 const CurrentAccountsNewRoute = CurrentAccountsNewRouteImport.update({
   id: '/new',
@@ -229,6 +253,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/payables': typeof PayablesRoute
+  '/price-revisions': typeof PriceRevisionsRouteWithChildren
   '/receivables': typeof ReceivablesRoute
   '/recurring': typeof RecurringRouteWithChildren
   '/signup': typeof SignupRoute
@@ -241,9 +266,12 @@ export interface FileRoutesByFullPath {
   '/contracts/new': typeof ContractsNewRoute
   '/counterparties/new': typeof CounterpartiesNewRoute
   '/current-accounts/new': typeof CurrentAccountsNewRoute
+  '/price-revisions/$id': typeof PriceRevisionsIdRoute
+  '/price-revisions/new': typeof PriceRevisionsNewRoute
   '/recurring/new': typeof RecurringNewRoute
   '/transactions/new': typeof TransactionsNewRoute
   '/users/new': typeof UsersNewRoute
+  '/price-revisions/': typeof PriceRevisionsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/recurring/$id/edit': typeof RecurringIdEditRoute
   '/users/$id/ban': typeof UsersIdBanRoute
@@ -277,9 +305,12 @@ export interface FileRoutesByTo {
   '/contracts/new': typeof ContractsNewRoute
   '/counterparties/new': typeof CounterpartiesNewRoute
   '/current-accounts/new': typeof CurrentAccountsNewRoute
+  '/price-revisions/$id': typeof PriceRevisionsIdRoute
+  '/price-revisions/new': typeof PriceRevisionsNewRoute
   '/recurring/new': typeof RecurringNewRoute
   '/transactions/new': typeof TransactionsNewRoute
   '/users/new': typeof UsersNewRoute
+  '/price-revisions': typeof PriceRevisionsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/recurring/$id/edit': typeof RecurringIdEditRoute
   '/users/$id/ban': typeof UsersIdBanRoute
@@ -302,6 +333,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/payables': typeof PayablesRoute
+  '/price-revisions': typeof PriceRevisionsRouteWithChildren
   '/receivables': typeof ReceivablesRoute
   '/recurring': typeof RecurringRouteWithChildren
   '/signup': typeof SignupRoute
@@ -314,9 +346,12 @@ export interface FileRoutesById {
   '/contracts/new': typeof ContractsNewRoute
   '/counterparties/new': typeof CounterpartiesNewRoute
   '/current-accounts/new': typeof CurrentAccountsNewRoute
+  '/price-revisions/$id': typeof PriceRevisionsIdRoute
+  '/price-revisions/new': typeof PriceRevisionsNewRoute
   '/recurring/new': typeof RecurringNewRoute
   '/transactions/new': typeof TransactionsNewRoute
   '/users/new': typeof UsersNewRoute
+  '/price-revisions/': typeof PriceRevisionsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/recurring/$id/edit': typeof RecurringIdEditRoute
   '/users/$id/ban': typeof UsersIdBanRoute
@@ -340,6 +375,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/payables'
+    | '/price-revisions'
     | '/receivables'
     | '/recurring'
     | '/signup'
@@ -352,9 +388,12 @@ export interface FileRouteTypes {
     | '/contracts/new'
     | '/counterparties/new'
     | '/current-accounts/new'
+    | '/price-revisions/$id'
+    | '/price-revisions/new'
     | '/recurring/new'
     | '/transactions/new'
     | '/users/new'
+    | '/price-revisions/'
     | '/api/auth/$'
     | '/recurring/$id/edit'
     | '/users/$id/ban'
@@ -388,9 +427,12 @@ export interface FileRouteTypes {
     | '/contracts/new'
     | '/counterparties/new'
     | '/current-accounts/new'
+    | '/price-revisions/$id'
+    | '/price-revisions/new'
     | '/recurring/new'
     | '/transactions/new'
     | '/users/new'
+    | '/price-revisions'
     | '/api/auth/$'
     | '/recurring/$id/edit'
     | '/users/$id/ban'
@@ -412,6 +454,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/payables'
+    | '/price-revisions'
     | '/receivables'
     | '/recurring'
     | '/signup'
@@ -424,9 +467,12 @@ export interface FileRouteTypes {
     | '/contracts/new'
     | '/counterparties/new'
     | '/current-accounts/new'
+    | '/price-revisions/$id'
+    | '/price-revisions/new'
     | '/recurring/new'
     | '/transactions/new'
     | '/users/new'
+    | '/price-revisions/'
     | '/api/auth/$'
     | '/recurring/$id/edit'
     | '/users/$id/ban'
@@ -449,6 +495,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
   PayablesRoute: typeof PayablesRoute
+  PriceRevisionsRoute: typeof PriceRevisionsRouteWithChildren
   ReceivablesRoute: typeof ReceivablesRoute
   RecurringRoute: typeof RecurringRouteWithChildren
   SignupRoute: typeof SignupRoute
@@ -492,6 +539,13 @@ declare module '@tanstack/react-router' {
       path: '/receivables'
       fullPath: '/receivables'
       preLoaderRoute: typeof ReceivablesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/price-revisions': {
+      id: '/price-revisions'
+      path: '/price-revisions'
+      fullPath: '/price-revisions'
+      preLoaderRoute: typeof PriceRevisionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/payables': {
@@ -585,6 +639,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/price-revisions/': {
+      id: '/price-revisions/'
+      path: '/'
+      fullPath: '/price-revisions/'
+      preLoaderRoute: typeof PriceRevisionsIndexRouteImport
+      parentRoute: typeof PriceRevisionsRoute
+    }
     '/users/new': {
       id: '/users/new'
       path: '/new'
@@ -605,6 +666,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/recurring/new'
       preLoaderRoute: typeof RecurringNewRouteImport
       parentRoute: typeof RecurringRoute
+    }
+    '/price-revisions/new': {
+      id: '/price-revisions/new'
+      path: '/new'
+      fullPath: '/price-revisions/new'
+      preLoaderRoute: typeof PriceRevisionsNewRouteImport
+      parentRoute: typeof PriceRevisionsRoute
+    }
+    '/price-revisions/$id': {
+      id: '/price-revisions/$id'
+      path: '/$id'
+      fullPath: '/price-revisions/$id'
+      preLoaderRoute: typeof PriceRevisionsIdRouteImport
+      parentRoute: typeof PriceRevisionsRoute
     }
     '/current-accounts/new': {
       id: '/current-accounts/new'
@@ -783,6 +858,22 @@ const CurrentAccountsRouteWithChildren = CurrentAccountsRoute._addFileChildren(
   CurrentAccountsRouteChildren,
 )
 
+interface PriceRevisionsRouteChildren {
+  PriceRevisionsIdRoute: typeof PriceRevisionsIdRoute
+  PriceRevisionsNewRoute: typeof PriceRevisionsNewRoute
+  PriceRevisionsIndexRoute: typeof PriceRevisionsIndexRoute
+}
+
+const PriceRevisionsRouteChildren: PriceRevisionsRouteChildren = {
+  PriceRevisionsIdRoute: PriceRevisionsIdRoute,
+  PriceRevisionsNewRoute: PriceRevisionsNewRoute,
+  PriceRevisionsIndexRoute: PriceRevisionsIndexRoute,
+}
+
+const PriceRevisionsRouteWithChildren = PriceRevisionsRoute._addFileChildren(
+  PriceRevisionsRouteChildren,
+)
+
 interface RecurringRouteChildren {
   RecurringNewRoute: typeof RecurringNewRoute
   RecurringIdEditRoute: typeof RecurringIdEditRoute
@@ -841,6 +932,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
   PayablesRoute: PayablesRoute,
+  PriceRevisionsRoute: PriceRevisionsRouteWithChildren,
   ReceivablesRoute: ReceivablesRoute,
   RecurringRoute: RecurringRouteWithChildren,
   SignupRoute: SignupRoute,

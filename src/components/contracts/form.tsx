@@ -16,6 +16,10 @@ import {
   counterpartiesQueryKey,
   fetchCounterparties,
 } from '@/components/counterparties/actions'
+import {
+  companiesQueryKey,
+  fetchCompanies,
+} from '@/components/companies/actions'
 import { Button } from '@/components/ui/button'
 import { Combobox } from '@/components/ui/combobox'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
@@ -40,6 +44,7 @@ const uiFormSchema = z.object({
   fileUrl: z.string().min(1, 'Укажите ссылку на файл'),
   businessLineId: z.string().min(1, 'Выберите направление'),
   counterpartyId: z.string().min(1, 'Выберите контрагента'),
+  companyId: z.string(),
   amount: z.array(amountItemSchema).min(1, 'Добавьте хотя бы одну сумму'),
 })
 
@@ -67,6 +72,10 @@ export const ContractForm = ({
     queryKey: counterpartiesQueryKey,
     queryFn: () => fetchCounterparties(),
   })
+  const { data: companies = [] } = useQuery({
+    queryKey: companiesQueryKey,
+    queryFn: () => fetchCompanies(),
+  })
 
   const form = useForm({
     defaultValues: {
@@ -77,6 +86,7 @@ export const ContractForm = ({
       fileUrl: current?.fileUrl ?? '',
       businessLineId: current?.businessLine.id ?? '',
       counterpartyId: current?.counterparty.id ?? '',
+      companyId: current?.companyId ?? '',
       amount: current?.amount ?? [''],
     },
     validators: { onSubmit: uiFormSchema },
@@ -93,6 +103,7 @@ export const ContractForm = ({
               fileUrl: value.fileUrl,
               businessLineId: value.businessLineId,
               counterpartyId: value.counterpartyId,
+              companyId: value.companyId || undefined,
               amount: value.amount,
             },
           })
@@ -115,6 +126,7 @@ export const ContractForm = ({
             fileUrl: value.fileUrl,
             businessLineId: value.businessLineId,
             counterpartyId: value.counterpartyId,
+            companyId: value.companyId || undefined,
             amount: value.amount,
           },
         })
@@ -303,6 +315,24 @@ export const ContractForm = ({
               </Field>
             )
           }}
+        </form.Field>
+
+        <form.Field name="companyId">
+          {(field) => (
+            <Field>
+              <FieldLabel>Компания</FieldLabel>
+              <Combobox
+                options={companies.map((c) => ({ value: c.id, label: c.name }))}
+                value={field.state.value}
+                onValueChange={field.handleChange}
+                onBlur={field.handleBlur}
+                placeholder="Без компании"
+                searchPlaceholder="Поиск компании…"
+                allowClear
+                clearLabel="Без компании"
+              />
+            </Field>
+          )}
         </form.Field>
 
         <form.Field name="businessLineId">

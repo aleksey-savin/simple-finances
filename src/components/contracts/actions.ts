@@ -1,11 +1,12 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { db } from '@/db'
 import { contract, contractTypeEnum } from '@/db/schema'
 import { auth } from 'utils/auth'
+import { resolveSelectedScope } from '#/lib/company-scope'
 
 export const contractsQueryKey = ['contracts'] as const
 
@@ -14,8 +15,19 @@ export const fetchContracts = createServerFn().handler(async () => {
   const session = await auth.api.getSession({ headers: request.headers })
   if (!session?.user?.id) throw new Error('Не авторизован')
 
+  const { selectedScope } = await resolveSelectedScope(
+    session.user.id,
+    request.headers,
+  )
+
+  const whereClause =
+    selectedScope.kind === 'company'
+      ? eq(contract.companyId, selectedScope.id)
+      : and(isNull(contract.companyId), eq(contract.createdBy, session.user.id))
+
   return db.query.contract
     .findMany({
+      where: whereClause,
       columns: {
         id: true,
         name: true,
@@ -26,6 +38,7 @@ export const fetchContracts = createServerFn().handler(async () => {
         amount: true,
         businessLineId: true,
         counterpartyId: true,
+        companyId: true,
         createdBy: true,
       },
       with: {
@@ -57,6 +70,7 @@ export const fetchContracts = createServerFn().handler(async () => {
           ...row,
           businessLine: row.businessLine,
           counterparty: row.counterparty,
+          companyId: row.companyId,
         }
       }),
     )
@@ -80,6 +94,7 @@ const contractSchema = z.object({
   fileUrl: z.string().min(1, 'Укажите ссылку на файл'),
   businessLineId: z.string().min(1, 'Выберите направление'),
   counterpartyId: z.string().min(1, 'Выберите контрагента'),
+  companyId: z.string().optional(),
   amount: z.array(amountItemSchema).min(1, 'Добавьте хотя бы одну сумму'),
 })
 
@@ -100,6 +115,7 @@ export const addContract = createServerFn({ method: 'POST' })
       fileUrl: data.fileUrl,
       businessLineId: data.businessLineId,
       counterpartyId: data.counterpartyId,
+      companyId: data.companyId ?? null,
       amount: data.amount,
       createdBy: session.user.id,
     })
@@ -126,6 +142,7 @@ export const updateContract = createServerFn({ method: 'POST' })
         fileUrl: data.fileUrl,
         businessLineId: data.businessLineId,
         counterpartyId: data.counterpartyId,
+        companyId: data.companyId ?? null,
         amount: data.amount,
       })
       .where(eq(contract.id, data.id))

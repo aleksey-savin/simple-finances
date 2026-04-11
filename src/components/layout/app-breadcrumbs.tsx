@@ -1,3 +1,4 @@
+import React from 'react'
 import { useRouterState, Link, useMatches } from '@tanstack/react-router'
 import {
   Breadcrumb,
@@ -23,6 +24,7 @@ const ROUTE_LABELS: Record<string, { label: string; showAddButton: boolean }> =
     counterparties: { label: 'Контрагенты', showAddButton: true },
     contracts: { label: 'Договоры', showAddButton: true },
     'business-lines': { label: 'Бизнес-направления', showAddButton: true },
+    'price-revisions': { label: 'Ревизии цен', showAddButton: true },
     'current-accounts': { label: 'Расчётные счета', showAddButton: true },
     categories: { label: 'Категории', showAddButton: true },
     users: { label: 'Пользователи', showAddButton: true },
@@ -49,6 +51,9 @@ const CHILD_LABELS: Record<string, Record<string, string>> = {
   },
   'business-lines': {
     new: 'Новое направление',
+  },
+  'price-revisions': {
+    new: 'Новая ревизия',
   },
   'current-accounts': {
     new: 'Новый расчётный счёт',
@@ -90,11 +95,17 @@ export function AppBreadCrumbs() {
   const isViewPage = pathname.includes('/view')
   const lastSegment = segments[segments.length - 1]
 
+  // True when there are path segments beyond what we recognise in labels
+  // (e.g. a UUID like /price-revisions/:id). In this case the last known
+  // segment becomes a breadcrumb link back to the parent list, and we show
+  // the entity name from loader data as the current page title.
+  const isDetailPage = !isViewPage && allSegments.length > segments.length
+
   // Get loader data from the current active route match
   const activeMatch = matches[matches.length - 1]
   const loaderData = activeMatch?.loaderData as any
 
-  // Get entity name for view pages
+  // Get entity name for view pages or detail pages
   let entityName = ''
   if (isViewPage && loaderData) {
     if (lastSegment === 'clients' || lastSegment === 'wishlist') {
@@ -102,6 +113,8 @@ export function AppBreadCrumbs() {
     } else {
       entityName = loaderData.name || ''
     }
+  } else if (isDetailPage && loaderData) {
+    entityName = loaderData.name || ''
   }
 
   // Resolve a display label for any segment, using parent context when needed.
@@ -120,6 +133,7 @@ export function AppBreadCrumbs() {
   // route) that has showAddButton enabled.
   const showAddButton =
     !isViewPage &&
+    !isDetailPage &&
     segments.length > 0 &&
     lastSegment in ROUTE_LABELS &&
     (ROUTE_LABELS[lastSegment]?.showAddButton ?? false)
@@ -133,27 +147,24 @@ export function AppBreadCrumbs() {
             const label = getLabel(segment, index)
             const isLast = index === segments.length - 1
 
+            const isLink = !isLast || isViewPage || isDetailPage
+            const showSeparator = !isLast || isDetailPage
+
             return (
-              <BreadcrumbItem key={href} className="text-lg">
-                {!isLast ? (
-                  <>
+              <React.Fragment key={href}>
+                <BreadcrumbItem className="text-lg">
+                  {isLink ? (
                     <BreadcrumbLink asChild>
                       <Link to={href}>{label}</Link>
                     </BreadcrumbLink>
-                    <BreadcrumbSeparator />
-                  </>
-                ) : isViewPage ? (
-                  <>
-                    <BreadcrumbLink asChild>
-                      <Link to={href}>{label}</Link>
-                    </BreadcrumbLink>
-                  </>
-                ) : (
-                  <BreadcrumbPage className="font-semibold">
-                    {label}
-                  </BreadcrumbPage>
-                )}
-              </BreadcrumbItem>
+                  ) : (
+                    <BreadcrumbPage className="font-semibold">
+                      {label}
+                    </BreadcrumbPage>
+                  )}
+                </BreadcrumbItem>
+                {showSeparator && <BreadcrumbSeparator />}
+              </React.Fragment>
             )
           })}
 
@@ -173,16 +184,13 @@ export function AppBreadCrumbs() {
             </BreadcrumbItem>
           )}
 
-          {/* Show entity name on view pages */}
-          {isViewPage && entityName && (
-            <>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem className="text-lg">
-                <BreadcrumbPage className="font-semibold">
-                  {entityName}
-                </BreadcrumbPage>
-              </BreadcrumbItem>
-            </>
+          {/* Show entity name on view pages and detail pages */}
+          {(isViewPage || isDetailPage) && entityName && (
+            <BreadcrumbItem className="text-lg">
+              <BreadcrumbPage className="font-semibold">
+                {entityName}
+              </BreadcrumbPage>
+            </BreadcrumbItem>
           )}
         </BreadcrumbList>
       </Breadcrumb>

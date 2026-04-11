@@ -1,0 +1,1 @@
+ALTER TABLE "contract_price_revision" ADD COLUMN "completed_at" timestamp;

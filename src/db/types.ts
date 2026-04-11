@@ -9,6 +9,10 @@ import type {
   companyCurrentAccount,
   contract,
   contractTypeEnum,
+  contractPriceRevision,
+  contractPriceRevisionItem,
+  contractAmountHistory,
+  priceRevisionItemStatusEnum,
   counterparty,
   counterpartyTypeEnum,
   currentAccount,
@@ -166,3 +170,25 @@ export type SettlementUpdate = Partial<SettlementInsert> & { id: string }
 export type RecurringRule = typeof recurringRule.$inferSelect
 export type RecurringRuleInsert = typeof recurringRule.$inferInsert
 export type RecurringRuleUpdate = Partial<RecurringRuleInsert> & { id: string }
+
+// ─── Contract Price Revision ──────────────────────────────────────────────────
+
+export type PriceRevisionItemStatus =
+  (typeof priceRevisionItemStatusEnum.enumValues)[number]
+
+export type ContractPriceRevision = typeof contractPriceRevision.$inferSelect
+export type ContractPriceRevisionInsert =
+  typeof contractPriceRevision.$inferInsert
+export type ContractPriceRevisionUpdate =
+  Partial<ContractPriceRevisionInsert> & { id: string }
+
+export type ContractPriceRevisionItem =
+  typeof contractPriceRevisionItem.$inferSelect
+export type ContractPriceRevisionItemInsert =
+  typeof contractPriceRevisionItem.$inferInsert
+export type ContractPriceRevisionItemUpdate =
+  Partial<ContractPriceRevisionItemInsert> & { id: string }
+
+export type ContractAmountHistory = typeof contractAmountHistory.$inferSelect
+export type ContractAmountHistoryInsert =
+  typeof contractAmountHistory.$inferInsert

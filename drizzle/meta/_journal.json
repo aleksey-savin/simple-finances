@@ -288,6 +288,55 @@
       "when": 1775806257086,
       "tag": "0040_premium_red_shift",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1775831058542,
+      "tag": "0041_flippant_lyja",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1775832623067,
+      "tag": "0042_mean_bullseye",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1775881492802,
+      "tag": "0043_sloppy_lenny_balinger",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1775881998573,
+      "tag": "0044_talented_rockslide",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1775882192995,
+      "tag": "0045_chunky_fixer",
+      "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1775889905540,
+      "tag": "0046_lame_black_bolt",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1775890323246,
+      "tag": "0047_salty_leo",
+      "breakpoints": true
     }
   ]
 }

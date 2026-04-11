@@ -6,6 +6,8 @@ import type {
   Invoice as DBInvoice,
   Counterparty as DBCounterparty,
   BusinessLine as DBBusinessLine,
+  ContractPriceRevision as DBRevision,
+  ContractPriceRevisionItem as DBRevisionItem,
   CurrentAccount,
   CurrentAccountUser,
   User,
@@ -118,11 +120,56 @@ export type Contract = Pick<
   | 'amount'
   | 'businessLineId'
   | 'counterpartyId'
+  | 'companyId'
   | 'createdBy'
 > & {
   businessLine: Pick<DBBusinessLine, 'id' | 'name'>
   counterparty: Pick<DBCounterparty, 'id' | 'name'>
 }
+
+// ─── Price Revision ───────────────────────────────────────────────────────────
+
+export type { PriceRevisionItemStatus } from '@/db/types'
+
+export type PriceRevision = Pick<
+  DBRevision,
+  'id' | 'name' | 'businessLineId' | 'companyId' | 'createdAt' | 'completedAt'
+> & {
+  businessLine: { id: string; name: string }
+  itemCount: number
+}
+
+export type PriceRevisionDetail = Pick<
+  DBRevision,
+  'id' | 'name' | 'businessLineId' | 'companyId' | 'createdAt' | 'completedAt'
+> & {
+  businessLine: { id: string; name: string }
+  items: PriceRevisionItemRow[]
+}
+
+export type PriceRevisionItemRow = Pick<
+  DBRevisionItem,
+  | 'id'
+  | 'revisionId'
+  | 'contractId'
+  | 'currentAmounts'
+  | 'proposedAmounts'
+  | 'included'
+  | 'status'
+  | 'notifiedAt'
+  | 'agreedAt'
+  | 'signedAt'
+  | 'completedAt'
+> & {
+  contract: {
+    id: string
+    name: string
+    number: string | null
+    counterparty: { id: string; name: string }
+  }
+}
+
+// ─── Named Entity ─────────────────────────────────────────────────────────────
 
 export type NamedEntity = {
   id: string

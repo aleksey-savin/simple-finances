@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(ls /home/aleksey/projects/smb-budget/drizzle/*.sql)"
+      "Bash(ls /home/aleksey/projects/smb-budget/drizzle/*.sql)",
+      "Read(//var/run/**)",
+      "Read(//tmp/**)",
+      "Bash(podman ps:*)",
+      "Bash(pnpm db:generate)"
     ]
   }
 }

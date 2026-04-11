@@ -34,6 +34,7 @@ import {
   LayoutDashboard,
   List,
   ReceiptRussianRuble,
+  TrendingUp,
   User,
   UserRound,
   Wallet,
@@ -99,6 +100,12 @@ const navMain = [
         title: 'Договоры',
         icon: <FileSpreadsheet className="size-5" />,
         url: '/contracts',
+        hideForPersonal: true,
+      },
+      {
+        title: 'Ревизии цен',
+        icon: <TrendingUp className="size-5" />,
+        url: '/price-revisions',
         hideForPersonal: true,
       },
       {

@@ -45,6 +45,11 @@ export const contractTypeEnum = pgEnum('contract_type', [
   'supplier',
 ])
 
+export const priceRevisionItemStatusEnum = pgEnum(
+  'price_revision_item_status',
+  ['draft', 'notified', 'agreed', 'signed', 'success'],
+)
+
 export const expenseTag = pgTable(
   'expense_tag',
   {
@@ -446,6 +451,9 @@ export const contract = pgTable(
     counterpartyId: text('counterparty_id')
       .notNull()
       .references(() => counterparty.id),
+    companyId: text('company_id').references(() => company.id, {
+      onDelete: 'set null',
+    }),
     amount: numeric('amount').array().notNull(),
     createdBy: text('created_by')
       .notNull()
@@ -459,6 +467,91 @@ export const contract = pgTable(
   (table) => [
     index('contract_business_line_idx').on(table.businessLineId),
     index('contract_counterparty_idx').on(table.counterpartyId),
+    index('contract_company_idx').on(table.companyId),
+  ],
+)
+
+export const contractPriceRevision = pgTable(
+  'contract_price_revision',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    name: text('name').notNull(),
+    businessLineId: text('business_line_id')
+      .notNull()
+      .references(() => businessLine.id),
+    companyId: text('company_id').references(() => company.id, {
+      onDelete: 'set null',
+    }),
+    createdBy: text('created_by')
+      .notNull()
+      .references(() => user.id),
+    completedAt: timestamp('completed_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index('price_revision_business_line_idx').on(table.businessLineId),
+    index('price_revision_company_idx').on(table.companyId),
+  ],
+)
+
+export const contractAmountHistory = pgTable(
+  'contract_amount_history',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    contractId: text('contract_id')
+      .notNull()
+      .references(() => contract.id, { onDelete: 'cascade' }),
+    previousAmounts: numeric('previous_amounts').array().notNull(),
+    newAmounts: numeric('new_amounts').array().notNull(),
+    revisionItemId: text('revision_item_id'),
+    changedBy: text('changed_by')
+      .notNull()
+      .references(() => user.id),
+    changedAt: timestamp('changed_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('contract_amount_history_contract_idx').on(table.contractId),
+  ],
+)
+
+export const contractPriceRevisionItem = pgTable(
+  'contract_price_revision_item',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    revisionId: text('revision_id')
+      .notNull()
+      .references(() => contractPriceRevision.id, { onDelete: 'cascade' }),
+    contractId: text('contract_id')
+      .notNull()
+      .references(() => contract.id, { onDelete: 'cascade' }),
+    currentAmounts: numeric('current_amounts').array().notNull(),
+    proposedAmounts: numeric('proposed_amounts').array().notNull(),
+    included: boolean('included').notNull().default(true),
+    status: priceRevisionItemStatusEnum('status').notNull().default('draft'),
+    notifiedAt: timestamp('notified_at'),
+    agreedAt: timestamp('agreed_at'),
+    signedAt: timestamp('signed_at'),
+    completedAt: timestamp('completed_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    unique('price_revision_item_unique').on(table.revisionId, table.contractId),
+    index('price_revision_item_revision_idx').on(table.revisionId),
+    index('price_revision_item_contract_idx').on(table.contractId),
   ],
 )
 
@@ -956,6 +1049,7 @@ export const companyRelations = relations(company, ({ one, many }) => ({
   currentAccounts: many(companyCurrentAccount),
   counterpartyLinks: many(companyCounterparty),
   clients: many(client),
+  contracts: many(contract),
   createdByUser: one(user, {
     fields: [company.createdBy],
     references: [user.id],
@@ -987,7 +1081,21 @@ export const businessLineRelations = relations(
   }),
 )
 
-export const contractRelations = relations(contract, ({ one }) => ({
+export const contractAmountHistoryRelations = relations(
+  contractAmountHistory,
+  ({ one }) => ({
+    contract: one(contract, {
+      fields: [contractAmountHistory.contractId],
+      references: [contract.id],
+    }),
+    changedByUser: one(user, {
+      fields: [contractAmountHistory.changedBy],
+      references: [user.id],
+    }),
+  }),
+)
+
+export const contractRelations = relations(contract, ({ one, many }) => ({
   businessLine: one(businessLine, {
     fields: [contract.businessLineId],
     references: [businessLine.id],
@@ -996,11 +1104,50 @@ export const contractRelations = relations(contract, ({ one }) => ({
     fields: [contract.counterpartyId],
     references: [counterparty.id],
   }),
+  company: one(company, {
+    fields: [contract.companyId],
+    references: [company.id],
+  }),
   createdByUser: one(user, {
     fields: [contract.createdBy],
     references: [user.id],
   }),
+  priceRevisionItems: many(contractPriceRevisionItem),
+  amountHistory: many(contractAmountHistory),
 }))
+
+export const contractPriceRevisionRelations = relations(
+  contractPriceRevision,
+  ({ one, many }) => ({
+    businessLine: one(businessLine, {
+      fields: [contractPriceRevision.businessLineId],
+      references: [businessLine.id],
+    }),
+    company: one(company, {
+      fields: [contractPriceRevision.companyId],
+      references: [company.id],
+    }),
+    createdByUser: one(user, {
+      fields: [contractPriceRevision.createdBy],
+      references: [user.id],
+    }),
+    items: many(contractPriceRevisionItem),
+  }),
+)
+
+export const contractPriceRevisionItemRelations = relations(
+  contractPriceRevisionItem,
+  ({ one }) => ({
+    revision: one(contractPriceRevision, {
+      fields: [contractPriceRevisionItem.revisionId],
+      references: [contractPriceRevision.id],
+    }),
+    contract: one(contract, {
+      fields: [contractPriceRevisionItem.contractId],
+      references: [contract.id],
+    }),
+  }),
+)
 
 export const categoryRelations = relations(category, ({ one, many }) => ({
   company: one(company, {
