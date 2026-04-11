@@ -1,12 +1,23 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router'
 import { useState } from 'react'
+import { toast } from 'sonner'
 
-import { ExternalLink, FileText, Pencil, Search, X } from 'lucide-react'
+import {
+  ExternalLink,
+  FileText,
+  Loader2,
+  Pencil,
+  Search,
+  X,
+} from 'lucide-react'
 
 import type { ContractType } from '@/db/types'
 import { EditContractForm } from '@/components/contracts'
 import { DeleteContract } from '@/components/contracts/delete'
-import { fetchContracts } from '@/components/contracts/actions'
+import {
+  fetchContracts,
+  resolveContractFileUrl,
+} from '@/components/contracts/actions'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Combobox } from '@/components/ui/combobox'
@@ -42,6 +53,7 @@ function ContractsPage() {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [openingId, setOpeningId] = useState<string | null>(null)
 
   const editingContract =
     contracts.find((contract) => contract.id === editingId) ?? null
@@ -68,6 +80,33 @@ function ContractsPage() {
   })
 
   const hasActiveFilters = search.trim() !== '' || typeFilter !== ''
+
+  const openContractFile = async (contractId: string) => {
+    const popup = window.open('about:blank', '_blank')
+
+    if (!popup) {
+      toast.error('Браузер заблокировал всплывающее окно')
+      return
+    }
+
+    try {
+      setOpeningId(contractId)
+      const { url } = await resolveContractFileUrl({
+        data: { id: contractId },
+      })
+
+      popup.location.replace(url)
+    } catch (error) {
+      popup.close()
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'Не удалось открыть файл договора',
+      )
+    } finally {
+      setOpeningId((prev) => (prev === contractId ? null : prev))
+    }
+  }
 
   return (
     <>
@@ -147,14 +186,19 @@ function ContractsPage() {
                     </div>
                     <div className="flex items-center gap-1">
                       <Button
-                        asChild
                         variant="ghost"
                         size="icon"
                         className="size-8"
+                        onClick={() => {
+                          void openContractFile(contract.id)
+                        }}
+                        disabled={openingId === contract.id}
                       >
-                        <a href={contract.fileUrl} target="_blank" rel="noreferrer">
+                        {openingId === contract.id ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
                           <ExternalLink className="size-4" />
-                        </a>
+                        )}
                       </Button>
                       <Button
                         variant="ghost"
@@ -208,14 +252,19 @@ function ContractsPage() {
                       <TableCell>
                         <div className="flex justify-end gap-1">
                           <Button
-                            asChild
                             variant="ghost"
                             size="icon"
                             className="size-8"
+                            onClick={() => {
+                              void openContractFile(contract.id)
+                            }}
+                            disabled={openingId === contract.id}
                           >
-                            <a href={contract.fileUrl} target="_blank" rel="noreferrer">
+                            {openingId === contract.id ? (
+                              <Loader2 className="size-4 animate-spin" />
+                            ) : (
                               <ExternalLink className="size-4" />
-                            </a>
+                            )}
                           </Button>
                           <Button
                             variant="ghost"

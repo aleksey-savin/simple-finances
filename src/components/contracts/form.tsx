@@ -1,13 +1,21 @@
+import { useState } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
-import { Minus, Plus } from 'lucide-react'
+import { Loader2, Minus, Plus, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 import z from 'zod'
 
 import { contractTypeEnum } from '@/db/schema'
 import type { ContractType } from '@/db/types'
 import type { Contract } from '@/types'
+import {
+  CONTRACT_FILE_ACCEPT,
+  CONTRACT_FILE_MAX_SIZE_BYTES,
+  CONTRACT_FILE_MAX_SIZE_MB,
+  extractContractFileExtension,
+  resolveContractFileMimeTypeByExtension,
+} from '#/lib/contracts-file'
 import {
   businessLinesQueryKey,
   fetchBusinessLines,
@@ -24,7 +32,12 @@ import { Button } from '@/components/ui/button'
 import { Combobox } from '@/components/ui/combobox'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import { addContract, contractsQueryKey, updateContract } from './actions'
+import {
+  addContract,
+  contractsQueryKey,
+  updateContract,
+  uploadContractFile,
+} from './actions'
 
 const amountItemSchema = z
   .string()
@@ -41,7 +54,7 @@ const uiFormSchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Укажите дату заключения'),
   contractType: z.enum(contractTypeEnum.enumValues),
-  fileUrl: z.string().min(1, 'Укажите ссылку на файл'),
+  fileUrl: z.string().min(1, 'Укажите ссылку или загрузите файл'),
   businessLineId: z.string().min(1, 'Выберите направление'),
   counterpartyId: z.string().min(1, 'Выберите контрагента'),
   companyId: z.string(),
@@ -57,6 +70,34 @@ type ContractFormProps =
   | { contract?: undefined; onDone?: undefined }
   | { contract: Contract; onDone: () => void }
 
+async function readFileAsBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+
+    reader.onerror = () => {
+      reject(new Error('Не удалось прочитать файл'))
+    }
+
+    reader.onload = () => {
+      const result = reader.result
+      if (typeof result !== 'string') {
+        reject(new Error('Не удалось прочитать файл'))
+        return
+      }
+
+      const base64 = result.includes(',') ? result.split(',').at(-1) : result
+      if (!base64) {
+        reject(new Error('Файл пустой'))
+        return
+      }
+
+      resolve(base64)
+    }
+
+    reader.readAsDataURL(file)
+  })
+}
+
 export const ContractForm = ({
   contract: current,
   onDone,
@@ -64,6 +105,10 @@ export const ContractForm = ({
   const router = useRouter()
   const queryClient = useQueryClient()
   const isEdit = current !== undefined
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [isUploadingFile, setIsUploadingFile] = useState(false)
+  const [fileInputResetKey, setFileInputResetKey] = useState(0)
+
   const { data: businessLines = [] } = useQuery({
     queryKey: businessLinesQueryKey,
     queryFn: () => fetchBusinessLines(),
@@ -112,6 +157,8 @@ export const ContractForm = ({
           await queryClient.invalidateQueries({
             queryKey: businessLinesQueryKey,
           })
+          setSelectedFile(null)
+          setFileInputResetKey((prev) => prev + 1)
           toast.success('Договор обновлён')
           onDone()
           return
@@ -136,6 +183,8 @@ export const ContractForm = ({
           queryKey: businessLinesQueryKey,
         })
         form.reset()
+        setSelectedFile(null)
+        setFileInputResetKey((prev) => prev + 1)
         toast.success('Договор добавлен')
       } catch (error) {
         toast.error(error instanceof Error ? error.message : 'Произошла ошибка')
@@ -247,7 +296,7 @@ export const ContractForm = ({
               field.state.meta.isTouched && !field.state.meta.isValid
 
             return (
-                <Field data-invalid={isInvalid}>
+              <Field data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Тип договора</FieldLabel>
                 <Combobox
                   options={contractTypeEnum.enumValues.map((contractType) => ({
@@ -272,6 +321,49 @@ export const ContractForm = ({
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
 
+            const uploadSelectedContractFile = async () => {
+              if (!selectedFile) {
+                toast.error('Сначала выберите файл')
+                return
+              }
+
+              if (selectedFile.size > CONTRACT_FILE_MAX_SIZE_BYTES) {
+                toast.error(`Файл больше ${CONTRACT_FILE_MAX_SIZE_MB} МБ`)
+                return
+              }
+
+              const extension = extractContractFileExtension(selectedFile.name)
+              const mimeType =
+                selectedFile.type ||
+                resolveContractFileMimeTypeByExtension(extension) ||
+                'application/octet-stream'
+
+              try {
+                setIsUploadingFile(true)
+                const fileBase64 = await readFileAsBase64(selectedFile)
+                const result = await uploadContractFile({
+                  data: {
+                    fileName: selectedFile.name,
+                    mimeType,
+                    fileSize: selectedFile.size,
+                    fileBase64,
+                  },
+                })
+
+                field.handleChange(result.fileUrl)
+                field.handleBlur()
+                setSelectedFile(null)
+                setFileInputResetKey((prev) => prev + 1)
+                toast.success('Файл загружен')
+              } catch (error) {
+                toast.error(
+                  error instanceof Error ? error.message : 'Не удалось загрузить файл',
+                )
+              } finally {
+                setIsUploadingFile(false)
+              }
+            }
+
             return (
               <Field data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Ссылка на файл</FieldLabel>
@@ -282,11 +374,62 @@ export const ContractForm = ({
                   onBlur={field.handleBlur}
                   onChange={(event) => field.handleChange(event.target.value)}
                   aria-invalid={isInvalid}
-                  placeholder="https://..."
+                  placeholder="https://... или загрузите файл ниже"
                   autoComplete="off"
-                  type="url"
+                  type="text"
                   required
                 />
+
+                <div className="mt-2 rounded-md border border-dashed p-3">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <Input
+                      key={fileInputResetKey}
+                      type="file"
+                      accept={CONTRACT_FILE_ACCEPT}
+                      className="h-auto cursor-pointer py-2"
+                      onChange={(event) => {
+                        const nextFile = event.target.files?.[0] ?? null
+                        if (!nextFile) {
+                          setSelectedFile(null)
+                          return
+                        }
+
+                        if (nextFile.size > CONTRACT_FILE_MAX_SIZE_BYTES) {
+                          toast.error(`Файл больше ${CONTRACT_FILE_MAX_SIZE_MB} МБ`)
+                          event.target.value = ''
+                          setSelectedFile(null)
+                          return
+                        }
+
+                        setSelectedFile(nextFile)
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="gap-2"
+                      onClick={uploadSelectedContractFile}
+                      disabled={!selectedFile || isUploadingFile}
+                    >
+                      {isUploadingFile ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <Upload className="size-4" />
+                      )}
+                      {isUploadingFile ? 'Загрузка...' : 'Загрузить файл'}
+                    </Button>
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Форматы: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG. До{' '}
+                    {CONTRACT_FILE_MAX_SIZE_MB} МБ.
+                  </p>
+                  {selectedFile && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Выбран файл: {selectedFile.name}
+                    </p>
+                  )}
+                </div>
+
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
@@ -299,7 +442,7 @@ export const ContractForm = ({
               field.state.meta.isTouched && !field.state.meta.isValid
 
             return (
-                <Field data-invalid={isInvalid}>
+              <Field data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Контрагент</FieldLabel>
                 <Combobox
                   options={counterparties.map((counterparty) => ({
@@ -341,7 +484,7 @@ export const ContractForm = ({
               field.state.meta.isTouched && !field.state.meta.isValid
 
             return (
-                <Field data-invalid={isInvalid}>
+              <Field data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Направление</FieldLabel>
                 <Combobox
                   options={businessLines.map((businessLine) => ({
@@ -424,7 +567,9 @@ export const ContractForm = ({
           }}
         </form.Field>
 
-        <Button type="submit">{isEdit ? 'Сохранить' : 'Создать'}</Button>
+        <Button type="submit" disabled={isUploadingFile}>
+          {isEdit ? 'Сохранить' : 'Создать'}
+        </Button>
       </div>
     </form>
   )

@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { ExternalLink, FileText, Pencil } from 'lucide-react'
+import { ExternalLink, FileText, Loader2, Pencil } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
+import { toast } from 'sonner'
 
 import type { ContractType } from '@/db/types'
 import type { Contract } from '@/types'
@@ -12,7 +13,11 @@ import {
   ItemMedia,
   ItemTitle,
 } from '@/components/ui/item'
-import { contractsQueryKey, fetchContracts } from './actions'
+import {
+  contractsQueryKey,
+  fetchContracts,
+  resolveContractFileUrl,
+} from './actions'
 import { DeleteContract } from './delete'
 import { EditContractForm } from './form'
 
@@ -47,13 +52,18 @@ const contractTypeLabel: Record<ContractType, string> = {
 function ContractRow({
   contract,
   editingId,
+  openingId,
+  onOpenFile,
   setEditingId,
 }: {
   contract: Contract
   editingId: string | null
+  openingId: string | null
+  onOpenFile: (contract: Contract) => Promise<void>
   setEditingId: (id: string | null) => void
 }) {
   const isEditing = editingId === contract.id
+  const isOpeningFile = openingId === contract.id
 
   return (
     <div className="flex flex-col">
@@ -84,15 +94,20 @@ function ContractRow({
 
         <ItemActions>
           <Button
-            asChild
             variant="ghost"
             size="icon"
             className="size-7"
             title="Открыть файл"
+            onClick={() => {
+              void onOpenFile(contract)
+            }}
+            disabled={isOpeningFile}
           >
-            <a href={contract.fileUrl} target="_blank" rel="noreferrer">
+            {isOpeningFile ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
               <ExternalLink className="size-3.5" />
-            </a>
+            )}
           </Button>
           <Button
             variant="ghost"
@@ -125,6 +140,34 @@ export const ContractsList = () => {
     queryFn: () => fetchContracts(),
   })
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [openingId, setOpeningId] = useState<string | null>(null)
+
+  const handleOpenFile = async (contract: Contract) => {
+    const popup = window.open('about:blank', '_blank')
+
+    if (!popup) {
+      toast.error('Браузер заблокировал всплывающее окно')
+      return
+    }
+
+    try {
+      setOpeningId(contract.id)
+      const { url } = await resolveContractFileUrl({
+        data: { id: contract.id },
+      })
+
+      popup.location.replace(url)
+    } catch (error) {
+      popup.close()
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'Не удалось открыть файл договора',
+      )
+    } finally {
+      setOpeningId((prev) => (prev === contract.id ? null : prev))
+    }
+  }
 
   return (
     <>
@@ -145,6 +188,8 @@ export const ContractsList = () => {
                 key={contract.id}
                 contract={contract}
                 editingId={editingId}
+                openingId={openingId}
+                onOpenFile={handleOpenFile}
                 setEditingId={setEditingId}
               />
             ))}
