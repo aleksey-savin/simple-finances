@@ -5,6 +5,7 @@ import type {
   category,
   client,
   clientCounterparty,
+  clientManager,
   company,
   companyCurrentAccount,
   contract,
@@ -95,6 +96,9 @@ export type ClientUpdate = Partial<ClientInsert> & { id: string }
 
 export type ClientCounterparty = typeof clientCounterparty.$inferSelect
 export type ClientCounterpartyInsert = typeof clientCounterparty.$inferInsert
+
+export type ClientManager = typeof clientManager.$inferSelect
+export type ClientManagerInsert = typeof clientManager.$inferInsert
 
 // ─── Company ──────────────────────────────────────────────────────────────────
 

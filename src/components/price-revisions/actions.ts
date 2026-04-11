@@ -5,11 +5,16 @@ import { z } from 'zod'
 
 import { db } from '@/db'
 import {
+  client,
   contract,
   contractAmountHistory,
   contractPriceRevision,
   contractPriceRevisionItem,
+  clientCounterparty,
+  clientManager,
+  user,
 } from '@/db/schema'
+import { inArray } from 'drizzle-orm'
 import type { PriceRevisionDetail, PriceRevision } from '@/types'
 import { auth } from 'utils/auth'
 import { resolveSelectedScope } from '#/lib/company-scope'
@@ -117,18 +122,63 @@ export const fetchPriceRevision = createServerFn()
           },
           with: {
             contract: {
-              columns: { id: true, name: true, number: true },
+              columns: { id: true, name: true, number: true, signedAt: true },
               with: {
                 counterparty: { columns: { id: true, name: true } },
               },
             },
           },
-          orderBy: (table, { asc }) => asc(table.createdAt),
+          orderBy: (table, { asc }) => asc(table.id),
         },
       },
     })
 
     if (!revision) throw new Error('Ревизия не найдена')
+
+    const counterpartyIds = [
+      ...new Set(revision.items.map((i) => i.contract!.counterparty!.id)),
+    ]
+
+    const managersMap = new Map<string, { userId: string; name: string }[]>()
+    const clientMap = new Map<string, { id: string; name: string }>()
+
+    if (counterpartyIds.length > 0) {
+      const [managerRows, clientRows] = await Promise.all([
+        db
+          .select({
+            counterpartyId: clientCounterparty.counterpartyId,
+            userId: clientManager.userId,
+            userName: user.name,
+          })
+          .from(clientCounterparty)
+          .innerJoin(clientManager, eq(clientManager.clientId, clientCounterparty.clientId))
+          .innerJoin(user, eq(user.id, clientManager.userId))
+          .where(inArray(clientCounterparty.counterpartyId, counterpartyIds)),
+        db
+          .select({
+            counterpartyId: clientCounterparty.counterpartyId,
+            clientId: client.id,
+            clientName: client.name,
+          })
+          .from(clientCounterparty)
+          .innerJoin(client, eq(client.id, clientCounterparty.clientId))
+          .where(inArray(clientCounterparty.counterpartyId, counterpartyIds)),
+      ])
+
+      for (const row of managerRows) {
+        const list = managersMap.get(row.counterpartyId) ?? []
+        if (!list.some((m) => m.userId === row.userId)) {
+          list.push({ userId: row.userId, name: row.userName })
+        }
+        managersMap.set(row.counterpartyId, list)
+      }
+
+      for (const row of clientRows) {
+        if (!clientMap.has(row.counterpartyId)) {
+          clientMap.set(row.counterpartyId, { id: row.clientId, name: row.clientName })
+        }
+      }
+    }
 
     return {
       id: revision.id,
@@ -138,13 +188,24 @@ export const fetchPriceRevision = createServerFn()
       createdAt: revision.createdAt,
       completedAt: revision.completedAt,
       businessLine: revision.businessLine!,
-      items: revision.items.map((item) => ({
-        ...item,
-        contract: {
-          ...item.contract!,
-          counterparty: item.contract!.counterparty!,
-        },
-      })),
+      items: revision.items
+        .map((item) => ({
+          ...item,
+          contract: {
+            ...item.contract!,
+            signedAt: item.contract!.signedAt ?? null,
+            counterparty: {
+              ...item.contract!.counterparty!,
+              client: clientMap.get(item.contract!.counterparty!.id) ?? null,
+            },
+          },
+          managers: managersMap.get(item.contract!.counterparty!.id) ?? [],
+        }))
+        .sort((a, b) => {
+          const nameA = (a.contract.counterparty.client?.name ?? a.contract.counterparty.name).toLowerCase()
+          const nameB = (b.contract.counterparty.client?.name ?? b.contract.counterparty.name).toLowerCase()
+          return nameA.localeCompare(nameB, 'ru')
+        }),
     }
   })
 

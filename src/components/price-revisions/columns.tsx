@@ -63,6 +63,28 @@ export function buildRevisionColumns(
         ]
       : []),
     {
+      id: 'client',
+      header: 'Клиент',
+      cell: ({ row }) => {
+        const { client } = row.original.contract.counterparty
+        const counterpartyName = row.original.contract.counterparty.name
+        return (
+          <div className={row.original.included ? '' : 'opacity-40'}>
+            {client ? (
+              <>
+                <div className="font-medium">{client.name}</div>
+                <div className="text-xs text-muted-foreground">
+                  ({counterpartyName})
+                </div>
+              </>
+            ) : (
+              <span>{counterpartyName}</span>
+            )}
+          </div>
+        )
+      },
+    },
+    {
       accessorKey: 'contract.name',
       header: 'Договор',
       cell: ({ row }) => (
@@ -77,17 +99,28 @@ export function buildRevisionColumns(
       ),
     },
     {
-      accessorKey: 'contract.counterparty.name',
-      header: 'Контрагент',
+      id: 'contractSignedAt',
+      header: 'От',
       cell: ({ row }) => (
-        <span className={row.original.included ? '' : 'opacity-40'}>
-          {row.original.contract.counterparty.name}
+        <span
+          className={`text-sm tabular-nums ${row.original.included ? '' : 'opacity-40'}`}
+        >
+          {row.original.contract.signedAt ? (
+            new Intl.DateTimeFormat('ru-RU', {
+              day: '2-digit',
+              month: '2-digit',
+              year: '2-digit',
+            }).format(new Date(row.original.contract.signedAt))
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          )}
         </span>
       ),
     },
+
     {
       accessorKey: 'currentAmounts',
-      header: 'Текущие суммы',
+      header: 'Текущая',
       cell: ({ row }) => (
         <div
           className={`flex flex-col items-start gap-0.5 ${row.original.included ? '' : 'opacity-40'}`}
@@ -102,7 +135,7 @@ export function buildRevisionColumns(
     },
     {
       accessorKey: 'proposedAmounts',
-      header: 'Предложенные суммы',
+      header: 'Новая',
       cell: ({ row }) => {
         const { currentAmounts, proposedAmounts } = row.original
         const readOnly = isCompleted || !row.original.included
@@ -164,6 +197,27 @@ export function buildRevisionColumns(
           )}
         </div>
       ),
+    },
+    {
+      id: 'managers',
+      header: 'Менеджер',
+      cell: ({ row }) => {
+        const managers = row.original.managers
+        if (!managers || managers.length === 0) {
+          return <span className="text-muted-foreground text-xs">—</span>
+        }
+        return (
+          <div
+            className={`flex flex-col gap-0.5 ${row.original.included ? '' : 'opacity-40'}`}
+          >
+            {managers.map((m) => (
+              <span key={m.userId} className="text-sm">
+                {m.name}
+              </span>
+            ))}
+          </div>
+        )
+      },
     },
     ...(!isCompleted
       ? [

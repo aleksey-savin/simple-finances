@@ -98,6 +98,7 @@ export type Counterparty = Pick<
 
 export type Client = Pick<DBClient, 'id' | 'name' | 'createdBy' | 'companyId'> & {
   counterparties: Pick<DBCounterparty, 'id' | 'name'>[]
+  managers: { userId: string; name: string }[]
 }
 
 export type Company = Pick<DBCompany, 'id' | 'name' | 'createdBy'> & {
@@ -165,8 +166,10 @@ export type PriceRevisionItemRow = Pick<
     id: string
     name: string
     number: string | null
-    counterparty: { id: string; name: string }
+    signedAt: string | null
+    counterparty: { id: string; name: string; client: { id: string; name: string } | null }
   }
+  managers: { userId: string; name: string }[]
 }
 
 // ─── Named Entity ─────────────────────────────────────────────────────────────

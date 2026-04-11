@@ -12,6 +12,8 @@ import {
 import {
   fetchCompanies,
   companiesQueryKey,
+  fetchCompanyMembers,
+  companyMembersQueryKey,
 } from '@/components/companies/actions'
 import { Button } from '@/components/ui/button'
 import { Combobox } from '@/components/ui/combobox'
@@ -28,6 +30,7 @@ const uiFormSchema = z.object({
   counterpartiesIds: z
     .array(z.string())
     .min(1, 'Выберите хотя бы одного контрагента'),
+  managerIds: z.array(z.string()),
 })
 
 type ClientFormProps =
@@ -47,6 +50,13 @@ export const ClientForm = ({ client: current, onDone }: ClientFormProps) => {
     queryFn: () => fetchCompanies(),
   })
 
+  const companyId = current?.companyId ?? null
+  const { data: companyMembers = [] } = useQuery({
+    queryKey: companyMembersQueryKey(companyId ?? ''),
+    queryFn: () => fetchCompanyMembers({ data: { companyId: companyId! } }),
+    enabled: !!companyId,
+  })
+
   const counterpartyOptions: MultiSelectOption[] = counterparties.map(
     (counterparty) => ({
       value: counterparty.id,
@@ -60,6 +70,7 @@ export const ClientForm = ({ client: current, onDone }: ClientFormProps) => {
       name: current?.name ?? '',
       companyId: current?.companyId ?? '',
       counterpartiesIds: current?.counterparties.map((item) => item.id) ?? [],
+      managerIds: current?.managers.map((m) => m.userId) ?? [],
     },
     validators: { onSubmit: uiFormSchema },
     onSubmit: async ({ value }) => {
@@ -71,6 +82,7 @@ export const ClientForm = ({ client: current, onDone }: ClientFormProps) => {
               name: value.name,
               companyId: value.companyId || undefined,
               counterpartiesIds: value.counterpartiesIds,
+              managerIds: value.managerIds,
             },
           })
           await router.invalidate()
@@ -85,6 +97,7 @@ export const ClientForm = ({ client: current, onDone }: ClientFormProps) => {
             name: value.name,
             companyId: value.companyId || undefined,
             counterpartiesIds: value.counterpartiesIds,
+            managerIds: value.managerIds,
           },
         })
         await router.invalidate()
@@ -183,6 +196,28 @@ export const ClientForm = ({ client: current, onDone }: ClientFormProps) => {
             )
           }}
         </form.Field>
+
+        {companyMembers.length > 0 && (
+          <form.Field name="managerIds">
+            {(field) => (
+              <Field>
+                <FieldLabel>Ответственные менеджеры</FieldLabel>
+                <MultiSelectCombobox
+                  options={companyMembers.map((m) => ({
+                    value: m.userId,
+                    label: m.name,
+                  }))}
+                  value={field.state.value}
+                  onValueChange={field.handleChange}
+                  placeholder="Выберите менеджеров"
+                  searchPlaceholder="Поиск…"
+                  emptyText="Менеджеры не найдены"
+                  className="h-9 w-full"
+                />
+              </Field>
+            )}
+          </form.Field>
+        )}
 
 <Button type="submit">{isEdit ? 'Сохранить' : 'Создать'}</Button>
       </div>

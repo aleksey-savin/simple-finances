@@ -1019,8 +1019,41 @@ export const userCounterpartyRelations = relations(
   }),
 )
 
+export const clientManager = pgTable(
+  'client_manager',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    clientId: text('client_id')
+      .notNull()
+      .references(() => client.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    unique('client_manager_unique').on(table.clientId, table.userId),
+    index('client_manager_client_idx').on(table.clientId),
+    index('client_manager_user_idx').on(table.userId),
+  ],
+)
+
+export const clientManagerRelations = relations(clientManager, ({ one }) => ({
+  client: one(client, {
+    fields: [clientManager.clientId],
+    references: [client.id],
+  }),
+  user: one(user, {
+    fields: [clientManager.userId],
+    references: [user.id],
+  }),
+}))
+
 export const clientRelations = relations(client, ({ one, many }) => ({
   counterparties: many(clientCounterparty),
+  managers: many(clientManager),
   company: one(company, {
     fields: [client.companyId],
     references: [company.id],

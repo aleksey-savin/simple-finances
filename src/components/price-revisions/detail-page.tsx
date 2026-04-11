@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { DataTable } from '#/components/ui/data-table'
-import type { PriceRevisionDetail } from '@/types'
+import type { PriceRevisionDetail, PriceRevisionItemStatus } from '@/types'
 import { PriceRevisionSummaryCards } from './summary-cards'
 import { RevisionToolbar } from './revision-toolbar'
 import { buildRevisionColumns } from './columns'
@@ -23,6 +23,9 @@ export function PriceRevisionDetailPage({
 }) {
   const queryClient = useQueryClient()
   const [isPending, setIsPending] = useState(false)
+  const [filterStatus, setFilterStatus] = useState<PriceRevisionItemStatus | 'all'>('all')
+  const [filterManagerId, setFilterManagerId] = useState<string>('all')
+  const [filterIncluded, setFilterIncluded] = useState<'all' | 'included' | 'excluded'>('all')
 
   const isCompleted = !!revision.completedAt
   const includedItems = revision.items.filter((i) => i.included)
@@ -31,6 +34,20 @@ export function PriceRevisionDetailPage({
     includedItems.length > 0 &&
     includedItems.every((i) => i.status === 'success')
   const columns = buildRevisionColumns(revision.id, isCompleted)
+
+  const allManagers = [
+    ...new Map(
+      revision.items.flatMap((i) => i.managers).map((m) => [m.userId, m]),
+    ).values(),
+  ]
+
+  const filteredItems = revision.items.filter((item) => {
+    if (filterStatus !== 'all' && item.status !== filterStatus) return false
+    if (filterManagerId !== 'all' && !item.managers.some((m) => m.userId === filterManagerId)) return false
+    if (filterIncluded === 'included' && !item.included) return false
+    if (filterIncluded === 'excluded' && item.included) return false
+    return true
+  })
 
   async function handleApplyAdjustment(
     mode: 'percent' | 'fixed' | 'reset',
@@ -95,18 +112,22 @@ export function PriceRevisionDetailPage({
 
       <DataTable
         columns={columns}
-        data={revision.items}
+        data={filteredItems}
         pagination={false}
-        toolbar={
-          isCompleted
-            ? undefined
-            : (table) => (
-                <RevisionToolbar
-                  table={table}
-                  onApplyAdjustment={handleApplyAdjustment}
-                />
-              )
-        }
+        toolbar={(table) => (
+          <RevisionToolbar
+            table={table}
+            isCompleted={isCompleted}
+            onApplyAdjustment={handleApplyAdjustment}
+            allManagers={allManagers}
+            filterStatus={filterStatus}
+            onFilterStatus={setFilterStatus}
+            filterManagerId={filterManagerId}
+            onFilterManagerId={setFilterManagerId}
+            filterIncluded={filterIncluded}
+            onFilterIncluded={setFilterIncluded}
+          />
+        )}
       />
     </div>
   )
