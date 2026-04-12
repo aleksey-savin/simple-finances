@@ -20,9 +20,9 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.917.0",
     "@aws-sdk/s3-request-presigner": "^3.1029.0",
     "@faker-js/faker": "^10.3.0",
-    "@aws-sdk/client-s3": "^3.917.0",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/match-sorter-utils": "latest",
     "@tanstack/react-devtools": "latest",
@@ -53,6 +53,7 @@
     "react": "^19.2.0",
     "react-day-picker": "^9.14.0",
     "react-dom": "^19.2.0",
+    "smb-budget": "link:",
     "sonner": "^2.0.7",
     "streamdown": "^2.3.0",
     "tailwind-merge": "^3.0.2",

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ExternalLink, FileText, Loader2, Pencil } from 'lucide-react'
+import { FileText, Loader2, Paperclip, Pencil } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
@@ -16,7 +16,7 @@ import {
 import {
   contractsQueryKey,
   fetchContracts,
-  resolveContractFileUrl,
+  resolveDocumentUrl,
 } from './actions'
 import { DeleteContract } from './delete'
 import { EditContractForm } from './form'
@@ -52,18 +52,17 @@ const contractTypeLabel: Record<ContractType, string> = {
 function ContractRow({
   contract,
   editingId,
-  openingId,
-  onOpenFile,
+  openingDocId,
+  onOpenDocument,
   setEditingId,
 }: {
   contract: Contract
   editingId: string | null
-  openingId: string | null
-  onOpenFile: (contract: Contract) => Promise<void>
+  openingDocId: string | null
+  onOpenDocument: (documentId: string) => Promise<void>
   setEditingId: (id: string | null) => void
 }) {
   const isEditing = editingId === contract.id
-  const isOpeningFile = openingId === contract.id
 
   return (
     <div className="flex flex-col">
@@ -90,25 +89,29 @@ function ContractRow({
               .map((value) => `${formatAmount(value)} ₽`)
               .join(', ')}
           </p>
+          {contract.documents.length > 0 && (
+            <div className="mt-1 flex flex-wrap gap-1">
+              {contract.documents.map((doc) => (
+                <button
+                  key={doc.id}
+                  type="button"
+                  className="flex items-center gap-1 text-xs text-primary hover:underline disabled:opacity-50"
+                  disabled={openingDocId === doc.id}
+                  onClick={() => void onOpenDocument(doc.id)}
+                >
+                  {openingDocId === doc.id ? (
+                    <Loader2 className="size-3 animate-spin" />
+                  ) : (
+                    <Paperclip className="size-3" />
+                  )}
+                  {doc.name}
+                </button>
+              ))}
+            </div>
+          )}
         </ItemContent>
 
         <ItemActions>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-7"
-            title="Открыть файл"
-            onClick={() => {
-              void onOpenFile(contract)
-            }}
-            disabled={isOpeningFile}
-          >
-            {isOpeningFile ? (
-              <Loader2 className="size-3.5 animate-spin" />
-            ) : (
-              <ExternalLink className="size-3.5" />
-            )}
-          </Button>
           <Button
             variant="ghost"
             size="icon"
@@ -140,9 +143,9 @@ export const ContractsList = () => {
     queryFn: () => fetchContracts(),
   })
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [openingId, setOpeningId] = useState<string | null>(null)
+  const [openingDocId, setOpeningDocId] = useState<string | null>(null)
 
-  const handleOpenFile = async (contract: Contract) => {
+  const handleOpenDocument = async (documentId: string) => {
     const popup = window.open('about:blank', '_blank')
 
     if (!popup) {
@@ -151,9 +154,9 @@ export const ContractsList = () => {
     }
 
     try {
-      setOpeningId(contract.id)
-      const { url } = await resolveContractFileUrl({
-        data: { id: contract.id },
+      setOpeningDocId(documentId)
+      const { url } = await resolveDocumentUrl({
+        data: { documentId },
       })
 
       popup.location.replace(url)
@@ -162,10 +165,10 @@ export const ContractsList = () => {
       toast.error(
         error instanceof Error
           ? error.message
-          : 'Не удалось открыть файл договора',
+          : 'Не удалось открыть документ',
       )
     } finally {
-      setOpeningId((prev) => (prev === contract.id ? null : prev))
+      setOpeningDocId((prev) => (prev === documentId ? null : prev))
     }
   }
 
@@ -188,8 +191,8 @@ export const ContractsList = () => {
                 key={contract.id}
                 contract={contract}
                 editingId={editingId}
-                openingId={openingId}
-                onOpenFile={handleOpenFile}
+                openingDocId={openingDocId}
+                onOpenDocument={handleOpenDocument}
                 setEditingId={setEditingId}
               />
             ))}

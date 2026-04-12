@@ -12,6 +12,11 @@ import {
   SidebarRail,
 } from '@/components/ui/sidebar'
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -28,6 +33,7 @@ import {
   Building2,
   CalendarCheck,
   Check,
+  ChevronDown,
   ChevronsUpDown,
   FileSpreadsheet,
   Folder,
@@ -88,7 +94,29 @@ const navMain = [
     ],
   },
   {
-    title: 'Справочники',
+    title: 'CRM',
+    items: [
+      {
+        title: 'Клиенты',
+        icon: <User className="size-5" />,
+        url: '/clients',
+      },
+    ],
+  },
+  {
+    title: 'Инструменты',
+    items: [
+      {
+        title: 'Ревизии цен',
+        icon: <TrendingUp className="size-5" />,
+        url: '/price-revisions',
+        hideForPersonal: true,
+      },
+    ],
+  },
+  {
+    title: 'Администрирование',
+    collapsible: true,
     items: [
       {
         title: 'Бизнес-направления',
@@ -102,22 +130,13 @@ const navMain = [
         url: '/contracts',
         hideForPersonal: true,
       },
-      {
-        title: 'Ревизии цен',
-        icon: <TrendingUp className="size-5" />,
-        url: '/price-revisions',
-        hideForPersonal: true,
-      },
+
       {
         title: 'Категории платежей',
         icon: <List className="size-5" />,
         url: '/categories',
       },
-      {
-        title: 'Клиенты',
-        icon: <User className="size-5" />,
-        url: '/clients',
-      },
+
       {
         title: 'Контрагенты',
         icon: <ReceiptRussianRuble className="size-5" />,
@@ -129,19 +148,14 @@ const navMain = [
         url: '/companies',
       },
       {
-        title: 'Расчётные счета',
-        icon: <Wallet className="size-5" />,
-        url: '/current-accounts',
-      },
-    ],
-  },
-  {
-    title: 'Администрирование',
-    items: [
-      {
         title: 'Пользователи',
         icon: <User className="size-5" />,
         url: '/users',
+      },
+      {
+        title: 'Расчётные счета',
+        icon: <Wallet className="size-5" />,
+        url: '/current-accounts',
       },
     ],
   },
@@ -230,30 +244,62 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
 
       <SidebarContent>
-        {filteredNavMain.map((group) => (
-          <SidebarGroup key={group.title}>
-            {group.title && (
-              <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
-            )}
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {group.items.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      className="flex items-center gap-2 text-base"
-                    >
-                      <Link to={item.url}>
-                        {item.icon && <span>{item.icon}</span>}
-                        {item.title}
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
+        {filteredNavMain.map((group) =>
+          'collapsible' in group && group.collapsible ? (
+            <Collapsible key={group.title} className="group/collapsible">
+              <SidebarGroup>
+                <SidebarGroupLabel asChild>
+                  <CollapsibleTrigger className="flex w-full items-center">
+                    {group.title}
+                    <ChevronDown className="ml-auto size-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                  </CollapsibleTrigger>
+                </SidebarGroupLabel>
+                <CollapsibleContent>
+                  <SidebarGroupContent>
+                    <SidebarMenu>
+                      {group.items.map((item) => (
+                        <SidebarMenuItem key={item.title}>
+                          <SidebarMenuButton
+                            asChild
+                            className="flex items-center gap-2 text-base"
+                          >
+                            <Link to={item.url}>
+                              {item.icon && <span>{item.icon}</span>}
+                              {item.title}
+                            </Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      ))}
+                    </SidebarMenu>
+                  </SidebarGroupContent>
+                </CollapsibleContent>
+              </SidebarGroup>
+            </Collapsible>
+          ) : (
+            <SidebarGroup key={group.title}>
+              {group.title && (
+                <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
+              )}
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {group.items.map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton
+                        asChild
+                        className="flex items-center gap-2 text-base"
+                      >
+                        <Link to={item.url}>
+                          {item.icon && <span>{item.icon}</span>}
+                          {item.title}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ),
+        )}
       </SidebarContent>
 
       <SidebarFooter>

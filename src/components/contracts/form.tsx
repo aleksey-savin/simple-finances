@@ -2,20 +2,13 @@ import { useState } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
-import { Loader2, Minus, Plus, Upload } from 'lucide-react'
+import { Minus, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import z from 'zod'
 
 import { contractTypeEnum } from '@/db/schema'
 import type { ContractType } from '@/db/types'
 import type { Contract } from '@/types'
-import {
-  CONTRACT_FILE_ACCEPT,
-  CONTRACT_FILE_MAX_SIZE_BYTES,
-  CONTRACT_FILE_MAX_SIZE_MB,
-  extractContractFileExtension,
-  resolveContractFileMimeTypeByExtension,
-} from '#/lib/contracts-file'
 import {
   businessLinesQueryKey,
   fetchBusinessLines,
@@ -30,13 +23,20 @@ import {
 } from '@/components/companies/actions'
 import { Button } from '@/components/ui/button'
 import { Combobox } from '@/components/ui/combobox'
+import {
+  DocumentUploader,
+  type DocumentItem,
+} from '@/components/ui/document-uploader'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import {
   addContract,
+  addContractDocument,
   contractsQueryKey,
+  DOCUMENT_FILE_ACCEPT,
+  removeContractDocument,
   updateContract,
-  uploadContractFile,
+  uploadDocument,
 } from './actions'
 
 const amountItemSchema = z
@@ -54,7 +54,6 @@ const uiFormSchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Укажите дату заключения'),
   contractType: z.enum(contractTypeEnum.enumValues),
-  fileUrl: z.string().min(1, 'Укажите ссылку или загрузите файл'),
   businessLineId: z.string().min(1, 'Выберите направление'),
   counterpartyId: z.string().min(1, 'Выберите контрагента'),
   companyId: z.string(),
@@ -67,47 +66,22 @@ const contractTypeLabel: Record<ContractType, string> = {
 }
 
 type ContractFormProps =
-  | { contract?: undefined; onDone?: undefined }
-  | { contract: Contract; onDone: () => void }
-
-async function readFileAsBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-
-    reader.onerror = () => {
-      reject(new Error('Не удалось прочитать файл'))
-    }
-
-    reader.onload = () => {
-      const result = reader.result
-      if (typeof result !== 'string') {
-        reject(new Error('Не удалось прочитать файл'))
-        return
-      }
-
-      const base64 = result.includes(',') ? result.split(',').at(-1) : result
-      if (!base64) {
-        reject(new Error('Файл пустой'))
-        return
-      }
-
-      resolve(base64)
-    }
-
-    reader.readAsDataURL(file)
-  })
-}
+  | { contract?: undefined; onDone?: undefined; defaultCounterpartyId?: string; onSuccess?: () => void }
+  | { contract: Contract; onDone: () => void; defaultCounterpartyId?: string; onSuccess?: () => void }
 
 export const ContractForm = ({
   contract: current,
   onDone,
+  defaultCounterpartyId,
+  onSuccess,
 }: ContractFormProps) => {
   const router = useRouter()
   const queryClient = useQueryClient()
   const isEdit = current !== undefined
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [isUploadingFile, setIsUploadingFile] = useState(false)
-  const [fileInputResetKey, setFileInputResetKey] = useState(0)
+
+  const [documents, setDocuments] = useState<DocumentItem[]>(
+    () => current?.documents ?? [],
+  )
 
   const { data: businessLines = [] } = useQuery({
     queryKey: businessLinesQueryKey,
@@ -128,9 +102,8 @@ export const ContractForm = ({
       number: current?.number ?? '',
       signedAt: current?.signedAt ? String(current.signedAt).slice(0, 10) : '',
       contractType: (current?.contractType ?? 'customer') as ContractType,
-      fileUrl: current?.fileUrl ?? '',
       businessLineId: current?.businessLine.id ?? '',
-      counterpartyId: current?.counterparty.id ?? '',
+      counterpartyId: current?.counterparty.id ?? defaultCounterpartyId ?? '',
       companyId: current?.companyId ?? '',
       amount: current?.amount ?? [''],
     },
@@ -145,7 +118,6 @@ export const ContractForm = ({
               number: value.number,
               signedAt: value.signedAt,
               contractType: value.contractType,
-              fileUrl: value.fileUrl,
               businessLineId: value.businessLineId,
               counterpartyId: value.counterpartyId,
               companyId: value.companyId || undefined,
@@ -157,40 +129,75 @@ export const ContractForm = ({
           await queryClient.invalidateQueries({
             queryKey: businessLinesQueryKey,
           })
-          setSelectedFile(null)
-          setFileInputResetKey((prev) => prev + 1)
           toast.success('Договор обновлён')
           onDone()
           return
         }
 
-        await addContract({
+        const { id: contractId } = await addContract({
           data: {
             name: value.name,
             number: value.number,
             signedAt: value.signedAt,
             contractType: value.contractType,
-            fileUrl: value.fileUrl,
             businessLineId: value.businessLineId,
             counterpartyId: value.counterpartyId,
             companyId: value.companyId || undefined,
             amount: value.amount,
           },
         })
+
+        for (const doc of documents) {
+          await addContractDocument({
+            data: { contractId, documentId: doc.id },
+          })
+        }
+
         await router.invalidate()
         await queryClient.invalidateQueries({ queryKey: contractsQueryKey })
         await queryClient.invalidateQueries({
           queryKey: businessLinesQueryKey,
         })
         form.reset()
-        setSelectedFile(null)
-        setFileInputResetKey((prev) => prev + 1)
+        setDocuments([])
         toast.success('Договор добавлен')
+        onSuccess?.()
       } catch (error) {
         toast.error(error instanceof Error ? error.message : 'Произошла ошибка')
       }
     },
   })
+
+  const handleUpload = async (file: File, base64: string) => {
+    const doc = await uploadDocument({
+      data: {
+        fileName: file.name,
+        mimeType: file.type || 'application/octet-stream',
+        fileSize: file.size,
+        fileBase64: base64,
+      },
+    })
+
+    if (isEdit) {
+      await addContractDocument({
+        data: { contractId: current.id, documentId: doc.id },
+      })
+      await queryClient.invalidateQueries({ queryKey: contractsQueryKey })
+    }
+
+    setDocuments((prev) => [...prev, doc])
+    return doc
+  }
+
+  const handleRemove = async (doc: DocumentItem) => {
+    if (isEdit) {
+      await removeContractDocument({
+        data: { contractId: current.id, documentId: doc.id },
+      })
+      await queryClient.invalidateQueries({ queryKey: contractsQueryKey })
+    }
+    setDocuments((prev) => prev.filter((d) => d.id !== doc.id))
+  }
 
   return (
     <form
@@ -310,126 +317,6 @@ export const ContractForm = ({
                   placeholder="Выберите тип договора"
                   onBlur={field.handleBlur}
                 />
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
-              </Field>
-            )
-          }}
-        </form.Field>
-
-        <form.Field name="fileUrl">
-          {(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid
-
-            const uploadSelectedContractFile = async () => {
-              if (!selectedFile) {
-                toast.error('Сначала выберите файл')
-                return
-              }
-
-              if (selectedFile.size > CONTRACT_FILE_MAX_SIZE_BYTES) {
-                toast.error(`Файл больше ${CONTRACT_FILE_MAX_SIZE_MB} МБ`)
-                return
-              }
-
-              const extension = extractContractFileExtension(selectedFile.name)
-              const mimeType =
-                selectedFile.type ||
-                resolveContractFileMimeTypeByExtension(extension) ||
-                'application/octet-stream'
-
-              try {
-                setIsUploadingFile(true)
-                const fileBase64 = await readFileAsBase64(selectedFile)
-                const result = await uploadContractFile({
-                  data: {
-                    fileName: selectedFile.name,
-                    mimeType,
-                    fileSize: selectedFile.size,
-                    fileBase64,
-                  },
-                })
-
-                field.handleChange(result.fileUrl)
-                field.handleBlur()
-                setSelectedFile(null)
-                setFileInputResetKey((prev) => prev + 1)
-                toast.success('Файл загружен')
-              } catch (error) {
-                toast.error(
-                  error instanceof Error ? error.message : 'Не удалось загрузить файл',
-                )
-              } finally {
-                setIsUploadingFile(false)
-              }
-            }
-
-            return (
-              <Field data-invalid={isInvalid}>
-                <FieldLabel htmlFor={field.name}>Ссылка на файл</FieldLabel>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(event.target.value)}
-                  aria-invalid={isInvalid}
-                  placeholder="https://... или загрузите файл ниже"
-                  autoComplete="off"
-                  type="text"
-                  required
-                />
-
-                <div className="mt-2 rounded-md border border-dashed p-3">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                    <Input
-                      key={fileInputResetKey}
-                      type="file"
-                      accept={CONTRACT_FILE_ACCEPT}
-                      className="h-auto cursor-pointer py-2"
-                      onChange={(event) => {
-                        const nextFile = event.target.files?.[0] ?? null
-                        if (!nextFile) {
-                          setSelectedFile(null)
-                          return
-                        }
-
-                        if (nextFile.size > CONTRACT_FILE_MAX_SIZE_BYTES) {
-                          toast.error(`Файл больше ${CONTRACT_FILE_MAX_SIZE_MB} МБ`)
-                          event.target.value = ''
-                          setSelectedFile(null)
-                          return
-                        }
-
-                        setSelectedFile(nextFile)
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="gap-2"
-                      onClick={uploadSelectedContractFile}
-                      disabled={!selectedFile || isUploadingFile}
-                    >
-                      {isUploadingFile ? (
-                        <Loader2 className="size-4 animate-spin" />
-                      ) : (
-                        <Upload className="size-4" />
-                      )}
-                      {isUploadingFile ? 'Загрузка...' : 'Загрузить файл'}
-                    </Button>
-                  </div>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Форматы: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG. До{' '}
-                    {CONTRACT_FILE_MAX_SIZE_MB} МБ.
-                  </p>
-                  {selectedFile && (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Выбран файл: {selectedFile.name}
-                    </p>
-                  )}
-                </div>
-
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
@@ -567,7 +454,17 @@ export const ContractForm = ({
           }}
         </form.Field>
 
-        <Button type="submit" disabled={isUploadingFile}>
+        <Field>
+          <FieldLabel>Документы</FieldLabel>
+          <DocumentUploader
+            documents={documents}
+            onUpload={handleUpload}
+            onRemove={handleRemove}
+            accept={DOCUMENT_FILE_ACCEPT}
+          />
+        </Field>
+
+        <Button type="submit">
           {isEdit ? 'Сохранить' : 'Создать'}
         </Button>
       </div>
@@ -575,7 +472,13 @@ export const ContractForm = ({
   )
 }
 
-export const AddContractForm = () => <ContractForm />
+export const AddContractForm = ({
+  defaultCounterpartyId,
+  onSuccess,
+}: {
+  defaultCounterpartyId?: string
+  onSuccess?: () => void
+} = {}) => <ContractForm defaultCounterpartyId={defaultCounterpartyId} onSuccess={onSuccess} />
 
 export const EditContractForm = ({
   contract,

@@ -444,7 +444,6 @@ export const contract = pgTable(
     contractType: contractTypeEnum('contract_type')
       .notNull()
       .default('customer'),
-    fileUrl: text('file_url').notNull(),
     businessLineId: text('business_line_id')
       .notNull()
       .references(() => businessLine.id),
@@ -468,6 +467,37 @@ export const contract = pgTable(
     index('contract_business_line_idx').on(table.businessLineId),
     index('contract_counterparty_idx').on(table.counterpartyId),
     index('contract_company_idx').on(table.companyId),
+  ],
+)
+
+export const document = pgTable('document', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  name: text('name').notNull(),
+  url: text('url').notNull(),
+  uploadedAt: timestamp('uploaded_at').defaultNow().notNull(),
+  uploadedBy: text('uploaded_by')
+    .notNull()
+    .references(() => user.id),
+})
+
+export const contractDocument = pgTable(
+  'contract_document',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    contractId: text('contract_id')
+      .notNull()
+      .references(() => contract.id, { onDelete: 'cascade' }),
+    documentId: text('document_id')
+      .notNull()
+      .references(() => document.id, { onDelete: 'cascade' }),
+  },
+  (table) => [
+    index('contract_document_contract_idx').on(table.contractId),
+    unique('contract_document_unique').on(table.contractId, table.documentId),
   ],
 )
 
@@ -1051,9 +1081,35 @@ export const clientManagerRelations = relations(clientManager, ({ one }) => ({
   }),
 }))
 
+export const contact = pgTable(
+  'contact',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    clientId: text('client_id')
+      .notNull()
+      .references(() => client.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    position: text('position'),
+    phone: text('phone'),
+    email: text('email'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [index('contact_client_idx').on(table.clientId)],
+)
+
+export const contactRelations = relations(contact, ({ one }) => ({
+  client: one(client, {
+    fields: [contact.clientId],
+    references: [client.id],
+  }),
+}))
+
 export const clientRelations = relations(client, ({ one, many }) => ({
   counterparties: many(clientCounterparty),
   managers: many(clientManager),
+  contacts: many(contact),
   company: one(company, {
     fields: [client.companyId],
     references: [company.id],
@@ -1147,6 +1203,25 @@ export const contractRelations = relations(contract, ({ one, many }) => ({
   }),
   priceRevisionItems: many(contractPriceRevisionItem),
   amountHistory: many(contractAmountHistory),
+  contractDocuments: many(contractDocument),
+}))
+
+export const documentRelations = relations(document, ({ one }) => ({
+  uploadedByUser: one(user, {
+    fields: [document.uploadedBy],
+    references: [user.id],
+  }),
+}))
+
+export const contractDocumentRelations = relations(contractDocument, ({ one }) => ({
+  contract: one(contract, {
+    fields: [contractDocument.contractId],
+    references: [contract.id],
+  }),
+  document: one(document, {
+    fields: [contractDocument.documentId],
+    references: [document.id],
+  }),
 }))
 
 export const contractPriceRevisionRelations = relations(

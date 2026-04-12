@@ -29,6 +29,7 @@ import { Route as BankImportRouteImport } from './routes/bank-import'
 import { Route as R403RouteImport } from './routes/403'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PriceRevisionsIndexRouteImport } from './routes/price-revisions.index'
+import { Route as ClientsIndexRouteImport } from './routes/clients.index'
 import { Route as UsersNewRouteImport } from './routes/users.new'
 import { Route as TransactionsNewRouteImport } from './routes/transactions.new'
 import { Route as RecurringNewRouteImport } from './routes/recurring.new'
@@ -39,6 +40,7 @@ import { Route as CounterpartiesNewRouteImport } from './routes/counterparties.n
 import { Route as ContractsNewRouteImport } from './routes/contracts.new'
 import { Route as CompaniesNewRouteImport } from './routes/companies.new'
 import { Route as ClientsNewRouteImport } from './routes/clients.new'
+import { Route as ClientsIdRouteImport } from './routes/clients.$id'
 import { Route as CategoriesNewRouteImport } from './routes/categories.new'
 import { Route as BusinessLinesNewRouteImport } from './routes/business-lines.new'
 import { Route as UsersIdUpdateRouteImport } from './routes/users.$id.update'
@@ -148,6 +150,11 @@ const PriceRevisionsIndexRoute = PriceRevisionsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => PriceRevisionsRoute,
 } as any)
+const ClientsIndexRoute = ClientsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ClientsRoute,
+} as any)
 const UsersNewRoute = UsersNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -196,6 +203,11 @@ const CompaniesNewRoute = CompaniesNewRouteImport.update({
 const ClientsNewRoute = ClientsNewRouteImport.update({
   id: '/new',
   path: '/new',
+  getParentRoute: () => ClientsRoute,
+} as any)
+const ClientsIdRoute = ClientsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
   getParentRoute: () => ClientsRoute,
 } as any)
 const CategoriesNewRoute = CategoriesNewRouteImport.update({
@@ -261,6 +273,7 @@ export interface FileRoutesByFullPath {
   '/users': typeof UsersRouteWithChildren
   '/business-lines/new': typeof BusinessLinesNewRoute
   '/categories/new': typeof CategoriesNewRoute
+  '/clients/$id': typeof ClientsIdRoute
   '/clients/new': typeof ClientsNewRoute
   '/companies/new': typeof CompaniesNewRoute
   '/contracts/new': typeof ContractsNewRoute
@@ -271,6 +284,7 @@ export interface FileRoutesByFullPath {
   '/recurring/new': typeof RecurringNewRoute
   '/transactions/new': typeof TransactionsNewRoute
   '/users/new': typeof UsersNewRoute
+  '/clients/': typeof ClientsIndexRoute
   '/price-revisions/': typeof PriceRevisionsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/recurring/$id/edit': typeof RecurringIdEditRoute
@@ -285,7 +299,6 @@ export interface FileRoutesByTo {
   '/bank-import': typeof BankImportRoute
   '/business-lines': typeof BusinessLinesRouteWithChildren
   '/categories': typeof CategoriesRouteWithChildren
-  '/clients': typeof ClientsRouteWithChildren
   '/companies': typeof CompaniesRouteWithChildren
   '/contracts': typeof ContractsRouteWithChildren
   '/counterparties': typeof CounterpartiesRouteWithChildren
@@ -300,6 +313,7 @@ export interface FileRoutesByTo {
   '/users': typeof UsersRouteWithChildren
   '/business-lines/new': typeof BusinessLinesNewRoute
   '/categories/new': typeof CategoriesNewRoute
+  '/clients/$id': typeof ClientsIdRoute
   '/clients/new': typeof ClientsNewRoute
   '/companies/new': typeof CompaniesNewRoute
   '/contracts/new': typeof ContractsNewRoute
@@ -310,6 +324,7 @@ export interface FileRoutesByTo {
   '/recurring/new': typeof RecurringNewRoute
   '/transactions/new': typeof TransactionsNewRoute
   '/users/new': typeof UsersNewRoute
+  '/clients': typeof ClientsIndexRoute
   '/price-revisions': typeof PriceRevisionsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/recurring/$id/edit': typeof RecurringIdEditRoute
@@ -341,6 +356,7 @@ export interface FileRoutesById {
   '/users': typeof UsersRouteWithChildren
   '/business-lines/new': typeof BusinessLinesNewRoute
   '/categories/new': typeof CategoriesNewRoute
+  '/clients/$id': typeof ClientsIdRoute
   '/clients/new': typeof ClientsNewRoute
   '/companies/new': typeof CompaniesNewRoute
   '/contracts/new': typeof ContractsNewRoute
@@ -351,6 +367,7 @@ export interface FileRoutesById {
   '/recurring/new': typeof RecurringNewRoute
   '/transactions/new': typeof TransactionsNewRoute
   '/users/new': typeof UsersNewRoute
+  '/clients/': typeof ClientsIndexRoute
   '/price-revisions/': typeof PriceRevisionsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/recurring/$id/edit': typeof RecurringIdEditRoute
@@ -383,6 +400,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/business-lines/new'
     | '/categories/new'
+    | '/clients/$id'
     | '/clients/new'
     | '/companies/new'
     | '/contracts/new'
@@ -393,6 +411,7 @@ export interface FileRouteTypes {
     | '/recurring/new'
     | '/transactions/new'
     | '/users/new'
+    | '/clients/'
     | '/price-revisions/'
     | '/api/auth/$'
     | '/recurring/$id/edit'
@@ -407,7 +426,6 @@ export interface FileRouteTypes {
     | '/bank-import'
     | '/business-lines'
     | '/categories'
-    | '/clients'
     | '/companies'
     | '/contracts'
     | '/counterparties'
@@ -422,6 +440,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/business-lines/new'
     | '/categories/new'
+    | '/clients/$id'
     | '/clients/new'
     | '/companies/new'
     | '/contracts/new'
@@ -432,6 +451,7 @@ export interface FileRouteTypes {
     | '/recurring/new'
     | '/transactions/new'
     | '/users/new'
+    | '/clients'
     | '/price-revisions'
     | '/api/auth/$'
     | '/recurring/$id/edit'
@@ -462,6 +482,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/business-lines/new'
     | '/categories/new'
+    | '/clients/$id'
     | '/clients/new'
     | '/companies/new'
     | '/contracts/new'
@@ -472,6 +493,7 @@ export interface FileRouteTypes {
     | '/recurring/new'
     | '/transactions/new'
     | '/users/new'
+    | '/clients/'
     | '/price-revisions/'
     | '/api/auth/$'
     | '/recurring/$id/edit'
@@ -646,6 +668,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PriceRevisionsIndexRouteImport
       parentRoute: typeof PriceRevisionsRoute
     }
+    '/clients/': {
+      id: '/clients/'
+      path: '/'
+      fullPath: '/clients/'
+      preLoaderRoute: typeof ClientsIndexRouteImport
+      parentRoute: typeof ClientsRoute
+    }
     '/users/new': {
       id: '/users/new'
       path: '/new'
@@ -714,6 +743,13 @@ declare module '@tanstack/react-router' {
       path: '/new'
       fullPath: '/clients/new'
       preLoaderRoute: typeof ClientsNewRouteImport
+      parentRoute: typeof ClientsRoute
+    }
+    '/clients/$id': {
+      id: '/clients/$id'
+      path: '/$id'
+      fullPath: '/clients/$id'
+      preLoaderRoute: typeof ClientsIdRouteImport
       parentRoute: typeof ClientsRoute
     }
     '/categories/new': {
@@ -800,11 +836,15 @@ const CategoriesRouteWithChildren = CategoriesRoute._addFileChildren(
 )
 
 interface ClientsRouteChildren {
+  ClientsIdRoute: typeof ClientsIdRoute
   ClientsNewRoute: typeof ClientsNewRoute
+  ClientsIndexRoute: typeof ClientsIndexRoute
 }
 
 const ClientsRouteChildren: ClientsRouteChildren = {
+  ClientsIdRoute: ClientsIdRoute,
   ClientsNewRoute: ClientsNewRoute,
+  ClientsIndexRoute: ClientsIndexRoute,
 }
 
 const ClientsRouteWithChildren =

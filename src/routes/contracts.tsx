@@ -6,6 +6,7 @@ import {
   ExternalLink,
   FileText,
   Loader2,
+  Paperclip,
   Pencil,
   Search,
   X,
@@ -16,7 +17,7 @@ import { EditContractForm } from '@/components/contracts'
 import { DeleteContract } from '@/components/contracts/delete'
 import {
   fetchContracts,
-  resolveContractFileUrl,
+  resolveDocumentUrl,
 } from '@/components/contracts/actions'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -53,7 +54,7 @@ function ContractsPage() {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [openingId, setOpeningId] = useState<string | null>(null)
+  const [openingDocId, setOpeningDocId] = useState<string | null>(null)
 
   const editingContract =
     contracts.find((contract) => contract.id === editingId) ?? null
@@ -81,7 +82,7 @@ function ContractsPage() {
 
   const hasActiveFilters = search.trim() !== '' || typeFilter !== ''
 
-  const openContractFile = async (contractId: string) => {
+  const openDocumentFile = async (documentId: string) => {
     const popup = window.open('about:blank', '_blank')
 
     if (!popup) {
@@ -90,9 +91,9 @@ function ContractsPage() {
     }
 
     try {
-      setOpeningId(contractId)
-      const { url } = await resolveContractFileUrl({
-        data: { id: contractId },
+      setOpeningDocId(documentId)
+      const { url } = await resolveDocumentUrl({
+        data: { documentId },
       })
 
       popup.location.replace(url)
@@ -101,10 +102,10 @@ function ContractsPage() {
       toast.error(
         error instanceof Error
           ? error.message
-          : 'Не удалось открыть файл договора',
+          : 'Не удалось открыть документ',
       )
     } finally {
-      setOpeningId((prev) => (prev === contractId ? null : prev))
+      setOpeningDocId((prev) => (prev === documentId ? null : prev))
     }
   }
 
@@ -183,23 +184,30 @@ function ContractsPage() {
                           .map((amount) => `${formatAmount(amount)} ₽`)
                           .join(', ')}
                       </p>
+                      {contract.documents.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {contract.documents.map((doc) => (
+                            <Button
+                              key={doc.id}
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-6 gap-1 px-2 text-xs"
+                              disabled={openingDocId === doc.id}
+                              onClick={() => void openDocumentFile(doc.id)}
+                            >
+                              {openingDocId === doc.id ? (
+                                <Loader2 className="size-3 animate-spin" />
+                              ) : (
+                                <Paperclip className="size-3" />
+                              )}
+                              {doc.name}
+                            </Button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-8"
-                        onClick={() => {
-                          void openContractFile(contract.id)
-                        }}
-                        disabled={openingId === contract.id}
-                      >
-                        {openingId === contract.id ? (
-                          <Loader2 className="size-4 animate-spin" />
-                        ) : (
-                          <ExternalLink className="size-4" />
-                        )}
-                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -224,7 +232,8 @@ function ContractsPage() {
                     <TableHead className="font-bold">Контрагент</TableHead>
                     <TableHead className="font-bold">Направление</TableHead>
                     <TableHead className="font-bold">Суммы</TableHead>
-                    <TableHead className="w-28 text-right font-bold">
+                    <TableHead className="font-bold">Документы</TableHead>
+                    <TableHead className="w-20 text-right font-bold">
                       Действия
                     </TableHead>
                   </TableRow>
@@ -250,22 +259,31 @@ function ContractsPage() {
                           .join(', ')}
                       </TableCell>
                       <TableCell>
+                        {contract.documents.length === 0 ? (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        ) : (
+                          <div className="flex flex-col gap-1">
+                            {contract.documents.map((doc) => (
+                              <button
+                                key={doc.id}
+                                type="button"
+                                className="flex items-center gap-1 text-xs text-primary hover:underline disabled:opacity-50"
+                                disabled={openingDocId === doc.id}
+                                onClick={() => void openDocumentFile(doc.id)}
+                              >
+                                {openingDocId === doc.id ? (
+                                  <Loader2 className="size-3 animate-spin" />
+                                ) : (
+                                  <ExternalLink className="size-3" />
+                                )}
+                                {doc.name}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <div className="flex justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-8"
-                            onClick={() => {
-                              void openContractFile(contract.id)
-                            }}
-                            disabled={openingId === contract.id}
-                          >
-                            {openingId === contract.id ? (
-                              <Loader2 className="size-4 animate-spin" />
-                            ) : (
-                              <ExternalLink className="size-4" />
-                            )}
-                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"

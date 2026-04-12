@@ -3,6 +3,7 @@ import type {
   Client as DBClient,
   Company as DBCompany,
   Contract as DBContract,
+  Document as DBDocument,
   Invoice as DBInvoice,
   Counterparty as DBCounterparty,
   BusinessLine as DBBusinessLine,
@@ -99,6 +100,69 @@ export type Counterparty = Pick<
 export type Client = Pick<DBClient, 'id' | 'name' | 'createdBy' | 'companyId'> & {
   counterparties: Pick<DBCounterparty, 'id' | 'name'>[]
   managers: { userId: string; name: string }[]
+  contacts: { id: string; name: string; position: string | null; phone: string | null; email: string | null }[]
+}
+
+export type ClientDetail = {
+  id: string
+  name: string
+  companyId: string | null
+  createdBy: string
+  createdAt: Date
+  company: { id: string; name: string } | null
+  counterparties: {
+    id: string
+    name: string
+    fullName: string | null
+    type: string
+    tin: string | null
+  }[]
+  managers: { userId: string; name: string }[]
+  contracts: {
+    id: string
+    name: string
+    number: string | null
+    signedAt: string | null
+    contractType: 'customer' | 'supplier'
+    amount: string[]
+    businessLine: { id: string; name: string }
+    counterparty: { id: string; name: string }
+    documents: { id: string; name: string; url: string }[]
+  }[]
+  pendingPayments: {
+    id: string
+    amount: string
+    description: string
+    dueDate: Date | null
+    counterpartyName: string | null
+  }[]
+  activeRevisions: {
+    revisionId: string
+    revisionName: string
+    itemId: string
+    contractId: string
+    contractName: string
+    status: string
+    included: boolean
+    currentAmounts: string[]
+    proposedAmounts: string[]
+  }[]
+  amountHistory: {
+    id: string
+    contractId: string
+    contractName: string
+    previousAmounts: string[]
+    newAmounts: string[]
+    changedAt: Date
+    changedByName: string
+  }[]
+  contacts: {
+    id: string
+    name: string
+    position: string | null
+    phone: string | null
+    email: string | null
+  }[]
 }
 
 export type Company = Pick<DBCompany, 'id' | 'name' | 'createdBy'> & {
@@ -117,7 +181,6 @@ export type Contract = Pick<
   | 'number'
   | 'signedAt'
   | 'contractType'
-  | 'fileUrl'
   | 'amount'
   | 'businessLineId'
   | 'counterpartyId'
@@ -126,6 +189,7 @@ export type Contract = Pick<
 > & {
   businessLine: Pick<DBBusinessLine, 'id' | 'name'>
   counterparty: Pick<DBCounterparty, 'id' | 'name'>
+  documents: Pick<DBDocument, 'id' | 'name' | 'url'>[]
 }
 
 // ─── Price Revision ───────────────────────────────────────────────────────────
@@ -167,7 +231,13 @@ export type PriceRevisionItemRow = Pick<
     name: string
     number: string | null
     signedAt: string | null
-    counterparty: { id: string; name: string; client: { id: string; name: string } | null }
+    counterparty: {
+      id: string
+      name: string
+      client: { id: string; name: string } | null
+      contacts: { id: string; name: string; position: string | null; phone: string | null; email: string | null }[]
+    }
+    documents: { id: string; name: string; url: string }[]
   }
   managers: { userId: string; name: string }[]
 }

@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { db } from '@/db'
 import {
   client,
+  contact,
   contract,
   contractAmountHistory,
   contractPriceRevision,
@@ -125,6 +126,11 @@ export const fetchPriceRevision = createServerFn()
               columns: { id: true, name: true, number: true, signedAt: true },
               with: {
                 counterparty: { columns: { id: true, name: true } },
+                contractDocuments: {
+                  with: {
+                    document: { columns: { id: true, name: true, url: true } },
+                  },
+                },
               },
             },
           },
@@ -141,9 +147,10 @@ export const fetchPriceRevision = createServerFn()
 
     const managersMap = new Map<string, { userId: string; name: string }[]>()
     const clientMap = new Map<string, { id: string; name: string }>()
+    const contactsMap = new Map<string, { id: string; name: string; position: string | null; phone: string | null; email: string | null }[]>()
 
     if (counterpartyIds.length > 0) {
-      const [managerRows, clientRows] = await Promise.all([
+      const [managerRows, clientRows, contactRows] = await Promise.all([
         db
           .select({
             counterpartyId: clientCounterparty.counterpartyId,
@@ -163,6 +170,18 @@ export const fetchPriceRevision = createServerFn()
           .from(clientCounterparty)
           .innerJoin(client, eq(client.id, clientCounterparty.clientId))
           .where(inArray(clientCounterparty.counterpartyId, counterpartyIds)),
+        db
+          .select({
+            counterpartyId: clientCounterparty.counterpartyId,
+            id: contact.id,
+            name: contact.name,
+            position: contact.position,
+            phone: contact.phone,
+            email: contact.email,
+          })
+          .from(contact)
+          .innerJoin(clientCounterparty, eq(clientCounterparty.clientId, contact.clientId))
+          .where(inArray(clientCounterparty.counterpartyId, counterpartyIds)),
       ])
 
       for (const row of managerRows) {
@@ -177,6 +196,20 @@ export const fetchPriceRevision = createServerFn()
         if (!clientMap.has(row.counterpartyId)) {
           clientMap.set(row.counterpartyId, { id: row.clientId, name: row.clientName })
         }
+      }
+
+      for (const row of contactRows) {
+        const list = contactsMap.get(row.counterpartyId) ?? []
+        if (!list.some((c) => c.id === row.id)) {
+          list.push({
+            id: row.id,
+            name: row.name,
+            position: row.position ?? null,
+            phone: row.phone ?? null,
+            email: row.email ?? null,
+          })
+        }
+        contactsMap.set(row.counterpartyId, list)
       }
     }
 
@@ -197,7 +230,9 @@ export const fetchPriceRevision = createServerFn()
             counterparty: {
               ...item.contract!.counterparty!,
               client: clientMap.get(item.contract!.counterparty!.id) ?? null,
+              contacts: contactsMap.get(item.contract!.counterparty!.id) ?? [],
             },
+            documents: item.contract!.contractDocuments.map((cd) => cd.document),
           },
           managers: managersMap.get(item.contract!.counterparty!.id) ?? [],
         }))

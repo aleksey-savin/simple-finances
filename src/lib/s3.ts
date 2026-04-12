@@ -50,16 +50,24 @@ function getS3Config(): S3Config {
   }
 }
 
-function buildObjectKey(pathPrefix: string, fileName: string): string {
+function formatDatetimeForKey(date: Date): string {
+  return date.toISOString().replace(/[-:]/g, '').replace('T', '_').slice(0, 15)
+}
+
+function buildObjectKey(
+  pathPrefix: string,
+  fileName: string,
+  fileNamePrefix?: string,
+): string {
   const extension = extractFileExtension(fileName)
   const extensionSuffix = extension ? `.${extension}` : ''
   const normalizedPrefix = trimSlashes(pathPrefix) || DEFAULT_UPLOADS_PREFIX
 
-  return [
-    normalizedPrefix,
-    new Date().toISOString().slice(0, 10),
-    `${randomUUID()}${extensionSuffix}`,
-  ].join('/')
+  const baseName = fileNamePrefix
+    ? `${fileNamePrefix}_${formatDatetimeForKey(new Date())}`
+    : randomUUID()
+
+  return `${normalizedPrefix}/${baseName}${extensionSuffix}`
 }
 
 export type UploadBase64FileToS3Input = {
@@ -68,6 +76,7 @@ export type UploadBase64FileToS3Input = {
   fileSize: number
   fileBase64: string
   pathPrefix?: string
+  fileNamePrefix?: string
   maxSizeBytes?: number
 }
 
@@ -104,6 +113,7 @@ export async function uploadBase64FileToS3(
   const objectKey = buildObjectKey(
     params.pathPrefix ?? DEFAULT_UPLOADS_PREFIX,
     params.fileName,
+    params.fileNamePrefix,
   )
 
   const s3Client = new S3Client({

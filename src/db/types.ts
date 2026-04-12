@@ -6,13 +6,16 @@ import type {
   client,
   clientCounterparty,
   clientManager,
+  contact,
   company,
   companyCurrentAccount,
   contract,
   contractTypeEnum,
+  contractDocument,
   contractPriceRevision,
   contractPriceRevisionItem,
   contractAmountHistory,
+  document,
   priceRevisionItemStatusEnum,
   counterparty,
   counterpartyTypeEnum,
@@ -100,6 +103,10 @@ export type ClientCounterpartyInsert = typeof clientCounterparty.$inferInsert
 export type ClientManager = typeof clientManager.$inferSelect
 export type ClientManagerInsert = typeof clientManager.$inferInsert
 
+export type Contact = typeof contact.$inferSelect
+export type ContactInsert = typeof contact.$inferInsert
+export type ContactUpdate = Partial<ContactInsert> & { id: string }
+
 // ─── Company ──────────────────────────────────────────────────────────────────
 
 export type Company = typeof company.$inferSelect
@@ -121,6 +128,14 @@ export type BusinessLineUpdate = Partial<BusinessLineInsert> & { id: string }
 export type Contract = typeof contract.$inferSelect
 export type ContractInsert = typeof contract.$inferInsert
 export type ContractUpdate = Partial<ContractInsert> & { id: string }
+
+// ─── Document ─────────────────────────────────────────────────────────────────
+
+export type Document = typeof document.$inferSelect
+export type DocumentInsert = typeof document.$inferInsert
+
+export type ContractDocument = typeof contractDocument.$inferSelect
+export type ContractDocumentInsert = typeof contractDocument.$inferInsert
 
 // ─── Expense ──────────────────────────────────────────────────────────────────
 

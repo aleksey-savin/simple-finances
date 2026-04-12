@@ -24,3 +24,43 @@ Composed types that extend or pick from DB types (e.g. with extra fields like `r
 # standard components rules
 
 1. If adding Delete component, use `entityId` prop instead of `entity` prop, do not pass the whole entity object.
+
+# file uploads
+
+Use `<DocumentUploader>` from `src/components/ui/document-uploader.tsx` whenever an entity needs file attachments.
+
+The component handles all upload UI state (selected file, uploading spinner, remove spinner, input reset). You only provide callbacks:
+
+```tsx
+<DocumentUploader
+  documents={documents}           // { id, name, url }[]
+  onUpload={async (file, base64) => {
+    // 1. Call uploadDocument (from contracts/actions.ts or your own feature actions.ts)
+    // 2. Link the document to the entity (e.g. addContractDocument)
+    // 3. Return the DocumentItem so the uploader can add it to the list
+    return doc
+  }}
+  onRemove={async (doc) => {
+    // Unlink the document from the entity (e.g. removeContractDocument)
+  }}
+  accept={DOCUMENT_FILE_ACCEPT}   // optional, defaults to PDF/DOC/XLS/JPG/PNG
+/>
+```
+
+**For a new entity:**
+
+1. Add a `document` table relation via a `{entity}_document` join table (see `contract_document` as the reference pattern).
+2. Add `uploadDocument` / `resolveDocumentUrl` server functions in the feature's `actions.ts` — or reuse the ones already in `src/components/contracts/actions.ts` if they fit.
+3. Add `add{Entity}Document` and `remove{Entity}Document` server functions in the feature's `actions.ts`.
+4. In the feature query, load documents via the join table and flatten: `documents: row.{entity}Documents.map(d => d.document)`.
+5. Add `documents: { id, name, url }[]` to the domain type in `src/types.ts`.
+
+**To open a document** (e.g. in a list or table), use `resolveDocumentUrl` with the popup pattern:
+
+```ts
+const popup = window.open('about:blank', '_blank')
+const { url } = await resolveDocumentUrl({ data: { documentId } })
+popup.location.replace(url)
+```
+
+S3 keys for uploaded files follow the pattern `{entity}/contract_{datetime}.{ext}` (e.g. `contracts/contract_20250412_143022.pdf`). Pass `pathPrefix` and `fileNamePrefix` to `uploadBase64FileToS3`.

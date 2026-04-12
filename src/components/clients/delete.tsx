@@ -6,7 +6,13 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { clientsQueryKey, deleteClient } from './actions'
 
-export const DeleteClient = ({ clientId }: { clientId: string }) => {
+export const DeleteClient = ({
+  clientId,
+  onDeleted,
+}: {
+  clientId: string
+  onDeleted?: () => void
+}) => {
   const router = useRouter()
   const queryClient = useQueryClient()
 
@@ -16,6 +22,7 @@ export const DeleteClient = ({ clientId }: { clientId: string }) => {
       await router.invalidate()
       await queryClient.invalidateQueries({ queryKey: clientsQueryKey })
       toast.success('Клиент удалён')
+      onDeleted?.()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Произошла ошибка')
     }

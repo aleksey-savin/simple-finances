@@ -1,12 +1,62 @@
+import { useState } from 'react'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { PriceRevisionItemRow } from '@/types'
+import { ExternalLink, Loader2, Mail, Phone } from 'lucide-react'
+import { toast } from 'sonner'
+import { useQueryClient } from '@tanstack/react-query'
 import { Switch } from '#/components/ui/switch'
+import { resolveDocumentUrl } from '@/components/contracts/actions'
 import { formatCurrency } from './utils'
 import { ProposedAmountsCell } from './proposed-amount-cell'
 import { RevisionItemStatusActionButton } from './status-action-button'
 import { updateRevisionItem, priceRevisionQueryKey } from './actions'
-import { useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
+
+type DocumentLink = { id: string; name: string }
+
+function ContractDocumentLinks({ documents }: { documents: DocumentLink[] }) {
+  const [openingId, setOpeningId] = useState<string | null>(null)
+
+  if (documents.length === 0) return null
+
+  const handleOpen = async (documentId: string) => {
+    const popup = window.open('about:blank', '_blank')
+    if (!popup) {
+      toast.error('Браузер заблокировал всплывающее окно')
+      return
+    }
+    try {
+      setOpeningId(documentId)
+      const { url } = await resolveDocumentUrl({ data: { documentId } })
+      popup.location.replace(url)
+    } catch (error) {
+      popup.close()
+      toast.error(error instanceof Error ? error.message : 'Не удалось открыть документ')
+    } finally {
+      setOpeningId((prev) => (prev === documentId ? null : prev))
+    }
+  }
+
+  return (
+    <div className="mt-1 flex flex-col gap-0.5">
+      {documents.map((doc) => (
+        <button
+          key={doc.id}
+          type="button"
+          className="flex items-center gap-1 text-xs text-primary hover:underline disabled:opacity-50"
+          disabled={openingId === doc.id}
+          onClick={() => void handleOpen(doc.id)}
+        >
+          {openingId === doc.id ? (
+            <Loader2 className="size-3 animate-spin" />
+          ) : (
+            <ExternalLink className="size-3" />
+          )}
+          {doc.name}
+        </button>
+      ))}
+    </div>
+  )
+}
 
 function formatDate(date: Date | null): string {
   if (!date) return '—'
@@ -66,19 +116,47 @@ export function buildRevisionColumns(
       id: 'client',
       header: 'Клиент',
       cell: ({ row }) => {
-        const { client } = row.original.contract.counterparty
+        const { client, contacts } = row.original.contract.counterparty
         const counterpartyName = row.original.contract.counterparty.name
         return (
           <div className={row.original.included ? '' : 'opacity-40'}>
             {client ? (
               <>
                 <div className="font-medium">{client.name}</div>
-                <div className="text-xs text-muted-foreground">
-                  ({counterpartyName})
-                </div>
+                <div className="text-xs text-muted-foreground">({counterpartyName})</div>
               </>
             ) : (
               <span>{counterpartyName}</span>
+            )}
+            {contacts.length > 0 && (
+              <div className="mt-1 flex flex-col gap-0.5">
+                {contacts.map((c) => (
+                  <div key={c.id} className="text-xs text-muted-foreground">
+                    <span>{c.name}</span>
+                    {c.position && <span className="ml-1 opacity-70">{c.position}</span>}
+                    <div className="flex flex-wrap gap-x-2">
+                      {c.phone && (
+                        <a
+                          href={`tel:${c.phone}`}
+                          className="flex items-center gap-0.5 hover:text-foreground"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Phone className="size-2.5" />{c.phone}
+                        </a>
+                      )}
+                      {c.email && (
+                        <a
+                          href={`mailto:${c.email}`}
+                          className="flex items-center gap-0.5 hover:text-foreground"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Mail className="size-2.5" />{c.email}
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         )
@@ -95,6 +173,7 @@ export function buildRevisionColumns(
               №{row.original.contract.number}
             </div>
           )}
+          <ContractDocumentLinks documents={row.original.contract.documents} />
         </div>
       ),
     },

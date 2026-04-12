@@ -1,12 +1,23 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { db } from '@/db'
-import { client, clientCounterparty, clientManager } from '@/db/schema'
+import {
+  client,
+  clientCounterparty,
+  clientManager,
+  contact,
+  contract,
+  contractAmountHistory,
+  contractPriceRevision,
+  contractPriceRevisionItem,
+  invoice,
+} from '@/db/schema'
 import { auth } from 'utils/auth'
 import { resolveSelectedScope } from '#/lib/company-scope'
+import type { ClientDetail } from '@/types'
 
 export const clientsQueryKey = ['clients'] as const
 
@@ -47,6 +58,9 @@ export const fetchClients = createServerFn().handler(async () => {
             user: { columns: { id: true, name: true } },
           },
         },
+        contacts: {
+          columns: { id: true, name: true, position: true, phone: true, email: true },
+        },
       },
       orderBy: (table, { asc }) => asc(table.name),
     })
@@ -60,6 +74,13 @@ export const fetchClients = createServerFn().handler(async () => {
         managers: row.managers.map((item) => ({
           userId: item.user.id,
           name: item.user.name,
+        })),
+        contacts: row.contacts.map((c) => ({
+          id: c.id,
+          name: c.name,
+          position: c.position ?? null,
+          phone: c.phone ?? null,
+          email: c.email ?? null,
         })),
       })),
     )
@@ -169,4 +190,261 @@ export const deleteClient = createServerFn({ method: 'POST' })
   .inputValidator(deleteClientSchema)
   .handler(async ({ data }) => {
     await db.delete(client).where(eq(client.id, data.id))
+  })
+
+// ─── Client detail ────────────────────────────────────────────────────────────
+
+export const clientDetailQueryKey = (id: string) => ['clients', id] as const
+
+export const fetchClientDetail = createServerFn()
+  .inputValidator(z.object({ id: z.string() }))
+  .handler(async ({ data }): Promise<ClientDetail> => {
+    const request = getRequest()
+    const session = await auth.api.getSession({ headers: request.headers })
+    if (!session?.user?.id) throw new Error('Не авторизован')
+
+    const row = await db.query.client.findFirst({
+      where: eq(client.id, data.id),
+      columns: { id: true, name: true, companyId: true, createdBy: true, createdAt: true },
+      with: {
+        company: { columns: { id: true, name: true } },
+        counterparties: {
+          columns: {},
+          with: {
+            counterparty: {
+              columns: { id: true, name: true, fullName: true, type: true, tin: true },
+            },
+          },
+        },
+        managers: {
+          columns: {},
+          with: { user: { columns: { id: true, name: true } } },
+        },
+        contacts: {
+          columns: { id: true, name: true, position: true, phone: true, email: true },
+        },
+      },
+    })
+
+    if (!row) throw new Error('Клиент не найден')
+
+    const counterpartyIds = row.counterparties.map((c) => c.counterparty.id)
+
+    // ── Contracts ──────────────────────────────────────────────────────────
+    const contractRows =
+      counterpartyIds.length === 0
+        ? []
+        : await db.query.contract.findMany({
+            where: inArray(contract.counterpartyId, counterpartyIds),
+            columns: {
+              id: true,
+              name: true,
+              number: true,
+              signedAt: true,
+              contractType: true,
+              amount: true,
+              businessLineId: true,
+              counterpartyId: true,
+            },
+            with: {
+              businessLine: { columns: { id: true, name: true } },
+              counterparty: { columns: { id: true, name: true } },
+              contractDocuments: {
+                with: { document: { columns: { id: true, name: true, url: true } } },
+              },
+            },
+          })
+
+    const contractIds = contractRows.map((c) => c.id)
+
+    // ── Pending payments ───────────────────────────────────────────────────
+    const paymentRows =
+      counterpartyIds.length === 0
+        ? []
+        : await db.query.invoice.findMany({
+            where: and(
+              inArray(invoice.counterpartyId, counterpartyIds),
+              eq(invoice.kind, 'receivable'),
+              isNull(invoice.paidAt),
+              isNull(invoice.archivedAt),
+            ),
+            columns: {
+              id: true,
+              amount: true,
+              description: true,
+              dueDate: true,
+              counterpartyId: true,
+            },
+            with: {
+              counterparty: { columns: { name: true } },
+            },
+          })
+
+    // ── Active revisions ───────────────────────────────────────────────────
+    const revisionRows =
+      contractIds.length === 0
+        ? []
+        : await db
+            .select({
+              itemId: contractPriceRevisionItem.id,
+              contractId: contractPriceRevisionItem.contractId,
+              currentAmounts: contractPriceRevisionItem.currentAmounts,
+              proposedAmounts: contractPriceRevisionItem.proposedAmounts,
+              included: contractPriceRevisionItem.included,
+              status: contractPriceRevisionItem.status,
+              revisionId: contractPriceRevision.id,
+              revisionName: contractPriceRevision.name,
+              contractName: contract.name,
+            })
+            .from(contractPriceRevisionItem)
+            .innerJoin(
+              contractPriceRevision,
+              and(
+                eq(contractPriceRevisionItem.revisionId, contractPriceRevision.id),
+                isNull(contractPriceRevision.completedAt),
+              ),
+            )
+            .innerJoin(contract, eq(contractPriceRevisionItem.contractId, contract.id))
+            .where(inArray(contractPriceRevisionItem.contractId, contractIds))
+
+    // ── Amount history ─────────────────────────────────────────────────────
+    const historyRows =
+      contractIds.length === 0
+        ? []
+        : await db.query.contractAmountHistory.findMany({
+            where: inArray(contractAmountHistory.contractId, contractIds),
+            columns: {
+              id: true,
+              contractId: true,
+              previousAmounts: true,
+              newAmounts: true,
+              changedAt: true,
+            },
+            with: {
+              contract: { columns: { name: true } },
+              changedByUser: { columns: { name: true } },
+            },
+            orderBy: desc(contractAmountHistory.changedAt),
+            limit: 50,
+          })
+
+    return {
+      id: row.id,
+      name: row.name,
+      companyId: row.companyId,
+      createdBy: row.createdBy,
+      createdAt: row.createdAt,
+      company: row.company ?? null,
+      counterparties: row.counterparties.map((c) => ({
+        id: c.counterparty.id,
+        name: c.counterparty.name,
+        fullName: c.counterparty.fullName ?? null,
+        type: c.counterparty.type ?? '',
+        tin: c.counterparty.tin ?? null,
+      })),
+      managers: row.managers.map((m) => ({
+        userId: m.user.id,
+        name: m.user.name,
+      })),
+      contracts: contractRows.map((c) => ({
+        id: c.id,
+        name: c.name,
+        number: c.number ?? null,
+        signedAt: c.signedAt ?? null,
+        contractType: c.contractType,
+        amount: c.amount,
+        businessLine: c.businessLine!,
+        counterparty: c.counterparty!,
+        documents: c.contractDocuments.map((cd) => cd.document),
+      })),
+      pendingPayments: paymentRows.map((p) => ({
+        id: p.id,
+        amount: p.amount,
+        description: p.description,
+        dueDate: p.dueDate ?? null,
+        counterpartyName: p.counterparty?.name ?? null,
+      })),
+      activeRevisions: revisionRows.map((r) => ({
+        revisionId: r.revisionId,
+        revisionName: r.revisionName,
+        itemId: r.itemId,
+        contractId: r.contractId,
+        contractName: r.contractName,
+        status: r.status,
+        included: r.included,
+        currentAmounts: r.currentAmounts,
+        proposedAmounts: r.proposedAmounts,
+      })),
+      amountHistory: historyRows.map((h) => ({
+        id: h.id,
+        contractId: h.contractId,
+        contractName: h.contract?.name ?? '',
+        previousAmounts: h.previousAmounts,
+        newAmounts: h.newAmounts,
+        changedAt: h.changedAt,
+        changedByName: h.changedByUser?.name ?? '',
+      })),
+      contacts: row.contacts.map((c) => ({
+        id: c.id,
+        name: c.name,
+        position: c.position ?? null,
+        phone: c.phone ?? null,
+        email: c.email ?? null,
+      })),
+    }
+  })
+
+// ─── Contact CRUD ─────────────────────────────────────────────────────────────
+
+const contactSchema = z.object({
+  clientId: z.string(),
+  name: z.string().min(1, 'Введите имя'),
+  position: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().email('Некорректный email').optional().or(z.literal('')),
+})
+
+export const addContact = createServerFn({ method: 'POST' })
+  .inputValidator(contactSchema)
+  .handler(async ({ data }) => {
+    const request = getRequest()
+    const session = await auth.api.getSession({ headers: request.headers })
+    if (!session?.user?.id) throw new Error('Не авторизован')
+
+    const [inserted] = await db
+      .insert(contact)
+      .values({
+        clientId: data.clientId,
+        name: data.name,
+        position: data.position || null,
+        phone: data.phone || null,
+        email: data.email || null,
+      })
+      .returning()
+
+    return inserted
+  })
+
+export const updateContact = createServerFn({ method: 'POST' })
+  .inputValidator(contactSchema.extend({ id: z.string() }))
+  .handler(async ({ data }) => {
+    const request = getRequest()
+    const session = await auth.api.getSession({ headers: request.headers })
+    if (!session?.user?.id) throw new Error('Не авторизован')
+
+    await db
+      .update(contact)
+      .set({
+        name: data.name,
+        position: data.position || null,
+        phone: data.phone || null,
+        email: data.email || null,
+      })
+      .where(eq(contact.id, data.id))
+  })
+
+export const deleteContact = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ id: z.string() }))
+  .handler(async ({ data }) => {
+    await db.delete(contact).where(eq(contact.id, data.id))
   })

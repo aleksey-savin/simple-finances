@@ -1,3 +1,31 @@
+export function readFileAsBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+
+    reader.onerror = () => {
+      reject(new Error('Не удалось прочитать файл'))
+    }
+
+    reader.onload = () => {
+      const result = reader.result
+      if (typeof result !== 'string') {
+        reject(new Error('Не удалось прочитать файл'))
+        return
+      }
+
+      const base64 = result.includes(',') ? result.split(',').at(-1) : result
+      if (!base64) {
+        reject(new Error('Файл пустой'))
+        return
+      }
+
+      resolve(base64)
+    }
+
+    reader.readAsDataURL(file)
+  })
+}
+
 export function sanitizeUploadFileName(fileName: string): string {
   return fileName
     .trim()
