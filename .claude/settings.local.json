@@ -5,7 +5,8 @@
       "Read(//var/run/**)",
       "Read(//tmp/**)",
       "Bash(podman ps:*)",
-      "Bash(pnpm db:generate)"
+      "Bash(pnpm db:generate)",
+      "Bash(npx shadcn@latest add collapsible --yes)"
     ]
   }
 }

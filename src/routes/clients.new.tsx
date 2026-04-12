@@ -23,7 +23,7 @@ function NewClientPage() {
       title="Новый клиент"
       description="Привяжите к клиенту одного или нескольких контрагентов."
     >
-      <AddClientForm />
+      <AddClientForm onDone={handleClose} />
     </ResponsiveDialog>
   )
 }
