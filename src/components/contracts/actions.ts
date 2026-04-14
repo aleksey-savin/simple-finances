@@ -17,8 +17,8 @@ import { auth } from 'utils/auth'
 
 export const contractsQueryKey = ['contracts'] as const
 
-const DOCUMENT_FILE_MAX_SIZE_BYTES = 20 * 1024 * 1024
-const DOCUMENT_FILE_MAX_SIZE_MB = 20
+const DOCUMENT_FILE_MAX_SIZE_BYTES = 50 * 1024 * 1024
+const DOCUMENT_FILE_MAX_SIZE_MB = 50
 
 const DOCUMENT_FILE_ALLOWED_EXTENSIONS = [
   'pdf',
@@ -133,9 +133,7 @@ const amountItemSchema = z
 const contractSchema = z.object({
   name: z.string().min(2, 'Минимум 2 символа'),
   number: z.string().trim().min(1, 'Укажите номер договора'),
-  signedAt: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Укажите дату заключения'),
+  signedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Укажите дату заключения'),
   contractType: z.enum(contractTypeEnum.enumValues),
   businessLineId: z.string().min(1, 'Выберите направление'),
   counterpartyId: z.string().min(1, 'Выберите контрагента'),
