@@ -30,6 +30,7 @@ export function DeletePriceRevision({ entityId }: { entityId: string }) {
     <Button
       variant="ghost"
       size="icon"
+      className="size-8 text-destructive hover:text-destructive"
       disabled={isPending}
       onClick={handleDelete}
       title="Удалить ревизию"

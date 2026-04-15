@@ -88,7 +88,7 @@ export function BalanceCorrection({
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="rounded-lg bg-muted/40 p-3 text-sm">
+          <div className="bg-muted/40 p-3 text-sm">
             <div className="flex items-center justify-between gap-4">
               <span className="text-muted-foreground">Текущий баланс</span>
               <span className="font-medium tabular-nums">

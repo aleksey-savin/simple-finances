@@ -17,6 +17,7 @@ import {
 } from '@/db/schema'
 import { auth } from 'utils/auth'
 import { resolveSelectedScope } from '#/lib/company-scope'
+import { getPaymentState } from '#/lib/invoice-payment'
 import type { ClientDetail } from '@/types'
 
 export const clientsQueryKey = ['clients'] as const
@@ -84,6 +85,156 @@ export const fetchClients = createServerFn().handler(async () => {
         })),
       })),
     )
+})
+
+export type ClientSummary = {
+  id: string
+  name: string
+  companyId: string | null
+  createdBy: string
+  counterparties: { id: string; name: string }[]
+  managers: { userId: string; name: string }[]
+  contacts: { id: string; name: string; position: string | null; phone: string | null; email: string | null }[]
+  contractsCount: number
+  totalRevenue: number
+  activitiesCount: number
+}
+
+export const fetchClientsWithSummary = createServerFn().handler(async (): Promise<ClientSummary[]> => {
+  const request = getRequest()
+  const session = await auth.api.getSession({ headers: request.headers })
+  if (!session?.user?.id) throw new Error('Не авторизован')
+
+  const { selectedScope } = await resolveSelectedScope(session.user.id, request.headers)
+
+  const whereClause =
+    selectedScope.kind === 'company'
+      ? eq(client.companyId, selectedScope.id)
+      : and(isNull(client.companyId), eq(client.createdBy, session.user.id))
+
+  const clientRows = await db.query.client.findMany({
+    where: whereClause,
+    columns: { id: true, name: true, companyId: true, createdBy: true },
+    with: {
+      counterparties: {
+        columns: {},
+        with: { counterparty: { columns: { id: true, name: true } } },
+      },
+      managers: {
+        columns: {},
+        with: { user: { columns: { id: true, name: true } } },
+      },
+      contacts: {
+        columns: { id: true, name: true, position: true, phone: true, email: true },
+      },
+    },
+    orderBy: (table, { asc }) => asc(table.name),
+  })
+
+  const allCounterpartyIds = [
+    ...new Set(
+      clientRows.flatMap((row) => row.counterparties.map((c) => c.counterparty.id)),
+    ),
+  ]
+
+  const [contractRows, invoiceRows, revisionItemRows] = await Promise.all([
+    allCounterpartyIds.length === 0
+      ? []
+      : db.query.contract.findMany({
+          where: inArray(contract.counterpartyId, allCounterpartyIds),
+          columns: { id: true, counterpartyId: true },
+        }),
+    allCounterpartyIds.length === 0
+      ? []
+      : db.query.invoice.findMany({
+          where: and(
+            inArray(invoice.counterpartyId, allCounterpartyIds),
+            eq(invoice.kind, 'receivable'),
+          ),
+          columns: { counterpartyId: true, amount: true, paidAt: true },
+          with: { settlements: { columns: { amount: true, settledAt: true } } },
+        }),
+    Promise.resolve([]),
+  ])
+
+  const contractIdsByCounterpartyId = new Map<string, string[]>()
+  for (const c of contractRows) {
+    if (!c.counterpartyId) continue
+    const existing = contractIdsByCounterpartyId.get(c.counterpartyId) ?? []
+    existing.push(c.id)
+    contractIdsByCounterpartyId.set(c.counterpartyId, existing)
+  }
+
+  const allContractIds = contractRows.map((c) => c.id)
+  const activeRevisionItems =
+    allContractIds.length === 0
+      ? []
+      : await db
+          .select({ contractId: contractPriceRevisionItem.contractId })
+          .from(contractPriceRevisionItem)
+          .innerJoin(
+            contractPriceRevision,
+            and(
+              eq(contractPriceRevisionItem.revisionId, contractPriceRevision.id),
+              isNull(contractPriceRevision.completedAt),
+            ),
+          )
+          .where(inArray(contractPriceRevisionItem.contractId, allContractIds))
+
+  const activeRevisionCountByContractId = new Map<string, number>()
+  for (const item of activeRevisionItems) {
+    activeRevisionCountByContractId.set(
+      item.contractId,
+      (activeRevisionCountByContractId.get(item.contractId) ?? 0) + 1,
+    )
+  }
+
+  return clientRows.map((row) => {
+    const counterpartyIds = row.counterparties.map((c) => c.counterparty.id)
+    const counterpartyIdSet = new Set(counterpartyIds)
+
+    const contractsCount = contractRows.filter(
+      (c) => c.counterpartyId && counterpartyIdSet.has(c.counterpartyId),
+    ).length
+
+    const totalRevenue = invoiceRows
+      .filter((inv) => inv.counterpartyId && counterpartyIdSet.has(inv.counterpartyId))
+      .reduce((sum, inv) => {
+        const state = getPaymentState({
+          amount: inv.amount,
+          paidAt: inv.paidAt,
+          settlements: inv.settlements,
+        })
+        return sum + (state.status === 'paid' ? Number(inv.amount) : 0)
+      }, 0)
+
+    const clientContractIds = counterpartyIds.flatMap(
+      (id) => contractIdsByCounterpartyId.get(id) ?? [],
+    )
+    const activitiesCount = clientContractIds.reduce(
+      (sum, id) => sum + (activeRevisionCountByContractId.get(id) ?? 0),
+      0,
+    )
+
+    return {
+      id: row.id,
+      name: row.name,
+      companyId: row.companyId,
+      createdBy: row.createdBy,
+      counterparties: row.counterparties.map((c) => c.counterparty),
+      managers: row.managers.map((m) => ({ userId: m.user.id, name: m.user.name })),
+      contacts: row.contacts.map((c) => ({
+        id: c.id,
+        name: c.name,
+        position: c.position ?? null,
+        phone: c.phone ?? null,
+        email: c.email ?? null,
+      })),
+      contractsCount,
+      totalRevenue,
+      activitiesCount,
+    }
+  })
 })
 
 const clientSchema = z.object({

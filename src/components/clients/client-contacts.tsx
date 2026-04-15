@@ -16,6 +16,14 @@ import {
 } from '@/components/ui/dialog'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { addContact, updateContact, deleteContact, clientDetailQueryKey } from './actions'
 
 type Contact = ClientDetail['contacts'][number]
@@ -203,62 +211,79 @@ export function ClientContacts({
         {contacts.length === 0 ? (
           <p className="text-sm text-muted-foreground">Нет контактов</p>
         ) : (
-          <div className="flex flex-col divide-y">
-            {contacts.map((c) => (
-              <div key={c.id} className="flex items-start justify-between gap-3 py-2.5">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">{c.name}</p>
-                  {c.position && (
-                    <p className="mt-0.5 text-xs text-muted-foreground">{c.position}</p>
-                  )}
-                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
-                    {c.phone && (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="font-bold">Имя</TableHead>
+                <TableHead className="font-bold">Должность</TableHead>
+                <TableHead className="font-bold">Телефон</TableHead>
+                <TableHead className="font-bold">Email</TableHead>
+                <TableHead className="w-20" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {contacts.map((c) => (
+                <TableRow key={c.id}>
+                  <TableCell className="font-medium">{c.name}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
+                    {c.position ?? <span className="text-muted-foreground">—</span>}
+                  </TableCell>
+                  <TableCell>
+                    {c.phone ? (
                       <a
                         href={`tel:${c.phone}`}
-                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                        className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
                       >
                         <Phone className="size-3" />
                         {c.phone}
                       </a>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
                     )}
-                    {c.email && (
+                  </TableCell>
+                  <TableCell>
+                    {c.email ? (
                       <a
                         href={`mailto:${c.email}`}
-                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                        className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
                       >
                         <Mail className="size-3" />
                         {c.email}
                       </a>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
                     )}
-                  </div>
-                </div>
-                <div className="flex shrink-0 items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-7"
-                    onClick={() => setEditingContact(c)}
-                  >
-                    <Pencil className="size-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-7 text-destructive hover:text-destructive"
-                    disabled={deletingId === c.id}
-                    onClick={() => void handleDelete(c.id)}
-                  >
-                    <Trash2 className="size-3.5" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-7"
+                        onClick={() => setEditingContact(c)}
+                      >
+                        <Pencil className="size-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-7 text-destructive hover:text-destructive"
+                        disabled={deletingId === c.id}
+                        onClick={() => void handleDelete(c.id)}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
       </Card>
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="sm:max-w-sm" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Новый контакт</DialogTitle>
           </DialogHeader>
@@ -272,7 +297,7 @@ export function ClientContacts({
           if (!open) setEditingContact(null)
         }}
       >
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="sm:max-w-sm" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Редактировать контакт</DialogTitle>
           </DialogHeader>

@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { ArrowRight } from 'lucide-react'
+import { Eye } from 'lucide-react'
 
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
@@ -53,7 +53,7 @@ export function PriceRevisionList({
                 <div className="flex justify-end gap-1">
                   <Button asChild variant="ghost" size="icon" className="size-8" title="Открыть ревизию">
                     <Link to="/price-revisions/$id" params={{ id: revision.id }}>
-                      <ArrowRight className="size-4" />
+                      <Eye className="size-4" />
                     </Link>
                   </Button>
                   <DeletePriceRevision entityId={revision.id} />

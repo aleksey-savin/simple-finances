@@ -98,7 +98,7 @@ export function BankImportList({
             </div>
 
             {row.settlements.length > 0 && (
-              <div className="flex flex-col gap-2 rounded-lg border bg-muted/20 p-3">
+              <div className="flex flex-col gap-2 border bg-muted/20 p-3">
                 <p className="text-sm font-medium">Текущие привязки</p>
                 <div className="flex flex-col gap-2">
                   {row.settlements.map((settlement) => (

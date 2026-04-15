@@ -1,11 +1,20 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 
-import { Pencil, Search, User, X } from 'lucide-react'
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Eye,
+  Pencil,
+  Search,
+  User,
+  X,
+} from 'lucide-react'
 
 import { EditClientForm } from '@/components/clients'
 import { DeleteClient } from '@/components/clients/delete'
-import { fetchClients } from '@/components/clients/actions'
+import { fetchClientsWithSummary } from '@/components/clients/actions'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -27,30 +36,98 @@ import {
 } from '@/components/ui/table'
 
 export const Route = createFileRoute('/clients/')({
-  loader: () => fetchClients(),
+  loader: () => fetchClientsWithSummary(),
   component: ClientsPage,
 })
+
+type SortField = 'name' | 'contractsCount' | 'totalRevenue' | 'activitiesCount'
+type SortDir = 'asc' | 'desc'
+
+function SortHead({
+  field,
+  label,
+  sortField,
+  sortDir,
+  onSort,
+  className,
+}: {
+  field: SortField
+  label: string
+  sortField: SortField
+  sortDir: SortDir
+  onSort: (field: SortField) => void
+  className?: string
+}) {
+  const active = sortField === field
+  const Icon = active ? (sortDir === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown
+  return (
+    <TableHead className={className}>
+      <button
+        type="button"
+        onClick={() => onSort(field)}
+        className={`flex w-full items-center gap-1 font-bold hover:text-foreground ${className?.includes('text-right') ? 'justify-end' : ''}`}
+      >
+        {label}
+        <Icon
+          className={`size-3.5 ${active ? 'text-foreground' : 'text-muted-foreground'}`}
+        />
+      </button>
+    </TableHead>
+  )
+}
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(
+    value,
+  )
+}
 
 function ClientsPage() {
   const clients = Route.useLoaderData()
   const [search, setSearch] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [sortField, setSortField] = useState<SortField>('name')
+  const [sortDir, setSortDir] = useState<SortDir>('asc')
 
-  const editingClient = clients.find((client) => client.id === editingId) ?? null
+  const editingClient =
+    clients.find((client) => client.id === editingId) ?? null
+
+  function handleSort(field: SortField) {
+    if (sortField === field) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortField(field)
+      setSortDir('asc')
+    }
+  }
 
   const query = search.trim().toLowerCase()
-  const filteredClients = !query
-    ? clients
-    : clients.filter((client) => {
-        const haystack = [
-          client.name,
-          client.counterparties.map((counterparty) => counterparty.name).join(' '),
-        ]
-          .join(' ')
-          .toLowerCase()
+  const filteredClients = (
+    !query
+      ? clients
+      : clients.filter((client) => {
+          const haystack = [
+            client.name,
+            client.counterparties
+              .map((counterparty) => counterparty.name)
+              .join(' '),
+          ]
+            .join(' ')
+            .toLowerCase()
 
-        return haystack.includes(query)
-      })
+          return haystack.includes(query)
+        })
+  )
+    .slice()
+    .sort((a, b) => {
+      const dir = sortDir === 'asc' ? 1 : -1
+      const av = a[sortField]
+      const bv = b[sortField]
+      if (typeof av === 'string' && typeof bv === 'string') {
+        return av.localeCompare(bv, 'ru') * dir
+      }
+      return ((av as number) - (bv as number)) * dir
+    })
 
   const hasActiveFilters = search.trim() !== ''
 
@@ -133,10 +210,34 @@ function ClientsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="font-bold">Клиент</TableHead>
-                    <TableHead className="font-bold">Контрагенты</TableHead>
-                    <TableHead className="font-bold">Контакты</TableHead>
-                    <TableHead className="w-24 text-right font-bold">
+                    <SortHead
+                      field="name"
+                      label="Клиент"
+                      sortField={sortField}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                    />
+                    <TableHead className="w-80 font-bold">
+                      Контрагенты
+                    </TableHead>
+                    <TableHead className="w-48 font-bold">Контакты</TableHead>
+                    <SortHead
+                      field="contractsCount"
+                      label="Контракты"
+                      sortField={sortField}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                      className="text-right"
+                    />
+                    <SortHead
+                      field="totalRevenue"
+                      label="Выручка"
+                      sortField={sortField}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                      className="text-right"
+                    />
+                    <TableHead className="w-28 text-right font-bold">
                       Действия
                     </TableHead>
                   </TableRow>
@@ -156,11 +257,15 @@ function ClientsPage() {
                           </Link>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="w-48 max-w-48">
                         {client.counterparties.length > 0 ? (
                           <div className="flex flex-wrap gap-1">
                             {client.counterparties.map((counterparty) => (
-                              <Badge key={counterparty.id} variant="secondary">
+                              <Badge
+                                key={counterparty.id}
+                                variant="secondary"
+                                className="whitespace-normal"
+                              >
                                 {counterparty.name}
                               </Badge>
                             ))}
@@ -171,26 +276,55 @@ function ClientsPage() {
                           </span>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="w-48 max-w-48">
                         {client.contacts.length === 0 ? (
-                          <span className="text-sm text-muted-foreground">—</span>
+                          <span className="text-sm text-muted-foreground">
+                            —
+                          </span>
                         ) : (
-                          <div className="flex flex-col gap-0.5">
+                          <div className="flex flex-col gap-0.5 overflow-hidden">
                             {client.contacts.map((c) => (
-                              <span key={c.id} className="text-sm">
+                              <span key={c.id} className="truncate text-sm">
                                 {c.name}
-                                {c.position && (
-                                  <span className="ml-1 text-xs text-muted-foreground">
-                                    {c.position}
-                                  </span>
-                                )}
                               </span>
                             ))}
                           </div>
                         )}
                       </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {client.contractsCount > 0 ? (
+                          <span className="text-sm font-medium">
+                            {client.contractsCount}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">
+                            —
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {client.totalRevenue > 0 ? (
+                          <span className="text-sm font-semibold text-success">
+                            {formatCurrency(client.totalRevenue)} ₽
+                          </span>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">
+                            —
+                          </span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-8"
+                            asChild
+                          >
+                            <Link to="/clients/$id" params={{ id: client.id }}>
+                              <Eye className="size-4" />
+                            </Link>
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"

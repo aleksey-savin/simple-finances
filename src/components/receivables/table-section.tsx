@@ -246,5 +246,17 @@ function groupReceivableRows(rows: Row<IncomeRow>[]) {
     groups.push(nextGroup)
   }
 
+  groups.sort((a, b) => {
+    const totalA =
+      a.kind === 'client'
+        ? a.rows.reduce((sum, row) => sum + row.original.outstandingAmount, 0)
+        : 0
+    const totalB =
+      b.kind === 'client'
+        ? b.rows.reduce((sum, row) => sum + row.original.outstandingAmount, 0)
+        : 0
+    return totalB - totalA
+  })
+
   return groups
 }

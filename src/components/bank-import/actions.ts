@@ -870,7 +870,7 @@ async function findMatchingInvoices(
         invoiceRow.counterparty?.tin &&
         resolvedPayload.counterpartyTin === invoiceRow.counterparty.tin
       ) {
-        score += 80
+        score += 40
         reasons.push('совпадает ИНН контрагента')
       }
 
@@ -880,17 +880,17 @@ async function findMatchingInvoices(
         (normalizedCounterparty.includes(normalizedInvoiceCounterparty) ||
           normalizedInvoiceCounterparty.includes(normalizedCounterparty))
       ) {
-        score += 40
+        score += 20
         reasons.push('совпадает контрагент')
       }
 
       if (outstandingCents === targetAmountCents) {
-        score += 35
+        score += 15
         reasons.push('точное совпадение суммы')
       }
 
       if (outstandingCents > targetAmountCents) {
-        score += 10
+        score += 5
         reasons.push('доход/расход может быть частично закрыт')
       }
 
@@ -901,7 +901,7 @@ async function findMatchingInvoices(
           normalizeCounterpartyName(invoiceRow.description),
         )
       ) {
-        score += 15
+        score += 5
         reasons.push('назначение похоже на описание документа')
       }
 
@@ -909,7 +909,7 @@ async function findMatchingInvoices(
         refs.length > 0 &&
         refs.some((ref) => invoiceRow.description.toLowerCase().includes(ref))
       ) {
-        score += 25
+        score += 10
         reasons.push('найден номер документа в назначении')
       }
 
@@ -920,7 +920,7 @@ async function findMatchingInvoices(
         ),
       )
       if (dateDistanceDays <= 14) {
-        score += 10
+        score += 5
         reasons.push('даты близки')
       }
 

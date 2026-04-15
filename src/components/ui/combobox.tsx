@@ -10,6 +10,7 @@ export type ComboboxOption = {
   value: string
   label: string
   description?: string
+  badge?: string
   keywords?: string[]
 }
 
@@ -97,8 +98,15 @@ export function Combobox({
           )}
           disabled={disabled}
         >
-          <span className="truncate">{selectedOption?.label ?? placeholder}</span>
-          <ChevronsUpDown className="size-4 opacity-60" />
+          <span className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
+            <span className="truncate">{selectedOption?.label ?? placeholder}</span>
+            {selectedOption?.badge && (
+              <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
+                {selectedOption.badge}
+              </span>
+            )}
+          </span>
+          <ChevronsUpDown className="ml-1 size-4 shrink-0 opacity-60" />
         </Button>
       </PopoverTrigger>
       <PopoverPrimitive.Content
@@ -106,7 +114,7 @@ export function Combobox({
         align="start"
         sideOffset={4}
         className={cn(
-          'z-50 w-[--radix-popover-trigger-width] border bg-popover p-2 text-popover-foreground shadow-md outline-hidden',
+          'z-50 w-[--radix-popover-trigger-width] overflow-hidden border bg-popover p-2 text-popover-foreground shadow-md outline-hidden',
           contentClassName,
         )}
       >
@@ -150,13 +158,22 @@ export function Combobox({
                           isSelected ? 'opacity-100' : 'opacity-0',
                         )}
                       />
-                      <span className="min-w-0">
-                        <span className="block truncate">{option.label}</span>
-                        {option.description ? (
-                          <span className="block text-xs text-muted-foreground">
-                            {option.description}
+                      <span className="flex min-w-0 flex-1 items-start justify-between gap-2 overflow-hidden">
+                        <span className="min-w-0 overflow-hidden">
+                          <span className="block truncate">{option.label}</span>
+                          {option.description
+                            ? option.description.split('\n').map((line, i) => (
+                                <span key={i} className="block overflow-hidden break-words text-xs text-muted-foreground">
+                                  {line}
+                                </span>
+                              ))
+                            : null}
+                        </span>
+                        {option.badge && (
+                          <span className="mt-0.5 shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
+                            {option.badge}
                           </span>
-                        ) : null}
+                        )}
                       </span>
                     </button>
                   )
