@@ -12,7 +12,7 @@ import {
 } from '@/db/schema'
 import { normalizeBase64Payload } from '#/lib/file-upload'
 import { resolveSelectedScope } from '#/lib/company-scope'
-import { getS3SignedObjectUrl, uploadBase64FileToS3 } from '#/lib/s3'
+import { deleteS3Object, getS3SignedObjectUrl, uploadBase64FileToS3 } from '#/lib/s3'
 import { auth } from 'utils/auth'
 
 export const contractsQueryKey = ['contracts'] as const
@@ -252,14 +252,24 @@ export const removeContractDocument = createServerFn({ method: 'POST' })
     const session = await auth.api.getSession({ headers: request.headers })
     if (!session?.user?.id) throw new Error('Не авторизован')
 
-    await db
-      .delete(contractDocument)
-      .where(
-        and(
-          eq(contractDocument.contractId, data.contractId),
-          eq(contractDocument.documentId, data.documentId),
-        ),
-      )
+    const cd = await db.query.contractDocument.findFirst({
+      where: and(
+        eq(contractDocument.contractId, data.contractId),
+        eq(contractDocument.documentId, data.documentId),
+      ),
+      with: {
+        document: { columns: { url: true } },
+      },
+    })
+
+    if (!cd) return
+
+    await db.delete(document).where(eq(document.id, data.documentId))
+
+    const fileRef = cd.document.url?.trim()
+    if (fileRef && !/^https?:\/\//i.test(fileRef)) {
+      await deleteS3Object(fileRef).catch(() => {})
+    }
   })
 
 export const addContract = createServerFn({ method: 'POST' })

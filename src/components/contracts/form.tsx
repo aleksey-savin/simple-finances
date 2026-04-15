@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
@@ -8,7 +7,6 @@ import z from 'zod'
 
 import { contractTypeEnum } from '@/db/schema'
 import type { ContractType } from '@/db/types'
-import type { Contract } from '@/types'
 import {
   businessLinesQueryKey,
   fetchBusinessLines,
@@ -23,21 +21,25 @@ import {
 } from '@/components/companies/actions'
 import { Button } from '@/components/ui/button'
 import { Combobox } from '@/components/ui/combobox'
-import {
-  DocumentUploader,
-  type DocumentItem,
-} from '@/components/ui/document-uploader'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import {
   addContract,
-  addContractDocument,
   contractsQueryKey,
-  DOCUMENT_FILE_ACCEPT,
-  removeContractDocument,
   updateContract,
-  uploadDocument,
 } from './actions'
+
+export type ContractEditData = {
+  id: string
+  name: string
+  number: string | null
+  signedAt: string | null
+  contractType: ContractType
+  businessLine: { id: string; name: string }
+  counterparty: { id: string; name: string }
+  companyId?: string | null
+  amount: string[]
+}
 
 const amountItemSchema = z
   .string()
@@ -67,7 +69,7 @@ const contractTypeLabel: Record<ContractType, string> = {
 
 type ContractFormProps =
   | { contract?: undefined; onDone?: undefined; defaultCounterpartyId?: string; onSuccess?: () => void }
-  | { contract: Contract; onDone: () => void; defaultCounterpartyId?: string; onSuccess?: () => void }
+  | { contract: ContractEditData; onDone: () => void; defaultCounterpartyId?: string; onSuccess?: () => void }
 
 export const ContractForm = ({
   contract: current,
@@ -78,10 +80,6 @@ export const ContractForm = ({
   const router = useRouter()
   const queryClient = useQueryClient()
   const isEdit = current !== undefined
-
-  const [documents, setDocuments] = useState<DocumentItem[]>(
-    () => current?.documents ?? [],
-  )
 
   const { data: businessLines = [] } = useQuery({
     queryKey: businessLinesQueryKey,
@@ -147,19 +145,12 @@ export const ContractForm = ({
           },
         })
 
-        for (const doc of documents) {
-          await addContractDocument({
-            data: { contractId, documentId: doc.id },
-          })
-        }
-
         await router.invalidate()
         await queryClient.invalidateQueries({ queryKey: contractsQueryKey })
         await queryClient.invalidateQueries({
           queryKey: businessLinesQueryKey,
         })
         form.reset()
-        setDocuments([])
         toast.success('Договор добавлен')
         onSuccess?.()
       } catch (error) {
@@ -167,37 +158,6 @@ export const ContractForm = ({
       }
     },
   })
-
-  const handleUpload = async (file: File, base64: string) => {
-    const doc = await uploadDocument({
-      data: {
-        fileName: file.name,
-        mimeType: file.type || 'application/octet-stream',
-        fileSize: file.size,
-        fileBase64: base64,
-      },
-    })
-
-    if (isEdit) {
-      await addContractDocument({
-        data: { contractId: current.id, documentId: doc.id },
-      })
-      await queryClient.invalidateQueries({ queryKey: contractsQueryKey })
-    }
-
-    setDocuments((prev) => [...prev, doc])
-    return doc
-  }
-
-  const handleRemove = async (doc: DocumentItem) => {
-    if (isEdit) {
-      await removeContractDocument({
-        data: { contractId: current.id, documentId: doc.id },
-      })
-      await queryClient.invalidateQueries({ queryKey: contractsQueryKey })
-    }
-    setDocuments((prev) => prev.filter((d) => d.id !== doc.id))
-  }
 
   return (
     <form
@@ -454,16 +414,6 @@ export const ContractForm = ({
           }}
         </form.Field>
 
-        <Field>
-          <FieldLabel>Документы</FieldLabel>
-          <DocumentUploader
-            documents={documents}
-            onUpload={handleUpload}
-            onRemove={handleRemove}
-            accept={DOCUMENT_FILE_ACCEPT}
-          />
-        </Field>
-
         <Button type="submit">
           {isEdit ? 'Сохранить' : 'Создать'}
         </Button>
@@ -484,6 +434,6 @@ export const EditContractForm = ({
   contract,
   onDone,
 }: {
-  contract: Contract
+  contract: ContractEditData
   onDone: () => void
 }) => <ContractForm contract={contract} onDone={onDone} />

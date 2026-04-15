@@ -2,6 +2,14 @@ import { Link } from '@tanstack/react-router'
 
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 
 export type PendingActivity = {
   id: string
@@ -26,30 +34,43 @@ export function ClientPendingActivities({
       {activities.length === 0 ? (
         <p className="text-sm text-muted-foreground">Нет активных задач</p>
       ) : (
-        <div className="flex flex-col divide-y">
-          {activities.map((a) => (
-            <div key={a.id} className="flex items-center justify-between gap-3 py-2.5">
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">{a.typeLabel}</p>
-                {a.link ? (
-                  <Link
-                    to={a.link.to}
-                    params={a.link.params}
-                    className="text-sm font-medium text-primary hover:underline"
-                  >
-                    {a.title}
-                  </Link>
-                ) : (
-                  <p className="text-sm font-medium">{a.title}</p>
-                )}
-                {a.subtitle && (
-                  <p className="mt-0.5 text-xs text-muted-foreground">{a.subtitle}</p>
-                )}
-              </div>
-              <Badge variant={a.statusVariant}>{a.statusLabel}</Badge>
-            </div>
-          ))}
-        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="font-bold">Тип</TableHead>
+              <TableHead className="font-bold">Название</TableHead>
+              <TableHead className="font-bold">Статус</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {activities.map((a) => (
+              <TableRow key={a.id}>
+                <TableCell className="text-sm text-muted-foreground">
+                  {a.typeLabel}
+                </TableCell>
+                <TableCell>
+                  {a.link ? (
+                    <Link
+                      to={a.link.to}
+                      params={a.link.params}
+                      className="text-sm font-medium text-primary hover:underline"
+                    >
+                      {a.title}
+                    </Link>
+                  ) : (
+                    <span className="text-sm font-medium">{a.title}</span>
+                  )}
+                  {a.subtitle && (
+                    <p className="mt-0.5 text-xs text-muted-foreground">{a.subtitle}</p>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={a.statusVariant}>{a.statusLabel}</Badge>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
     </Card>
   )

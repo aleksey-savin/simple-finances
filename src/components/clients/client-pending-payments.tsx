@@ -37,7 +37,7 @@ export function ClientPendingPayments({
       <div className="mb-3 flex items-baseline justify-between gap-2">
         <h3 className="text-sm font-semibold">Ожидаемые платежи</h3>
         {payments.length > 0 && (
-          <span className="font-mono text-sm font-bold tabular-nums">
+          <span className="font-mono text-sm text-success font-bold tabular-nums">
             {formatTotal(total)} ₽
           </span>
         )}

@@ -1,4 +1,12 @@
 import { Card } from '@/components/ui/card'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 
 export type HistoryEntry = {
   id: string
@@ -26,22 +34,35 @@ export function ClientHistoryLog({ entries }: { entries: HistoryEntry[] }) {
       {entries.length === 0 ? (
         <p className="text-sm text-muted-foreground">История пуста</p>
       ) : (
-        <div className="flex flex-col divide-y">
-          {entries.map((e) => (
-            <div key={e.id} className="py-3">
-              <div className="flex items-start justify-between gap-4">
-                <p className="text-sm font-medium">{e.title}</p>
-                <p className="shrink-0 text-xs text-muted-foreground">{formatDate(e.date)}</p>
-              </div>
-              {(e.subtitle || e.actor) && (
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {[e.actor, e.subtitle].filter(Boolean).join(' · ')}
-                </p>
-              )}
-              {e.description && <div className="mt-2">{e.description}</div>}
-            </div>
-          ))}
-        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="font-bold">Договор</TableHead>
+              <TableHead className="font-bold">Изменение</TableHead>
+              <TableHead className="font-bold">Кто</TableHead>
+              <TableHead className="font-bold">Дата</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {entries.map((e) => (
+              <TableRow key={e.id}>
+                <TableCell>
+                  <span className="text-sm font-medium">{e.title}</span>
+                  {e.subtitle && (
+                    <p className="mt-0.5 text-xs text-muted-foreground">{e.subtitle}</p>
+                  )}
+                </TableCell>
+                <TableCell>{e.description ?? <span className="text-muted-foreground">—</span>}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {e.actor ?? <span>—</span>}
+                </TableCell>
+                <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                  {formatDate(e.date)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
     </Card>
   )

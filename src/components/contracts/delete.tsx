@@ -7,7 +7,13 @@ import { businessLinesQueryKey } from '@/components/business-lines/actions'
 import { Button } from '@/components/ui/button'
 import { contractsQueryKey, deleteContract } from './actions'
 
-export const DeleteContract = ({ entityId }: { entityId: string }) => {
+export const DeleteContract = ({
+  entityId,
+  onDeleted,
+}: {
+  entityId: string
+  onDeleted?: () => Promise<void>
+}) => {
   const router = useRouter()
   const queryClient = useQueryClient()
 
@@ -19,6 +25,7 @@ export const DeleteContract = ({ entityId }: { entityId: string }) => {
       await queryClient.invalidateQueries({
         queryKey: businessLinesQueryKey,
       })
+      await onDeleted?.()
       toast.success('Договор удалён')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Произошла ошибка')

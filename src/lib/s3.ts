@@ -1,6 +1,6 @@
 import { Buffer } from 'node:buffer'
 import { randomUUID } from 'node:crypto'
-import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 import { extractFileExtension, normalizeBase64Payload } from './file-upload'
@@ -145,6 +145,29 @@ export async function uploadBase64FileToS3(
   return {
     objectKey,
   }
+}
+
+export async function deleteS3Object(objectKey: string): Promise<void> {
+  const config = getS3Config()
+  const key = trimSlashes(objectKey)
+  if (!key) return
+
+  const s3Client = new S3Client({
+    region: config.region,
+    endpoint: config.endpoint,
+    forcePathStyle: config.forcePathStyle,
+    credentials: {
+      accessKeyId: config.accessKeyId,
+      secretAccessKey: config.secretAccessKey,
+    },
+  })
+
+  await s3Client.send(
+    new DeleteObjectCommand({
+      Bucket: config.bucket,
+      Key: key,
+    }),
+  )
 }
 
 export type GetS3SignedObjectUrlInput = {

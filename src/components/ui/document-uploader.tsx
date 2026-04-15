@@ -27,21 +27,27 @@ export function DocumentUploader({
   accept,
   disabled,
 }: DocumentUploaderProps) {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [removingId, setRemovingId] = useState<string | null>(null)
   const [inputKey, setInputKey] = useState(0)
 
   const handleUpload = async () => {
-    if (!selectedFile) return
+    if (selectedFiles.length === 0) return
 
     try {
       setIsUploading(true)
-      const base64 = await readFileAsBase64(selectedFile)
-      await onUpload(selectedFile, base64)
-      setSelectedFile(null)
+      for (const file of selectedFiles) {
+        const base64 = await readFileAsBase64(file)
+        await onUpload(file, base64)
+      }
+      setSelectedFiles([])
       setInputKey((k) => k + 1)
-      toast.success('Файл загружен')
+      toast.success(
+        selectedFiles.length === 1
+          ? 'Файл загружен'
+          : `Загружено файлов: ${selectedFiles.length}`,
+      )
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'Не удалось загрузить файл',
@@ -101,10 +107,11 @@ export function DocumentUploader({
             key={inputKey}
             type="file"
             accept={accept}
+            multiple
             className="h-auto cursor-pointer py-2"
             disabled={disabled || isUploading}
             onChange={(event) => {
-              setSelectedFile(event.target.files?.[0] ?? null)
+              setSelectedFiles(Array.from(event.target.files ?? []))
             }}
           />
           <Button
@@ -112,18 +119,22 @@ export function DocumentUploader({
             variant="outline"
             className="gap-2"
             onClick={handleUpload}
-            disabled={disabled || !selectedFile || isUploading}
+            disabled={disabled || selectedFiles.length === 0 || isUploading}
           >
             {isUploading ? (
               <Loader2 className="size-4 animate-spin" />
             ) : (
               <Upload className="size-4" />
             )}
-            {isUploading ? 'Загрузка...' : 'Загрузить'}
+            {isUploading
+              ? 'Загрузка...'
+              : selectedFiles.length > 1
+                ? `Загрузить (${selectedFiles.length})`
+                : 'Загрузить'}
           </Button>
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
-          PDF, DOC, DOCX, XLS, XLSX, JPG, PNG. До 20 МБ.
+          PDF, DOC, DOCX, XLS, XLSX, JPG, PNG. До 50 МБ.
         </p>
       </div>
     </div>

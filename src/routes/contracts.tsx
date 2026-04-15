@@ -3,9 +3,6 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 
 import {
-  ExternalLink,
-  FileText,
-  Loader2,
   Paperclip,
   Pencil,
   Search,
@@ -19,6 +16,8 @@ import {
   fetchContracts,
   resolveDocumentUrl,
 } from '@/components/contracts/actions'
+import { ContractDocuments } from '@/components/contracts/documents'
+import { ContractsTable } from '@/components/contracts/table'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Combobox } from '@/components/ui/combobox'
@@ -30,14 +29,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 
 const contractTypeLabel: Record<ContractType, string> = {
   customer: 'С покупателем',
@@ -54,10 +45,13 @@ function ContractsPage() {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [docsContractId, setDocsContractId] = useState<string | null>(null)
   const [openingDocId, setOpeningDocId] = useState<string | null>(null)
 
   const editingContract =
     contracts.find((contract) => contract.id === editingId) ?? null
+  const docsContract =
+    contracts.find((contract) => contract.id === docsContractId) ?? null
 
   const query = search.trim().toLowerCase()
   const filteredContracts = contracts.filter((contract) => {
@@ -184,30 +178,17 @@ function ContractsPage() {
                           .map((amount) => `${formatAmount(amount)} ₽`)
                           .join(', ')}
                       </p>
-                      {contract.documents.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          {contract.documents.map((doc) => (
-                            <Button
-                              key={doc.id}
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="h-6 gap-1 px-2 text-xs"
-                              disabled={openingDocId === doc.id}
-                              onClick={() => void openDocumentFile(doc.id)}
-                            >
-                              {openingDocId === doc.id ? (
-                                <Loader2 className="size-3 animate-spin" />
-                              ) : (
-                                <Paperclip className="size-3" />
-                              )}
-                              {doc.name}
-                            </Button>
-                          ))}
-                        </div>
-                      )}
                     </div>
                     <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8"
+                        title="Документы"
+                        onClick={() => setDocsContractId(contract.id)}
+                      >
+                        <Paperclip className="size-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -224,81 +205,34 @@ function ContractsPage() {
             </div>
 
             <Card className="hidden p-4 sm:block">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="font-bold">Договор</TableHead>
-                    <TableHead className="font-bold">Тип</TableHead>
-                    <TableHead className="font-bold">Контрагент</TableHead>
-                    <TableHead className="font-bold">Направление</TableHead>
-                    <TableHead className="font-bold">Суммы</TableHead>
-                    <TableHead className="font-bold">Документы</TableHead>
-                    <TableHead className="w-20 text-right font-bold">
-                      Действия
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredContracts.map((contract) => (
-                    <TableRow key={contract.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2 font-medium">
-                          <FileText className="size-4 text-muted-foreground" />
-                          {`№${contract.number} от ${formatSignedAt(contract.signedAt)}`}
-                        </div>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {contract.name}
-                        </p>
-                      </TableCell>
-                      <TableCell>{contractTypeLabel[contract.contractType]}</TableCell>
-                      <TableCell>{contract.counterparty.name}</TableCell>
-                      <TableCell>{contract.businessLine.name}</TableCell>
-                      <TableCell>
-                        {contract.amount
-                          .map((amount) => `${formatAmount(amount)} ₽`)
-                          .join(', ')}
-                      </TableCell>
-                      <TableCell>
-                        {contract.documents.length === 0 ? (
-                          <span className="text-xs text-muted-foreground">—</span>
-                        ) : (
-                          <div className="flex flex-col gap-1">
-                            {contract.documents.map((doc) => (
-                              <button
-                                key={doc.id}
-                                type="button"
-                                className="flex items-center gap-1 text-xs text-primary hover:underline disabled:opacity-50"
-                                disabled={openingDocId === doc.id}
-                                onClick={() => void openDocumentFile(doc.id)}
-                              >
-                                {openingDocId === doc.id ? (
-                                  <Loader2 className="size-3 animate-spin" />
-                                ) : (
-                                  <ExternalLink className="size-3" />
-                                )}
-                                {doc.name}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-8"
-                            onClick={() => setEditingId(contract.id)}
-                          >
-                            <Pencil className="size-4" />
-                          </Button>
-                          <DeleteContract entityId={contract.id} />
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <ContractsTable
+                contracts={filteredContracts}
+                openingDocId={openingDocId}
+                onOpenDocument={(id) => void openDocumentFile(id)}
+                showType
+                renderActions={(contract) => (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-8"
+                      title="Документы"
+                      onClick={() => setDocsContractId(contract.id)}
+                    >
+                      <Paperclip className="size-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-8"
+                      onClick={() => setEditingId(contract.id)}
+                    >
+                      <Pencil className="size-4" />
+                    </Button>
+                    <DeleteContract entityId={contract.id} />
+                  </>
+                )}
+              />
             </Card>
           </>
         )}
@@ -323,6 +257,27 @@ function ContractsPage() {
           ) : null}
         </DialogContent>
       </Dialog>
+
+      <Dialog
+        open={docsContract !== null}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) setDocsContractId(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Документы</DialogTitle>
+            <DialogDescription>{docsContract?.name}</DialogDescription>
+          </DialogHeader>
+          {docsContract ? (
+            <ContractDocuments
+              contractId={docsContract.id}
+              documents={docsContract.documents}
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
       <Outlet />
     </>
   )
