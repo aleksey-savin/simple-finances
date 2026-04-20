@@ -9,7 +9,8 @@
       "Bash(npx shadcn@latest add collapsible --yes)",
       "Bash(npx tsc *)",
       "Bash(python3 -c \"import json,sys; j=json.load\\(sys.stdin\\); [print\\(e['idx'], e['tag']\\) for e in j['entries']]\")",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(python3 -c \"import json,sys; p=json.load\\(sys.stdin\\); [print\\(k,':',v\\) for k,v in p.get\\('scripts',{}\\).items\\(\\)]\")"
     ]
   }
 }
