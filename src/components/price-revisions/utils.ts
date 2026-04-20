@@ -30,35 +30,28 @@ export function computeRevisionSummary(
     }
   }
 
-  // Find how many tiers there are (max across all items)
-  const tierCount = Math.max(...included.map((i) => i.currentAmounts.length))
+  // Sum each contract's own min/max tier amounts independently
+  const minCurrent = included.reduce(
+    (s, i) => s + Math.min(...i.currentAmounts.map(Number)),
+    0,
+  )
+  const maxCurrent = included.reduce(
+    (s, i) => s + Math.max(...i.currentAmounts.map(Number)),
+    0,
+  )
+  const minProposed = included.reduce(
+    (s, i) => s + Math.min(...i.proposedAmounts.map(Number)),
+    0,
+  )
+  const maxProposed = included.reduce(
+    (s, i) => s + Math.max(...i.proposedAmounts.map(Number)),
+    0,
+  )
 
-  // For each tier index, sum current and proposed across all items
-  // (items with fewer tiers contribute 0 for missing tiers)
-  const tierSums = Array.from({ length: tierCount }, (_, j) => {
-    const sumCurrent = included.reduce(
-      (s, i) => s + Number(i.currentAmounts[j] ?? 0),
-      0,
-    )
-    const sumProposed = included.reduce(
-      (s, i) => s + Number(i.proposedAmounts[j] ?? 0),
-      0,
-    )
-    const delta = sumProposed - sumCurrent
-    const percent = sumCurrent > 0 ? (delta / sumCurrent) * 100 : null
-    return { sumCurrent, sumProposed, delta, percent }
-  })
-
-  const minCurrent = Math.min(...tierSums.map((t) => t.sumCurrent))
-  const maxCurrent = Math.max(...tierSums.map((t) => t.sumCurrent))
-  const minProposed = Math.min(...tierSums.map((t) => t.sumProposed))
-  const maxProposed = Math.max(...tierSums.map((t) => t.sumProposed))
-  const minDelta = Math.min(...tierSums.map((t) => t.delta))
-  const maxDelta = Math.max(...tierSums.map((t) => t.delta))
-
-  const percents = tierSums.map((t) => t.percent).filter((p): p is number => p !== null)
-  const minDeltaPercent = percents.length > 0 ? Math.min(...percents) : null
-  const maxDeltaPercent = percents.length > 0 ? Math.max(...percents) : null
+  const minDelta = minProposed - minCurrent
+  const maxDelta = maxProposed - maxCurrent
+  const minDeltaPercent = minCurrent > 0 ? (minDelta / minCurrent) * 100 : null
+  const maxDeltaPercent = maxCurrent > 0 ? (maxDelta / maxCurrent) * 100 : null
 
   return {
     minCurrent,

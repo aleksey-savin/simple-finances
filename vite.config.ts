@@ -17,6 +17,8 @@ const config = defineConfig({
       experimental: { tasks: true, vite: {} },
       scheduledTasks: {
         '* * * * *': ['recurring'],
+        '0 * * * *': ['proxmox-vm-manager'],
+        '0 8 * * *': ['invoice-reminders'],
       },
     }),
     tsconfigPaths({ projects: ['./tsconfig.json'] }),

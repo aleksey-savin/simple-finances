@@ -15,6 +15,7 @@ import type {
   contractPriceRevision,
   contractPriceRevisionItem,
   contractAmountHistory,
+  contractVm,
   document,
   priceRevisionItemStatusEnum,
   counterparty,
@@ -26,15 +27,19 @@ import type {
   expenseTag,
   invoice,
   invoiceKindEnum,
+  invoiceReminderLog,
   invoiceTag,
   income,
   incomeTag,
+  proxmoxNode,
+  proxmoxAccountSettings,
   recurringRule,
   session,
   settlement,
   tag,
   user,
   verification,
+  vmTypeEnum,
 } from './schema'
 
 // ─── Enum ─────────────────────────────────────────────────────────────────────
@@ -211,3 +216,19 @@ export type ContractPriceRevisionItemUpdate =
 export type ContractAmountHistory = typeof contractAmountHistory.$inferSelect
 export type ContractAmountHistoryInsert =
   typeof contractAmountHistory.$inferInsert
+
+// ─── Proxmox ──────────────────────────────────────────────────────────────────
+
+export type VmType = (typeof vmTypeEnum.enumValues)[number]
+
+export type ProxmoxNode = typeof proxmoxNode.$inferSelect
+export type ProxmoxNodeInsert = typeof proxmoxNode.$inferInsert
+
+export type ProxmoxAccountSettings = typeof proxmoxAccountSettings.$inferSelect
+export type ProxmoxAccountSettingsInsert = typeof proxmoxAccountSettings.$inferInsert
+
+export type ContractVm = typeof contractVm.$inferSelect
+export type ContractVmInsert = typeof contractVm.$inferInsert
+
+export type InvoiceReminderLog = typeof invoiceReminderLog.$inferSelect
+export type InvoiceReminderLogInsert = typeof invoiceReminderLog.$inferInsert

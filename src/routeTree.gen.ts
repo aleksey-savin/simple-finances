@@ -15,6 +15,7 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as RecurringRouteImport } from './routes/recurring'
 import { Route as ReceivablesRouteImport } from './routes/receivables'
 import { Route as PriceRevisionsRouteImport } from './routes/price-revisions'
+import { Route as PreferencesRouteImport } from './routes/preferences'
 import { Route as PayablesRouteImport } from './routes/payables'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -78,6 +79,11 @@ const ReceivablesRoute = ReceivablesRouteImport.update({
 const PriceRevisionsRoute = PriceRevisionsRouteImport.update({
   id: '/price-revisions',
   path: '/price-revisions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PreferencesRoute = PreferencesRouteImport.update({
+  id: '/preferences',
+  path: '/preferences',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PayablesRoute = PayablesRouteImport.update({
@@ -265,6 +271,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/payables': typeof PayablesRoute
+  '/preferences': typeof PreferencesRoute
   '/price-revisions': typeof PriceRevisionsRouteWithChildren
   '/receivables': typeof ReceivablesRoute
   '/recurring': typeof RecurringRouteWithChildren
@@ -306,6 +313,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/payables': typeof PayablesRoute
+  '/preferences': typeof PreferencesRoute
   '/receivables': typeof ReceivablesRoute
   '/recurring': typeof RecurringRouteWithChildren
   '/signup': typeof SignupRoute
@@ -348,6 +356,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/payables': typeof PayablesRoute
+  '/preferences': typeof PreferencesRoute
   '/price-revisions': typeof PriceRevisionsRouteWithChildren
   '/receivables': typeof ReceivablesRoute
   '/recurring': typeof RecurringRouteWithChildren
@@ -392,6 +401,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/payables'
+    | '/preferences'
     | '/price-revisions'
     | '/receivables'
     | '/recurring'
@@ -433,6 +443,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/payables'
+    | '/preferences'
     | '/receivables'
     | '/recurring'
     | '/signup'
@@ -474,6 +485,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/payables'
+    | '/preferences'
     | '/price-revisions'
     | '/receivables'
     | '/recurring'
@@ -517,6 +529,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
   PayablesRoute: typeof PayablesRoute
+  PreferencesRoute: typeof PreferencesRoute
   PriceRevisionsRoute: typeof PriceRevisionsRouteWithChildren
   ReceivablesRoute: typeof ReceivablesRoute
   RecurringRoute: typeof RecurringRouteWithChildren
@@ -568,6 +581,13 @@ declare module '@tanstack/react-router' {
       path: '/price-revisions'
       fullPath: '/price-revisions'
       preLoaderRoute: typeof PriceRevisionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/preferences': {
+      id: '/preferences'
+      path: '/preferences'
+      fullPath: '/preferences'
+      preLoaderRoute: typeof PreferencesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/payables': {
@@ -972,6 +992,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
   PayablesRoute: PayablesRoute,
+  PreferencesRoute: PreferencesRoute,
   PriceRevisionsRoute: PriceRevisionsRouteWithChildren,
   ReceivablesRoute: ReceivablesRoute,
   RecurringRoute: RecurringRouteWithChildren,

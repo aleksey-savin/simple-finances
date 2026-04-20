@@ -1,0 +1,4409 @@
+{
+  "id": "4ba5c290-c71c-4f89-bde5-2a440129eacd",
+  "prevId": "ca743dc1-7ca1-4414-975b-d1e142268c47",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.account": {
+      "name": "account",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "account_id": {
+          "name": "account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_id": {
+          "name": "provider_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "access_token": {
+          "name": "access_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "refresh_token": {
+          "name": "refresh_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "id_token": {
+          "name": "id_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "access_token_expires_at": {
+          "name": "access_token_expires_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "refresh_token_expires_at": {
+          "name": "refresh_token_expires_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scope": {
+          "name": "scope",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "password": {
+          "name": "password",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "account_userId_idx": {
+          "name": "account_userId_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "account_user_id_user_id_fk": {
+          "name": "account_user_id_user_id_fk",
+          "tableFrom": "account",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.bank_transaction": {
+      "name": "bank_transaction",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "current_account_id": {
+          "name": "current_account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "direction": {
+          "name": "direction",
+          "type": "bank_transaction_direction",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "currency": {
+          "name": "currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'RUB'"
+        },
+        "booked_at": {
+          "name": "booked_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value_date": {
+          "name": "value_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "counterparty_name_raw": {
+          "name": "counterparty_name_raw",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "external_id": {
+          "name": "external_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "raw_payload": {
+          "name": "raw_payload",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "bank_transaction_account_idx": {
+          "name": "bank_transaction_account_idx",
+          "columns": [
+            {
+              "expression": "current_account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "bank_transaction_current_account_id_current_account_id_fk": {
+          "name": "bank_transaction_current_account_id_current_account_id_fk",
+          "tableFrom": "bank_transaction",
+          "tableTo": "current_account",
+          "columnsFrom": [
+            "current_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "bank_transaction_account_external_unique": {
+          "name": "bank_transaction_account_external_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "current_account_id",
+            "external_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.business_line": {
+      "name": "business_line",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "business_line_created_by_user_id_fk": {
+          "name": "business_line_created_by_user_id_fk",
+          "tableFrom": "business_line",
+          "tableTo": "user",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.category": {
+      "name": "category",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "company_id": {
+          "name": "company_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "use_for_expenses": {
+          "name": "use_for_expenses",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "use_for_income": {
+          "name": "use_for_income",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "is_shared": {
+          "name": "is_shared",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "category_company_id_company_id_fk": {
+          "name": "category_company_id_company_id_fk",
+          "tableFrom": "category",
+          "tableTo": "company",
+          "columnsFrom": [
+            "company_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "category_created_by_user_id_fk": {
+          "name": "category_created_by_user_id_fk",
+          "tableFrom": "category",
+          "tableTo": "user",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "category_updated_by_user_id_fk": {
+          "name": "category_updated_by_user_id_fk",
+          "tableFrom": "category",
+          "tableTo": "user",
+          "columnsFrom": [
+            "updated_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.client": {
+      "name": "client",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "company_id": {
+          "name": "company_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "client_company_id_company_id_fk": {
+          "name": "client_company_id_company_id_fk",
+          "tableFrom": "client",
+          "tableTo": "company",
+          "columnsFrom": [
+            "company_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "client_created_by_user_id_fk": {
+          "name": "client_created_by_user_id_fk",
+          "tableFrom": "client",
+          "tableTo": "user",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.client_counterparty": {
+      "name": "client_counterparty",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "client_id": {
+          "name": "client_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "counterparty_id": {
+          "name": "counterparty_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "client_counterparty_client_idx": {
+          "name": "client_counterparty_client_idx",
+          "columns": [
+            {
+              "expression": "client_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "client_counterparty_counterparty_idx": {
+          "name": "client_counterparty_counterparty_idx",
+          "columns": [
+            {
+              "expression": "counterparty_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "client_counterparty_client_id_client_id_fk": {
+          "name": "client_counterparty_client_id_client_id_fk",
+          "tableFrom": "client_counterparty",
+          "tableTo": "client",
+          "columnsFrom": [
+            "client_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "client_counterparty_counterparty_id_counterparty_id_fk": {
+          "name": "client_counterparty_counterparty_id_counterparty_id_fk",
+          "tableFrom": "client_counterparty",
+          "tableTo": "counterparty",
+          "columnsFrom": [
+            "counterparty_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "client_counterparty_unique": {
+          "name": "client_counterparty_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "client_id",
+            "counterparty_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.client_manager": {
+      "name": "client_manager",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "client_id": {
+          "name": "client_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "client_manager_client_idx": {
+          "name": "client_manager_client_idx",
+          "columns": [
+            {
+              "expression": "client_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "client_manager_user_idx": {
+          "name": "client_manager_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "client_manager_client_id_client_id_fk": {
+          "name": "client_manager_client_id_client_id_fk",
+          "tableFrom": "client_manager",
+          "tableTo": "client",
+          "columnsFrom": [
+            "client_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "client_manager_user_id_user_id_fk": {
+          "name": "client_manager_user_id_user_id_fk",
+          "tableFrom": "client_manager",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "client_manager_unique": {
+          "name": "client_manager_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "client_id",
+            "user_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.company": {
+      "name": "company",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "company_created_by_user_id_fk": {
+          "name": "company_created_by_user_id_fk",
+          "tableFrom": "company",
+          "tableTo": "user",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.company_counterparty": {
+      "name": "company_counterparty",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "company_id": {
+          "name": "company_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "counterparty_id": {
+          "name": "counterparty_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "company_counterparty_company_idx": {
+          "name": "company_counterparty_company_idx",
+          "columns": [
+            {
+              "expression": "company_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "company_counterparty_counterparty_idx": {
+          "name": "company_counterparty_counterparty_idx",
+          "columns": [
+            {
+              "expression": "counterparty_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "company_counterparty_company_id_company_id_fk": {
+          "name": "company_counterparty_company_id_company_id_fk",
+          "tableFrom": "company_counterparty",
+          "tableTo": "company",
+          "columnsFrom": [
+            "company_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "company_counterparty_counterparty_id_counterparty_id_fk": {
+          "name": "company_counterparty_counterparty_id_counterparty_id_fk",
+          "tableFrom": "company_counterparty",
+          "tableTo": "counterparty",
+          "columnsFrom": [
+            "counterparty_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "company_counterparty_unique": {
+          "name": "company_counterparty_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "company_id",
+            "counterparty_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.company_current_account": {
+      "name": "company_current_account",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "company_id": {
+          "name": "company_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "current_account_id": {
+          "name": "current_account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "company_current_account_company_idx": {
+          "name": "company_current_account_company_idx",
+          "columns": [
+            {
+              "expression": "company_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "company_current_account_account_idx": {
+          "name": "company_current_account_account_idx",
+          "columns": [
+            {
+              "expression": "current_account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "company_current_account_company_id_company_id_fk": {
+          "name": "company_current_account_company_id_company_id_fk",
+          "tableFrom": "company_current_account",
+          "tableTo": "company",
+          "columnsFrom": [
+            "company_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "company_current_account_current_account_id_current_account_id_fk": {
+          "name": "company_current_account_current_account_id_current_account_id_fk",
+          "tableFrom": "company_current_account",
+          "tableTo": "current_account",
+          "columnsFrom": [
+            "current_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "company_current_account_unique": {
+          "name": "company_current_account_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "company_id",
+            "current_account_id"
+          ]
+        },
+        "company_current_account_account_unique": {
+          "name": "company_current_account_account_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "current_account_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.contact": {
+      "name": "contact",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "client_id": {
+          "name": "client_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "contact_client_idx": {
+          "name": "contact_client_idx",
+          "columns": [
+            {
+              "expression": "client_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "contact_client_id_client_id_fk": {
+          "name": "contact_client_id_client_id_fk",
+          "tableFrom": "contact",
+          "tableTo": "client",
+          "columnsFrom": [
+            "client_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.contract": {
+      "name": "contract",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "number": {
+          "name": "number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "signed_at": {
+          "name": "signed_at",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "contract_type": {
+          "name": "contract_type",
+          "type": "contract_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'customer'"
+        },
+        "business_line_id": {
+          "name": "business_line_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "counterparty_id": {
+          "name": "counterparty_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "company_id": {
+          "name": "company_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "amount": {
+          "name": "amount",
+          "type": "numeric[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "contract_business_line_idx": {
+          "name": "contract_business_line_idx",
+          "columns": [
+            {
+              "expression": "business_line_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "contract_counterparty_idx": {
+          "name": "contract_counterparty_idx",
+          "columns": [
+            {
+              "expression": "counterparty_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "contract_company_idx": {
+          "name": "contract_company_idx",
+          "columns": [
+            {
+              "expression": "company_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "contract_business_line_id_business_line_id_fk": {
+          "name": "contract_business_line_id_business_line_id_fk",
+          "tableFrom": "contract",
+          "tableTo": "business_line",
+          "columnsFrom": [
+            "business_line_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "contract_counterparty_id_counterparty_id_fk": {
+          "name": "contract_counterparty_id_counterparty_id_fk",
+          "tableFrom": "contract",
+          "tableTo": "counterparty",
+          "columnsFrom": [
+            "counterparty_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "contract_company_id_company_id_fk": {
+          "name": "contract_company_id_company_id_fk",
+          "tableFrom": "contract",
+          "tableTo": "company",
+          "columnsFrom": [
+            "company_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "contract_created_by_user_id_fk": {
+          "name": "contract_created_by_user_id_fk",
+          "tableFrom": "contract",
+          "tableTo": "user",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.contract_amount_history": {
+      "name": "contract_amount_history",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "contract_id": {
+          "name": "contract_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "previous_amounts": {
+          "name": "previous_amounts",
+          "type": "numeric[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "new_amounts": {
+          "name": "new_amounts",
+          "type": "numeric[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision_item_id": {
+          "name": "revision_item_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "changed_by": {
+          "name": "changed_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "changed_at": {
+          "name": "changed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "contract_amount_history_contract_idx": {
+          "name": "contract_amount_history_contract_idx",
+          "columns": [
+            {
+              "expression": "contract_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "contract_amount_history_contract_id_contract_id_fk": {
+          "name": "contract_amount_history_contract_id_contract_id_fk",
+          "tableFrom": "contract_amount_history",
+          "tableTo": "contract",
+          "columnsFrom": [
+            "contract_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "contract_amount_history_changed_by_user_id_fk": {
+          "name": "contract_amount_history_changed_by_user_id_fk",
+          "tableFrom": "contract_amount_history",
+          "tableTo": "user",
+          "columnsFrom": [
+            "changed_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.contract_document": {
+      "name": "contract_document",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "contract_id": {
+          "name": "contract_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "document_id": {
+          "name": "document_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "contract_document_contract_idx": {
+          "name": "contract_document_contract_idx",
+          "columns": [
+            {
+              "expression": "contract_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "contract_document_contract_id_contract_id_fk": {
+          "name": "contract_document_contract_id_contract_id_fk",
+          "tableFrom": "contract_document",
+          "tableTo": "contract",
+          "columnsFrom": [
+            "contract_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "contract_document_document_id_document_id_fk": {
+          "name": "contract_document_document_id_document_id_fk",
+          "tableFrom": "contract_document",
+          "tableTo": "document",
+          "columnsFrom": [
+            "document_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "contract_document_unique": {
+          "name": "contract_document_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "contract_id",
+            "document_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.contract_price_revision": {
+      "name": "contract_price_revision",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "business_line_id": {
+          "name": "business_line_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "company_id": {
+          "name": "company_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "price_revision_business_line_idx": {
+          "name": "price_revision_business_line_idx",
+          "columns": [
+            {
+              "expression": "business_line_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "price_revision_company_idx": {
+          "name": "price_revision_company_idx",
+          "columns": [
+            {
+              "expression": "company_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "contract_price_revision_business_line_id_business_line_id_fk": {
+          "name": "contract_price_revision_business_line_id_business_line_id_fk",
+          "tableFrom": "contract_price_revision",
+          "tableTo": "business_line",
+          "columnsFrom": [
+            "business_line_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "contract_price_revision_company_id_company_id_fk": {
+          "name": "contract_price_revision_company_id_company_id_fk",
+          "tableFrom": "contract_price_revision",
+          "tableTo": "company",
+          "columnsFrom": [
+            "company_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "contract_price_revision_created_by_user_id_fk": {
+          "name": "contract_price_revision_created_by_user_id_fk",
+          "tableFrom": "contract_price_revision",
+          "tableTo": "user",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.contract_price_revision_item": {
+      "name": "contract_price_revision_item",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "revision_id": {
+          "name": "revision_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "contract_id": {
+          "name": "contract_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "current_amounts": {
+          "name": "current_amounts",
+          "type": "numeric[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "proposed_amounts": {
+          "name": "proposed_amounts",
+          "type": "numeric[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "included": {
+          "name": "included",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "status": {
+          "name": "status",
+          "type": "price_revision_item_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'draft'"
+        },
+        "notified_at": {
+          "name": "notified_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "agreed_at": {
+          "name": "agreed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "signed_at": {
+          "name": "signed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "price_revision_item_revision_idx": {
+          "name": "price_revision_item_revision_idx",
+          "columns": [
+            {
+              "expression": "revision_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "price_revision_item_contract_idx": {
+          "name": "price_revision_item_contract_idx",
+          "columns": [
+            {
+              "expression": "contract_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "contract_price_revision_item_revision_id_contract_price_revision_id_fk": {
+          "name": "contract_price_revision_item_revision_id_contract_price_revision_id_fk",
+          "tableFrom": "contract_price_revision_item",
+          "tableTo": "contract_price_revision",
+          "columnsFrom": [
+            "revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "contract_price_revision_item_contract_id_contract_id_fk": {
+          "name": "contract_price_revision_item_contract_id_contract_id_fk",
+          "tableFrom": "contract_price_revision_item",
+          "tableTo": "contract",
+          "columnsFrom": [
+            "contract_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "price_revision_item_unique": {
+          "name": "price_revision_item_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "revision_id",
+            "contract_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.contract_vm": {
+      "name": "contract_vm",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "contract_id": {
+          "name": "contract_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "proxmox_node_id": {
+          "name": "proxmox_node_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "vmid": {
+          "name": "vmid",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "vm_type": {
+          "name": "vm_type",
+          "type": "vm_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "paused_until": {
+          "name": "paused_until",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_paused_by_system": {
+          "name": "is_paused_by_system",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "contract_vm_contract_idx": {
+          "name": "contract_vm_contract_idx",
+          "columns": [
+            {
+              "expression": "contract_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "contract_vm_node_idx": {
+          "name": "contract_vm_node_idx",
+          "columns": [
+            {
+              "expression": "proxmox_node_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "contract_vm_contract_id_contract_id_fk": {
+          "name": "contract_vm_contract_id_contract_id_fk",
+          "tableFrom": "contract_vm",
+          "tableTo": "contract",
+          "columnsFrom": [
+            "contract_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "contract_vm_proxmox_node_id_proxmox_node_id_fk": {
+          "name": "contract_vm_proxmox_node_id_proxmox_node_id_fk",
+          "tableFrom": "contract_vm",
+          "tableTo": "proxmox_node",
+          "columnsFrom": [
+            "proxmox_node_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "contract_vm_node_vmid_unique": {
+          "name": "contract_vm_node_vmid_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "proxmox_node_id",
+            "vmid"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.counterparty": {
+      "name": "counterparty",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fullName": {
+          "name": "fullName",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tin": {
+          "name": "tin",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "type": {
+          "name": "type",
+          "type": "counterparty_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "linked_user_id": {
+          "name": "linked_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "counterparty_linked_user_id_user_id_fk": {
+          "name": "counterparty_linked_user_id_user_id_fk",
+          "tableFrom": "counterparty",
+          "tableTo": "user",
+          "columnsFrom": [
+            "linked_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "counterparty_created_by_user_id_fk": {
+          "name": "counterparty_created_by_user_id_fk",
+          "tableFrom": "counterparty",
+          "tableTo": "user",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.current_account": {
+      "name": "current_account",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bank_name": {
+          "name": "bank_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bank_name_initials": {
+          "name": "bank_name_initials",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bank_bik": {
+          "name": "bank_bik",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bank_ks": {
+          "name": "bank_ks",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "account_number": {
+          "name": "account_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "balance": {
+          "name": "balance",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "accept_payments": {
+          "name": "accept_payments",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "current_account_created_by_user_id_fk": {
+          "name": "current_account_created_by_user_id_fk",
+          "tableFrom": "current_account",
+          "tableTo": "user",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "current_account_updated_by_user_id_fk": {
+          "name": "current_account_updated_by_user_id_fk",
+          "tableFrom": "current_account",
+          "tableTo": "user",
+          "columnsFrom": [
+            "updated_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.current_account_user": {
+      "name": "current_account_user",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "current_account_id": {
+          "name": "current_account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'viewer'"
+        },
+        "invited_by": {
+          "name": "invited_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "current_account_user_account_idx": {
+          "name": "current_account_user_account_idx",
+          "columns": [
+            {
+              "expression": "current_account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "current_account_user_user_idx": {
+          "name": "current_account_user_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "current_account_user_current_account_id_current_account_id_fk": {
+          "name": "current_account_user_current_account_id_current_account_id_fk",
+          "tableFrom": "current_account_user",
+          "tableTo": "current_account",
+          "columnsFrom": [
+            "current_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "current_account_user_user_id_user_id_fk": {
+          "name": "current_account_user_user_id_user_id_fk",
+          "tableFrom": "current_account_user",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "current_account_user_invited_by_user_id_fk": {
+          "name": "current_account_user_invited_by_user_id_fk",
+          "tableFrom": "current_account_user",
+          "tableTo": "user",
+          "columnsFrom": [
+            "invited_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "current_account_user_unique": {
+          "name": "current_account_user_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "current_account_id",
+            "user_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.document": {
+      "name": "document",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "uploaded_at": {
+          "name": "uploaded_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "uploaded_by": {
+          "name": "uploaded_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "document_uploaded_by_user_id_fk": {
+          "name": "document_uploaded_by_user_id_fk",
+          "tableFrom": "document",
+          "tableTo": "user",
+          "columnsFrom": [
+            "uploaded_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.expense": {
+      "name": "expense",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "category_id": {
+          "name": "category_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "counterparty_id": {
+          "name": "counterparty_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "current_account_id": {
+          "name": "current_account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "due_date": {
+          "name": "due_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "paid_at": {
+          "name": "paid_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "recurring_rule_id": {
+          "name": "recurring_rule_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "recurring_occurrence_at": {
+          "name": "recurring_occurrence_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "expense_category_id_category_id_fk": {
+          "name": "expense_category_id_category_id_fk",
+          "tableFrom": "expense",
+          "tableTo": "category",
+          "columnsFrom": [
+            "category_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "expense_counterparty_id_counterparty_id_fk": {
+          "name": "expense_counterparty_id_counterparty_id_fk",
+          "tableFrom": "expense",
+          "tableTo": "counterparty",
+          "columnsFrom": [
+            "counterparty_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "expense_current_account_id_current_account_id_fk": {
+          "name": "expense_current_account_id_current_account_id_fk",
+          "tableFrom": "expense",
+          "tableTo": "current_account",
+          "columnsFrom": [
+            "current_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "expense_recurring_rule_id_recurring_rule_id_fk": {
+          "name": "expense_recurring_rule_id_recurring_rule_id_fk",
+          "tableFrom": "expense",
+          "tableTo": "recurring_rule",
+          "columnsFrom": [
+            "recurring_rule_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "expense_created_by_user_id_fk": {
+          "name": "expense_created_by_user_id_fk",
+          "tableFrom": "expense",
+          "tableTo": "user",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "expense_updated_by_user_id_fk": {
+          "name": "expense_updated_by_user_id_fk",
+          "tableFrom": "expense",
+          "tableTo": "user",
+          "columnsFrom": [
+            "updated_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "expense_recurring_occurrence_unique": {
+          "name": "expense_recurring_occurrence_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "recurring_rule_id",
+            "recurring_occurrence_at"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.expense_tag": {
+      "name": "expense_tag",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "expense_id": {
+          "name": "expense_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tag_id": {
+          "name": "tag_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "expense_tag_expense_idx": {
+          "name": "expense_tag_expense_idx",
+          "columns": [
+            {
+              "expression": "expense_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "expense_tag_tag_idx": {
+          "name": "expense_tag_tag_idx",
+          "columns": [
+            {
+              "expression": "tag_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "expense_tag_expense_id_expense_id_fk": {
+          "name": "expense_tag_expense_id_expense_id_fk",
+          "tableFrom": "expense_tag",
+          "tableTo": "expense",
+          "columnsFrom": [
+            "expense_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "expense_tag_tag_id_tag_id_fk": {
+          "name": "expense_tag_tag_id_tag_id_fk",
+          "tableFrom": "expense_tag",
+          "tableTo": "tag",
+          "columnsFrom": [
+            "tag_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "expense_tag_unique": {
+          "name": "expense_tag_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "expense_id",
+            "tag_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.income": {
+      "name": "income",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "category_id": {
+          "name": "category_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "counterparty_id": {
+          "name": "counterparty_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "current_account_id": {
+          "name": "current_account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "due_date": {
+          "name": "due_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "paid_at": {
+          "name": "paid_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "recurring_rule_id": {
+          "name": "recurring_rule_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "recurring_occurrence_at": {
+          "name": "recurring_occurrence_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "linked_expense_id": {
+          "name": "linked_expense_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "income_category_id_category_id_fk": {
+          "name": "income_category_id_category_id_fk",
+          "tableFrom": "income",
+          "tableTo": "category",
+          "columnsFrom": [
+            "category_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "income_counterparty_id_counterparty_id_fk": {
+          "name": "income_counterparty_id_counterparty_id_fk",
+          "tableFrom": "income",
+          "tableTo": "counterparty",
+          "columnsFrom": [
+            "counterparty_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "income_current_account_id_current_account_id_fk": {
+          "name": "income_current_account_id_current_account_id_fk",
+          "tableFrom": "income",
+          "tableTo": "current_account",
+          "columnsFrom": [
+            "current_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "income_recurring_rule_id_recurring_rule_id_fk": {
+          "name": "income_recurring_rule_id_recurring_rule_id_fk",
+          "tableFrom": "income",
+          "tableTo": "recurring_rule",
+          "columnsFrom": [
+            "recurring_rule_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "income_linked_expense_id_expense_id_fk": {
+          "name": "income_linked_expense_id_expense_id_fk",
+          "tableFrom": "income",
+          "tableTo": "expense",
+          "columnsFrom": [
+            "linked_expense_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "income_created_by_user_id_fk": {
+          "name": "income_created_by_user_id_fk",
+          "tableFrom": "income",
+          "tableTo": "user",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "income_updated_by_user_id_fk": {
+          "name": "income_updated_by_user_id_fk",
+          "tableFrom": "income",
+          "tableTo": "user",
+          "columnsFrom": [
+            "updated_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "income_recurring_occurrence_unique": {
+          "name": "income_recurring_occurrence_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "recurring_rule_id",
+            "recurring_occurrence_at"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.income_tag": {
+      "name": "income_tag",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "income_id": {
+          "name": "income_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tag_id": {
+          "name": "tag_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "income_tag_income_idx": {
+          "name": "income_tag_income_idx",
+          "columns": [
+            {
+              "expression": "income_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "income_tag_tag_idx": {
+          "name": "income_tag_tag_idx",
+          "columns": [
+            {
+              "expression": "tag_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "income_tag_income_id_income_id_fk": {
+          "name": "income_tag_income_id_income_id_fk",
+          "tableFrom": "income_tag",
+          "tableTo": "income",
+          "columnsFrom": [
+            "income_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "income_tag_tag_id_tag_id_fk": {
+          "name": "income_tag_tag_id_tag_id_fk",
+          "tableFrom": "income_tag",
+          "tableTo": "tag",
+          "columnsFrom": [
+            "tag_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "income_tag_unique": {
+          "name": "income_tag_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "income_id",
+            "tag_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.invoice": {
+      "name": "invoice",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "invoice_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "category_id": {
+          "name": "category_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "counterparty_id": {
+          "name": "counterparty_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "current_account_id": {
+          "name": "current_account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "due_date": {
+          "name": "due_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "paid_at": {
+          "name": "paid_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "recurring_rule_id": {
+          "name": "recurring_rule_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "recurring_occurrence_at": {
+          "name": "recurring_occurrence_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "linked_invoice_id": {
+          "name": "linked_invoice_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "contract_id": {
+          "name": "contract_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "invoice_category_id_category_id_fk": {
+          "name": "invoice_category_id_category_id_fk",
+          "tableFrom": "invoice",
+          "tableTo": "category",
+          "columnsFrom": [
+            "category_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "invoice_counterparty_id_counterparty_id_fk": {
+          "name": "invoice_counterparty_id_counterparty_id_fk",
+          "tableFrom": "invoice",
+          "tableTo": "counterparty",
+          "columnsFrom": [
+            "counterparty_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "invoice_current_account_id_current_account_id_fk": {
+          "name": "invoice_current_account_id_current_account_id_fk",
+          "tableFrom": "invoice",
+          "tableTo": "current_account",
+          "columnsFrom": [
+            "current_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "invoice_recurring_rule_id_recurring_rule_id_fk": {
+          "name": "invoice_recurring_rule_id_recurring_rule_id_fk",
+          "tableFrom": "invoice",
+          "tableTo": "recurring_rule",
+          "columnsFrom": [
+            "recurring_rule_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "invoice_contract_id_contract_id_fk": {
+          "name": "invoice_contract_id_contract_id_fk",
+          "tableFrom": "invoice",
+          "tableTo": "contract",
+          "columnsFrom": [
+            "contract_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "invoice_created_by_user_id_fk": {
+          "name": "invoice_created_by_user_id_fk",
+          "tableFrom": "invoice",
+          "tableTo": "user",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "invoice_updated_by_user_id_fk": {
+          "name": "invoice_updated_by_user_id_fk",
+          "tableFrom": "invoice",
+          "tableTo": "user",
+          "columnsFrom": [
+            "updated_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "invoice_linked_invoice_fk": {
+          "name": "invoice_linked_invoice_fk",
+          "tableFrom": "invoice",
+          "tableTo": "invoice",
+          "columnsFrom": [
+            "linked_invoice_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "invoice_recurring_occurrence_unique": {
+          "name": "invoice_recurring_occurrence_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "recurring_rule_id",
+            "recurring_occurrence_at",
+            "kind"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.invoice_reminder_log": {
+      "name": "invoice_reminder_log",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "invoice_id": {
+          "name": "invoice_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sent_at": {
+          "name": "sent_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "to_email": {
+          "name": "to_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "invoice_reminder_log_invoice_idx": {
+          "name": "invoice_reminder_log_invoice_idx",
+          "columns": [
+            {
+              "expression": "invoice_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "invoice_reminder_log_invoice_id_invoice_id_fk": {
+          "name": "invoice_reminder_log_invoice_id_invoice_id_fk",
+          "tableFrom": "invoice_reminder_log",
+          "tableTo": "invoice",
+          "columnsFrom": [
+            "invoice_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.invoice_tag": {
+      "name": "invoice_tag",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "invoice_id": {
+          "name": "invoice_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tag_id": {
+          "name": "tag_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "invoice_tag_invoice_idx": {
+          "name": "invoice_tag_invoice_idx",
+          "columns": [
+            {
+              "expression": "invoice_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "invoice_tag_tag_idx": {
+          "name": "invoice_tag_tag_idx",
+          "columns": [
+            {
+              "expression": "tag_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "invoice_tag_invoice_id_invoice_id_fk": {
+          "name": "invoice_tag_invoice_id_invoice_id_fk",
+          "tableFrom": "invoice_tag",
+          "tableTo": "invoice",
+          "columnsFrom": [
+            "invoice_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "invoice_tag_tag_id_tag_id_fk": {
+          "name": "invoice_tag_tag_id_tag_id_fk",
+          "tableFrom": "invoice_tag",
+          "tableTo": "tag",
+          "columnsFrom": [
+            "tag_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "invoice_tag_unique": {
+          "name": "invoice_tag_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "invoice_id",
+            "tag_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.proxmox_account_settings": {
+      "name": "proxmox_account_settings",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "current_account_id": {
+          "name": "current_account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reminder_days_before": {
+          "name": "reminder_days_before",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 3
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "proxmox_account_settings_current_account_id_current_account_id_fk": {
+          "name": "proxmox_account_settings_current_account_id_current_account_id_fk",
+          "tableFrom": "proxmox_account_settings",
+          "tableTo": "current_account",
+          "columnsFrom": [
+            "current_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "proxmox_account_settings_unique": {
+          "name": "proxmox_account_settings_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "current_account_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.proxmox_node": {
+      "name": "proxmox_node",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "current_account_id": {
+          "name": "current_account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "host": {
+          "name": "host",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "port": {
+          "name": "port",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 8006
+        },
+        "token_id": {
+          "name": "token_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_secret": {
+          "name": "token_secret",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "verify_ssl": {
+          "name": "verify_ssl",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "proxmox_node_account_idx": {
+          "name": "proxmox_node_account_idx",
+          "columns": [
+            {
+              "expression": "current_account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "proxmox_node_current_account_id_current_account_id_fk": {
+          "name": "proxmox_node_current_account_id_current_account_id_fk",
+          "tableFrom": "proxmox_node",
+          "tableTo": "current_account",
+          "columnsFrom": [
+            "current_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.recurring_rule": {
+      "name": "recurring_rule",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "category_id": {
+          "name": "category_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "counterparty_id": {
+          "name": "counterparty_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "payment_account_id": {
+          "name": "payment_account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "payment_category_id": {
+          "name": "payment_category_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "current_account_id": {
+          "name": "current_account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cron_expression": {
+          "name": "cron_expression",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "due_days_from_creation": {
+          "name": "due_days_from_creation",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "contract_id": {
+          "name": "contract_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "last_run_at": {
+          "name": "last_run_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "next_run_at": {
+          "name": "next_run_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "recurring_rule_category_id_category_id_fk": {
+          "name": "recurring_rule_category_id_category_id_fk",
+          "tableFrom": "recurring_rule",
+          "tableTo": "category",
+          "columnsFrom": [
+            "category_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "recurring_rule_counterparty_id_counterparty_id_fk": {
+          "name": "recurring_rule_counterparty_id_counterparty_id_fk",
+          "tableFrom": "recurring_rule",
+          "tableTo": "counterparty",
+          "columnsFrom": [
+            "counterparty_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "recurring_rule_payment_account_id_current_account_id_fk": {
+          "name": "recurring_rule_payment_account_id_current_account_id_fk",
+          "tableFrom": "recurring_rule",
+          "tableTo": "current_account",
+          "columnsFrom": [
+            "payment_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "recurring_rule_payment_category_id_category_id_fk": {
+          "name": "recurring_rule_payment_category_id_category_id_fk",
+          "tableFrom": "recurring_rule",
+          "tableTo": "category",
+          "columnsFrom": [
+            "payment_category_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "recurring_rule_current_account_id_current_account_id_fk": {
+          "name": "recurring_rule_current_account_id_current_account_id_fk",
+          "tableFrom": "recurring_rule",
+          "tableTo": "current_account",
+          "columnsFrom": [
+            "current_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "recurring_rule_contract_id_contract_id_fk": {
+          "name": "recurring_rule_contract_id_contract_id_fk",
+          "tableFrom": "recurring_rule",
+          "tableTo": "contract",
+          "columnsFrom": [
+            "contract_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "recurring_rule_created_by_user_id_fk": {
+          "name": "recurring_rule_created_by_user_id_fk",
+          "tableFrom": "recurring_rule",
+          "tableTo": "user",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "recurring_rule_updated_by_user_id_fk": {
+          "name": "recurring_rule_updated_by_user_id_fk",
+          "tableFrom": "recurring_rule",
+          "tableTo": "user",
+          "columnsFrom": [
+            "updated_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.session": {
+      "name": "session",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token": {
+          "name": "token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "impersonated_by": {
+          "name": "impersonated_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ip_address": {
+          "name": "ip_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_agent": {
+          "name": "user_agent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "session_userId_idx": {
+          "name": "session_userId_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "session_user_id_user_id_fk": {
+          "name": "session_user_id_user_id_fk",
+          "tableFrom": "session",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "session_token_unique": {
+          "name": "session_token_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "token"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.settlement": {
+      "name": "settlement",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "invoice_id": {
+          "name": "invoice_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bank_transaction_id": {
+          "name": "bank_transaction_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "settled_at": {
+          "name": "settled_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "settlement_invoice_idx": {
+          "name": "settlement_invoice_idx",
+          "columns": [
+            {
+              "expression": "invoice_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "settlement_bank_transaction_idx": {
+          "name": "settlement_bank_transaction_idx",
+          "columns": [
+            {
+              "expression": "bank_transaction_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "settlement_invoice_id_invoice_id_fk": {
+          "name": "settlement_invoice_id_invoice_id_fk",
+          "tableFrom": "settlement",
+          "tableTo": "invoice",
+          "columnsFrom": [
+            "invoice_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "settlement_bank_transaction_id_bank_transaction_id_fk": {
+          "name": "settlement_bank_transaction_id_bank_transaction_id_fk",
+          "tableFrom": "settlement",
+          "tableTo": "bank_transaction",
+          "columnsFrom": [
+            "bank_transaction_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "settlement_invoice_bank_transaction_unique": {
+          "name": "settlement_invoice_bank_transaction_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "invoice_id",
+            "bank_transaction_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.smtp_settings": {
+      "name": "smtp_settings",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "current_account_id": {
+          "name": "current_account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "host": {
+          "name": "host",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "port": {
+          "name": "port",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 587
+        },
+        "secure": {
+          "name": "secure",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "username": {
+          "name": "username",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "password": {
+          "name": "password",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "from_name": {
+          "name": "from_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "from_email": {
+          "name": "from_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "smtp_settings_current_account_id_current_account_id_fk": {
+          "name": "smtp_settings_current_account_id_current_account_id_fk",
+          "tableFrom": "smtp_settings",
+          "tableTo": "current_account",
+          "columnsFrom": [
+            "current_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "smtp_settings_account_unique": {
+          "name": "smtp_settings_account_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "current_account_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.tag": {
+      "name": "tag",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "color": {
+          "name": "color",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'#6366f1'"
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "tag_created_by_user_id_fk": {
+          "name": "tag_created_by_user_id_fk",
+          "tableFrom": "tag",
+          "tableTo": "user",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "tag_name_unique": {
+          "name": "tag_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "name"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.user": {
+      "name": "user",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email_verified": {
+          "name": "email_verified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "image": {
+          "name": "image",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'user'"
+        },
+        "banned": {
+          "name": "banned",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "ban_reason": {
+          "name": "ban_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ban_expires": {
+          "name": "ban_expires",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "user_email_unique": {
+          "name": "user_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.user_counterparty": {
+      "name": "user_counterparty",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "counterparty_id": {
+          "name": "counterparty_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "user_counterparty_user_idx": {
+          "name": "user_counterparty_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "user_counterparty_counterparty_idx": {
+          "name": "user_counterparty_counterparty_idx",
+          "columns": [
+            {
+              "expression": "counterparty_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "user_counterparty_user_id_user_id_fk": {
+          "name": "user_counterparty_user_id_user_id_fk",
+          "tableFrom": "user_counterparty",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "user_counterparty_counterparty_id_counterparty_id_fk": {
+          "name": "user_counterparty_counterparty_id_counterparty_id_fk",
+          "tableFrom": "user_counterparty",
+          "tableTo": "counterparty",
+          "columnsFrom": [
+            "counterparty_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "user_counterparty_unique": {
+          "name": "user_counterparty_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "user_id",
+            "counterparty_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.verification": {
+      "name": "verification",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "identifier": {
+          "name": "identifier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "verification_identifier_idx": {
+          "name": "verification_identifier_idx",
+          "columns": [
+            {
+              "expression": "identifier",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.bank_transaction_direction": {
+      "name": "bank_transaction_direction",
+      "schema": "public",
+      "values": [
+        "debit",
+        "credit"
+      ]
+    },
+    "public.contract_type": {
+      "name": "contract_type",
+      "schema": "public",
+      "values": [
+        "customer",
+        "supplier"
+      ]
+    },
+    "public.counterparty_type": {
+      "name": "counterparty_type",
+      "schema": "public",
+      "values": [
+        "Юридическое лицо",
+        "Физическое лицо",
+        "Индивидуальный предприниматель",
+        "Обособленное подразделение",
+        "Государственный орган"
+      ]
+    },
+    "public.invoice_kind": {
+      "name": "invoice_kind",
+      "schema": "public",
+      "values": [
+        "payable",
+        "receivable"
+      ]
+    },
+    "public.price_revision_item_status": {
+      "name": "price_revision_item_status",
+      "schema": "public",
+      "values": [
+        "draft",
+        "notified",
+        "agreed",
+        "signed",
+        "success"
+      ]
+    },
+    "public.vm_type": {
+      "name": "vm_type",
+      "schema": "public",
+      "values": [
+        "qemu",
+        "lxc"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

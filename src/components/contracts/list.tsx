@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FileText, Loader2, Paperclip, Pencil } from 'lucide-react'
+import { FileText, Loader2, Paperclip, Pencil, Server } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
@@ -20,6 +20,7 @@ import {
 } from './actions'
 import { DeleteContract } from './delete'
 import { EditContractForm } from './form'
+import { ContractIntegrationsSection } from './proxmox-integrations'
 
 function formatAmount(value: string) {
   const parsed = Number(value)
@@ -52,21 +53,26 @@ const contractTypeLabel: Record<ContractType, string> = {
 function ContractRow({
   contract,
   editingId,
+  integrationsId,
   openingDocId,
   onOpenDocument,
   setEditingId,
+  setIntegrationsId,
 }: {
   contract: Contract
   editingId: string | null
+  integrationsId: string | null
   openingDocId: string | null
   onOpenDocument: (documentId: string) => Promise<void>
   setEditingId: (id: string | null) => void
+  setIntegrationsId: (id: string | null) => void
 }) {
   const isEditing = editingId === contract.id
+  const isIntegrationsOpen = integrationsId === contract.id
 
   return (
     <div className="flex flex-col">
-      <Item variant={isEditing ? 'muted' : 'outline'} className="p-2">
+      <Item variant={isEditing || isIntegrationsOpen ? 'muted' : 'outline'} className="p-2">
         <ItemMedia variant="icon">
           <FileText className="size-4 text-muted-foreground" />
         </ItemMedia>
@@ -116,8 +122,23 @@ function ContractRow({
             variant="ghost"
             size="icon"
             className="size-7"
+            title="Интеграции Proxmox"
+            onClick={() => {
+              setIntegrationsId(isIntegrationsOpen ? null : contract.id)
+              if (isEditing) setEditingId(null)
+            }}
+          >
+            <Server className="size-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7"
             title="Редактировать"
-            onClick={() => setEditingId(isEditing ? null : contract.id)}
+            onClick={() => {
+              setEditingId(isEditing ? null : contract.id)
+              if (isIntegrationsOpen) setIntegrationsId(null)
+            }}
           >
             <Pencil className="size-3.5" />
           </Button>
@@ -133,6 +154,12 @@ function ContractRow({
           />
         </div>
       )}
+
+      {isIntegrationsOpen && (
+        <div className="-mt-0.5 rounded-b-md border border-t-0 bg-muted/30 px-4 pb-3">
+          <ContractIntegrationsSection contractId={contract.id} />
+        </div>
+      )}
     </div>
   )
 }
@@ -143,6 +170,7 @@ export const ContractsList = () => {
     queryFn: () => fetchContracts(),
   })
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [integrationsId, setIntegrationsId] = useState<string | null>(null)
   const [openingDocId, setOpeningDocId] = useState<string | null>(null)
 
   const handleOpenDocument = async (documentId: string) => {
@@ -191,9 +219,11 @@ export const ContractsList = () => {
                 key={contract.id}
                 contract={contract}
                 editingId={editingId}
+                integrationsId={integrationsId}
                 openingDocId={openingDocId}
                 onOpenDocument={handleOpenDocument}
                 setEditingId={setEditingId}
+                setIntegrationsId={setIntegrationsId}
               />
             ))}
           </div>

@@ -36,6 +36,7 @@ function NewRulePage() {
     dueDaysFromCreation: '',
     paymentAccountId: '',
     paymentCategoryId: '',
+    contractId: '',
   }
 
   const handleSubmit = async (value: RuleFormValues) => {
@@ -61,6 +62,7 @@ function NewRulePage() {
             : null,
         paymentAccountId: value.paymentAccountId || undefined,
         paymentCategoryId: value.paymentCategoryId || undefined,
+        contractId: value.contractId || undefined,
       },
     })
     toast.success('Правило создано')

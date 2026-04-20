@@ -50,6 +50,7 @@ function EditRulePage() {
       : '',
     paymentAccountId: rule.paymentAccountId ?? '',
     paymentCategoryId: rule.paymentCategoryId ?? '',
+    contractId: rule.contractId ?? '',
   }
 
   const handleSubmit = async (value: RuleFormValues) => {
@@ -76,6 +77,7 @@ function EditRulePage() {
             : null,
         paymentAccountId: value.paymentAccountId || undefined,
         paymentCategoryId: value.paymentCategoryId || undefined,
+        contractId: value.contractId || undefined,
       },
     })
     toast.success('Правило обновлено')

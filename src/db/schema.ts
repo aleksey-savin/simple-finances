@@ -45,6 +45,8 @@ export const contractTypeEnum = pgEnum('contract_type', [
   'supplier',
 ])
 
+export const vmTypeEnum = pgEnum('vm_type', ['qemu', 'lxc'])
+
 export const priceRevisionItemStatusEnum = pgEnum(
   'price_revision_item_status',
   ['draft', 'notified', 'agreed', 'signed', 'success'],
@@ -701,6 +703,9 @@ export const recurringRule = pgTable('recurring_rule', {
    * null → no due date is set on the generated entry.
    */
   dueDaysFromCreation: integer('due_days_from_creation'),
+  contractId: text('contract_id').references(() => contract.id, {
+    onDelete: 'set null',
+  }),
   isActive: boolean('is_active').notNull().default(true),
   /** Timestamp of the last time this rule was fired */
   lastRunAt: timestamp('last_run_at'),
@@ -747,6 +752,9 @@ export const invoice = pgTable(
     ),
     recurringOccurrenceAt: timestamp('recurring_occurrence_at'),
     linkedInvoiceId: text('linked_invoice_id'),
+    contractId: text('contract_id').references(() => contract.id, {
+      onDelete: 'set null',
+    }),
     createdBy: text('created_by')
       .notNull()
       .references(() => user.id),
@@ -959,6 +967,7 @@ export const incomeRelations = relations(income, ({ one, many }) => ({
 export const invoiceRelations = relations(invoice, ({ one, many }) => ({
   tags: many(invoiceTag),
   settlements: many(settlement),
+  reminderLogs: many(invoiceReminderLog),
   category: one(category, {
     fields: [invoice.categoryId],
     references: [category.id],
@@ -978,6 +987,10 @@ export const invoiceRelations = relations(invoice, ({ one, many }) => ({
   linkedInvoice: one(invoice, {
     fields: [invoice.linkedInvoiceId],
     references: [invoice.id],
+  }),
+  contract: one(contract, {
+    fields: [invoice.contractId],
+    references: [contract.id],
   }),
 }))
 
@@ -1204,6 +1217,9 @@ export const contractRelations = relations(contract, ({ one, many }) => ({
   priceRevisionItems: many(contractPriceRevisionItem),
   amountHistory: many(contractAmountHistory),
   contractDocuments: many(contractDocument),
+  contractVms: many(contractVm),
+  invoices: many(invoice),
+  recurringRules: many(recurringRule),
 }))
 
 export const documentRelations = relations(document, ({ one }) => ({
@@ -1285,4 +1301,133 @@ export const recurringRuleRelations = relations(recurringRule, ({ one }) => ({
     fields: [recurringRule.createdBy],
     references: [user.id],
   }),
+  contract: one(contract, {
+    fields: [recurringRule.contractId],
+    references: [contract.id],
+  }),
 }))
+
+export const smtpSettings = pgTable('smtp_settings', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  currentAccountId: text('current_account_id')
+    .notNull()
+    .references(() => currentAccount.id, { onDelete: 'cascade' }),
+  host: text('host').notNull(),
+  port: integer('port').notNull().default(587),
+  secure: boolean('secure').notNull().default(false),
+  username: text('username').notNull(),
+  password: text('password').notNull(),
+  fromName: text('from_name').notNull(),
+  fromEmail: text('from_email').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => [
+  unique('smtp_settings_account_unique').on(table.currentAccountId),
+])
+
+export const proxmoxNode = pgTable(
+  'proxmox_node',
+  {
+    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    currentAccountId: text('current_account_id')
+      .notNull()
+      .references(() => currentAccount.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    host: text('host').notNull(),
+    port: integer('port').notNull().default(8006),
+    tokenId: text('token_id').notNull(),
+    tokenSecret: text('token_secret').notNull(),
+    verifySsl: boolean('verify_ssl').notNull().default(false),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [index('proxmox_node_account_idx').on(table.currentAccountId)],
+)
+
+export const proxmoxAccountSettings = pgTable(
+  'proxmox_account_settings',
+  {
+    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    currentAccountId: text('current_account_id')
+      .notNull()
+      .references(() => currentAccount.id, { onDelete: 'cascade' }),
+    reminderDaysBefore: integer('reminder_days_before').notNull().default(3),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    unique('proxmox_account_settings_unique').on(table.currentAccountId),
+  ],
+)
+
+export const contractVm = pgTable(
+  'contract_vm',
+  {
+    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    contractId: text('contract_id')
+      .notNull()
+      .references(() => contract.id, { onDelete: 'cascade' }),
+    proxmoxNodeId: text('proxmox_node_id')
+      .notNull()
+      .references(() => proxmoxNode.id, { onDelete: 'cascade' }),
+    vmid: integer('vmid').notNull(),
+    vmType: vmTypeEnum('vm_type').notNull(),
+    name: text('name').notNull(),
+    pausedUntil: timestamp('paused_until'),
+    isPausedBySystem: boolean('is_paused_by_system').notNull().default(false),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    unique('contract_vm_node_vmid_unique').on(table.proxmoxNodeId, table.vmid),
+    index('contract_vm_contract_idx').on(table.contractId),
+    index('contract_vm_node_idx').on(table.proxmoxNodeId),
+  ],
+)
+
+export const invoiceReminderLog = pgTable(
+  'invoice_reminder_log',
+  {
+    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    invoiceId: text('invoice_id')
+      .notNull()
+      .references(() => invoice.id, { onDelete: 'cascade' }),
+    sentAt: timestamp('sent_at').defaultNow().notNull(),
+    toEmail: text('to_email').notNull(),
+  },
+  (table) => [index('invoice_reminder_log_invoice_idx').on(table.invoiceId)],
+)
+
+export const proxmoxNodeRelations = relations(proxmoxNode, ({ one, many }) => ({
+  currentAccount: one(currentAccount, {
+    fields: [proxmoxNode.currentAccountId],
+    references: [currentAccount.id],
+  }),
+  contractVms: many(contractVm),
+}))
+
+export const contractVmRelations = relations(contractVm, ({ one }) => ({
+  contract: one(contract, {
+    fields: [contractVm.contractId],
+    references: [contract.id],
+  }),
+  proxmoxNode: one(proxmoxNode, {
+    fields: [contractVm.proxmoxNodeId],
+    references: [proxmoxNode.id],
+  }),
+}))
+
+export const invoiceReminderLogRelations = relations(
+  invoiceReminderLog,
+  ({ one }) => ({
+    invoice: one(invoice, {
+      fields: [invoiceReminderLog.invoiceId],
+      references: [invoice.id],
+    }),
+  }),
+)

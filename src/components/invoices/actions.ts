@@ -40,6 +40,7 @@ export const invoiceInputSchema = z.object({
   createdAt: z.string().optional(),
   paymentAccountId: z.string().optional(),
   paymentCategoryId: z.string().optional(),
+  contractId: z.string().optional(),
 })
 
 function requireSessionUser(headers: Headers) {
@@ -71,6 +72,7 @@ export const addInvoice = createServerFn({ method: 'POST' })
           categoryId: data.categoryId,
           currentAccountId: data.currentAccountId,
           counterpartyId: data.counterpartyId,
+          contractId: data.contractId,
           dueDate,
           createdAt,
           createdBy: userId,
@@ -124,6 +126,7 @@ export const updateInvoice = createServerFn({ method: 'POST' })
         categoryId: data.categoryId,
         currentAccountId: data.currentAccountId,
         counterpartyId: data.counterpartyId,
+        contractId: data.contractId ?? null,
         dueDate,
         ...(createdAt && { createdAt }),
         updatedBy: userId,

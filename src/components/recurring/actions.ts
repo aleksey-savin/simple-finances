@@ -171,6 +171,7 @@ const createRuleSchema = z.object({
   dueDaysFromCreation: z.number().nullable(),
   paymentAccountId: z.string().optional(),
   paymentCategoryId: z.string().optional(),
+  contractId: z.string().optional(),
 })
 
 export const createRecurringRule = createServerFn({ method: 'POST' })
@@ -194,6 +195,7 @@ export const createRecurringRule = createServerFn({ method: 'POST' })
       dueDaysFromCreation: data.dueDaysFromCreation,
       paymentAccountId: data.paymentAccountId || null,
       paymentCategoryId: data.paymentCategoryId || null,
+      contractId: data.contractId || null,
       nextRunAt,
       createdBy: session.user.id,
       updatedBy: session.user.id,
@@ -214,6 +216,7 @@ const updateRuleSchema = z.object({
   dueDaysFromCreation: z.number().nullable(),
   paymentAccountId: z.string().optional(),
   paymentCategoryId: z.string().optional(),
+  contractId: z.string().optional(),
 })
 
 export const updateRecurringRule = createServerFn({ method: 'POST' })
@@ -239,6 +242,7 @@ export const updateRecurringRule = createServerFn({ method: 'POST' })
         dueDaysFromCreation: data.dueDaysFromCreation,
         paymentAccountId: data.paymentAccountId || null,
         paymentCategoryId: data.paymentCategoryId || null,
+        contractId: data.contractId || null,
         nextRunAt,
         updatedBy: session.user.id,
       })

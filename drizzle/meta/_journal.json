@@ -344,6 +344,20 @@
       "when": 1775907382304,
       "tag": "0048_mighty_onslaught",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1776399570251,
+      "tag": "0049_legal_northstar",
+      "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1776581880902,
+      "tag": "0050_aspiring_hedge_knight",
+      "breakpoints": true
     }
   ]
 }

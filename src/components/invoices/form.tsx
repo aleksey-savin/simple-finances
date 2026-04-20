@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { useRouter } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
 import { ArrowRight, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import z from 'zod'
@@ -8,6 +9,7 @@ import z from 'zod'
 import type { Invoice } from '@/db/types'
 
 import { addInvoice, fetchPaymentAccounts, updateInvoice } from './actions'
+import { contractsQueryKey, fetchContracts } from '@/components/contracts/actions'
 
 import { Button } from '@/components/ui/button'
 import { Combobox } from '@/components/ui/combobox'
@@ -28,6 +30,7 @@ const uiFormSchema = z.object({
   createdAt: z.string(),
   paymentAccountId: z.string(),
   paymentCategoryId: z.string(),
+  contractId: z.string(),
 })
 
 type CounterpartyOption = {
@@ -68,6 +71,11 @@ export function InvoiceForm({
   counterparties = [],
   asDialog = false,
 }: InvoiceFormProps) {
+  const { data: contracts = [] } = useQuery({
+    queryKey: contractsQueryKey,
+    queryFn: () => fetchContracts(),
+    select: (data) => data.map((c) => ({ id: c.id, name: c.name })),
+  })
   const router = useRouter()
   const isEdit = currentInvoice !== undefined
   const kind = currentInvoice?.kind ?? defaultKind
@@ -119,6 +127,7 @@ export function InvoiceForm({
       createdAt: toDateInputValue(currentInvoice?.createdAt ?? new Date()),
       paymentAccountId: '',
       paymentCategoryId: '',
+      contractId: currentInvoice?.contractId ?? '',
     },
     validators: { onSubmit: uiFormSchema },
     onSubmit: async ({ value }) => {
@@ -138,6 +147,7 @@ export function InvoiceForm({
             : undefined,
           paymentAccountId: value.paymentAccountId || undefined,
           paymentCategoryId: value.paymentCategoryId || undefined,
+          contractId: value.contractId || undefined,
         } as const
 
         if (isEdit) {
@@ -396,6 +406,28 @@ export function InvoiceForm({
             </div>
           )}
         </>
+      )}
+
+      {contracts.length > 0 && (
+        <form.Field name="contractId">
+          {(field) => (
+            <Field className="sm:w-1/2">
+              <FieldLabel htmlFor={field.name}>Договор</FieldLabel>
+              <Combobox
+                options={[
+                  { value: '__none__', label: 'Не указан' },
+                  ...contracts.map((c) => ({ value: c.id, label: c.name })),
+                ]}
+                value={field.state.value || '__none__'}
+                onValueChange={(value) =>
+                  field.handleChange(value === '__none__' ? '' : value)
+                }
+                placeholder="Выберите договор"
+                onBlur={field.handleBlur}
+              />
+            </Field>
+          )}
+        </form.Field>
       )}
 
       <div className="flex gap-2">
