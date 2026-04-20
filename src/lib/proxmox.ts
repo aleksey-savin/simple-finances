@@ -29,28 +29,32 @@ class ProxmoxClient {
 
   async request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${path}`
-    const fetchOptions: RequestInit = {
-      ...options,
-      headers: {
-        Authorization: this.authHeader,
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-    }
 
+    let prevTls: string | undefined
     if (!this.verifySsl) {
-      // @ts-ignore — undici dispatcher for self-signed certs
-      const { Agent } = await import('undici')
-      // @ts-ignore
-      fetchOptions.dispatcher = new Agent({ connect: { rejectUnauthorized: false } })
+      prevTls = process.env.NODE_TLS_REJECT_UNAUTHORIZED
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
     }
 
-    const res = await fetch(url, fetchOptions)
-    if (!res.ok) {
-      throw new Error(`Proxmox API ${res.status}: ${await res.text()}`)
+    try {
+      const res = await fetch(url, {
+        ...options,
+        headers: {
+          Authorization: this.authHeader,
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+      })
+      if (!res.ok) {
+        throw new Error(`Proxmox API ${res.status}: ${await res.text()}`)
+      }
+      const json = (await res.json()) as { data: T }
+      return json.data
+    } finally {
+      if (!this.verifySsl) {
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = prevTls ?? ''
+      }
     }
-    const json = (await res.json()) as { data: T }
-    return json.data
   }
 
   async testConnection(): Promise<void> {
