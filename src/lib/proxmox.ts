@@ -16,6 +16,10 @@ type ProxmoxClientConfig = {
   verifySsl: boolean
 }
 
+type ProxmoxRequestOptions = RequestInit & {
+  form?: Record<string, string | number | boolean | null | undefined>
+}
+
 class ProxmoxClient {
   private baseUrl: string
   private authHeader: string
@@ -27,8 +31,26 @@ class ProxmoxClient {
     this.verifySsl = config.verifySsl
   }
 
-  async request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  async request<T>(path: string, options: ProxmoxRequestOptions = {}): Promise<T> {
     const url = `${this.baseUrl}${path}`
+    const { form, headers, body: explicitBody, ...rest } = options
+
+    let body = explicitBody
+    const requestHeaders = new Headers(headers)
+    requestHeaders.set('Authorization', this.authHeader)
+    requestHeaders.set('Accept', 'application/json')
+
+    if (form) {
+      const params = new URLSearchParams()
+      for (const [key, value] of Object.entries(form)) {
+        if (value === null || value === undefined) continue
+        params.set(key, String(value))
+      }
+      body = params
+      requestHeaders.set('Content-Type', 'application/x-www-form-urlencoded')
+    } else if (body instanceof URLSearchParams) {
+      requestHeaders.set('Content-Type', 'application/x-www-form-urlencoded')
+    }
 
     let prevTls: string | undefined
     if (!this.verifySsl) {
@@ -38,15 +60,15 @@ class ProxmoxClient {
 
     try {
       const res = await fetch(url, {
-        ...options,
-        headers: {
-          Authorization: this.authHeader,
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
+        ...rest,
+        body,
+        headers: requestHeaders,
       })
       if (!res.ok) {
-        throw new Error(`Proxmox API ${res.status}: ${await res.text()}`)
+        const text = await res.text()
+        throw new Error(
+          `Proxmox API ${res.status} for ${rest.method ?? 'GET'} ${path}: ${text}`,
+        )
       }
       const json = (await res.json()) as { data: T }
       return json.data
@@ -64,9 +86,9 @@ class ProxmoxClient {
   async listVms(node: string): Promise<ProxmoxVm[]> {
     const [qemuList, lxcList] = await Promise.all([
       this.request<Array<{ vmid: number; name: string; status: string }>>(`/nodes/${node}/qemu`)
-        .then((vms) => vms.map((vm) => ({ ...vm, type: 'qemu' as const, node }))),
+        .then((vms) => (vms ?? []).map((vm) => ({ ...vm, type: 'qemu' as const, node }))),
       this.request<Array<{ vmid: number; name: string; status: string }>>(`/nodes/${node}/lxc`)
-        .then((vms) => vms.map((vm) => ({ ...vm, type: 'lxc' as const, node }))),
+        .then((vms) => (vms ?? []).map((vm) => ({ ...vm, type: 'lxc' as const, node }))),
     ])
     return [...qemuList, ...lxcList]
   }

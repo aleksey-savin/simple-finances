@@ -22,6 +22,7 @@ import { authMiddleware } from 'utils/auth-middleware'
 import { authClient } from 'utils/auth-client'
 import { ThemeProvider } from '#/components/theme-provider'
 import { AppHeader } from '#/components/layout/app-header'
+import { Toaster } from '#/components/ui/sonner'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -144,6 +145,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             </TooltipProvider>
           </ThemeProvider>
 
+          <Toaster richColors />
           <TanStackDevtools
             config={{
               position: 'bottom-right',

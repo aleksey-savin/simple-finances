@@ -1,12 +1,12 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
-import { eq } from 'drizzle-orm'
+import { asc, eq } from 'drizzle-orm'
 import z from 'zod'
 
 import { db } from '#/db'
 import { smtpSettings } from '#/db/schema'
-import { resolveSelectedScope } from '#/lib/company-scope'
 import { sendEmail } from '#/lib/email'
+import { buildSmtpTestEmail } from '#/lib/email-templates'
 import { auth } from 'utils/auth'
 
 // ─── Query key ────────────────────────────────────────────────────────────────
@@ -18,23 +18,15 @@ export const smtpSettingsQueryKey = ['smtp-settings'] as const
 export const fetchSmtpSettings = createServerFn().handler(async () => {
   const request = getRequest()
   const session = await auth.api.getSession({ headers: request.headers })
-  if (!session?.user?.id) throw new Error('Не авторизован')
+  if (!session.user.id) throw new Error('Не авторизован')
 
-  const { selectedScope } = await resolveSelectedScope(
-    session.user.id,
-    request.headers,
-  )
-
-  const accountId = selectedScope.accountIds[0]
-  if (!accountId) return null
-
-  const [settings] = await db
+  const settingsRows = await db
     .select()
     .from(smtpSettings)
-    .where(eq(smtpSettings.currentAccountId, accountId))
+    .orderBy(asc(smtpSettings.createdAt))
     .limit(1)
 
-  return settings ?? null
+  return settingsRows[0] ?? null
 })
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
@@ -56,23 +48,16 @@ export const saveSmtpSettings = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const request = getRequest()
     const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
-
-    const { selectedScope } = await resolveSelectedScope(
-      session.user.id,
-      request.headers,
-    )
-
-    const accountId = selectedScope.accountIds[0]
-    if (!accountId) throw new Error('Счёт не найден')
+    if (!session.user.id) throw new Error('Не авторизован')
 
     const existing = await db
       .select({ id: smtpSettings.id })
       .from(smtpSettings)
-      .where(eq(smtpSettings.currentAccountId, accountId))
+      .orderBy(asc(smtpSettings.createdAt))
       .limit(1)
 
     if (existing.length > 0) {
+      const currentSettingsId = existing[0].id
       await db
         .update(smtpSettings)
         .set({
@@ -85,10 +70,9 @@ export const saveSmtpSettings = createServerFn({ method: 'POST' })
           fromEmail: data.fromEmail,
           updatedAt: new Date(),
         })
-        .where(eq(smtpSettings.currentAccountId, accountId))
+        .where(eq(smtpSettings.id, currentSettingsId))
     } else {
       await db.insert(smtpSettings).values({
-        currentAccountId: accountId,
         host: data.host,
         port: data.port,
         secure: data.secure,
@@ -111,21 +95,14 @@ export const testSmtpConnection = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const request = getRequest()
     const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    if (!session.user.id) throw new Error('Не авторизован')
 
-    const { selectedScope } = await resolveSelectedScope(
-      session.user.id,
-      request.headers,
-    )
-
-    const accountId = selectedScope.accountIds[0]
-    if (!accountId) throw new Error('Счёт не найден')
+    const emailTemplate = buildSmtpTestEmail()
 
     await sendEmail({
-      currentAccountId: accountId,
       to: data.to,
-      subject: 'Тест SMTP — SMB Budget',
-      html: '<p>SMTP настроен и работает корректно.</p>',
-      text: 'SMTP настроен и работает корректно.',
+      subject: emailTemplate.subject,
+      html: emailTemplate.html,
+      text: emailTemplate.text,
     })
   })

@@ -17,7 +17,9 @@ import {
 } from '@/components/ui/dialog'
 import {
   contractVmsQueryKey,
+  contractPaymentTermQueryKey,
   fetchContractVms,
+  fetchContractPaymentTerm,
   fetchProxmoxVmsForNode,
   addContractVm,
   removeContractVm,
@@ -29,9 +31,20 @@ import {
 } from '@/components/preferences/proxmox-actions'
 
 type ContractVm = Awaited<ReturnType<typeof fetchContractVms>>[number]
-type ProxmoxVm = { vmid: number; name: string; type: 'qemu' | 'lxc'; status: string; node: string }
+type ProxmoxVm = {
+  vmid: number
+  name: string
+  type: 'qemu' | 'lxc'
+  status: string
+  node: string
+}
 
-function VmStatusBadge({ status, isPausedBySystem }: { status?: boolean; isPausedBySystem: boolean }) {
+function VmStatusBadge({
+  isPausedBySystem,
+}: {
+  status?: boolean
+  isPausedBySystem: boolean
+}) {
   if (isPausedBySystem) {
     return (
       <span className="flex items-center gap-1 text-xs text-orange-600">
@@ -44,14 +57,16 @@ function VmStatusBadge({ status, isPausedBySystem }: { status?: boolean; isPause
 }
 
 function GracePeriodPicker({
-  vm,
+  contractVmId,
+  pausedUntil,
   onSaved,
 }: {
-  vm: ContractVm
+  contractVmId: string
+  pausedUntil: string | null
   onSaved: () => void
 }) {
   const [value, setValue] = useState(
-    vm.pausedUntil ? new Date(vm.pausedUntil).toISOString().slice(0, 10) : '',
+    pausedUntil ? new Date(pausedUntil).toISOString().slice(0, 10) : '',
   )
   const [saving, setSaving] = useState(false)
 
@@ -60,8 +75,10 @@ function GracePeriodPicker({
     try {
       await setPausedUntil({
         data: {
-          contractVmId: vm.id,
-          pausedUntil: value ? new Date(`${value}T23:59:59`).toISOString() : null,
+          contractVmId,
+          pausedUntil: value
+            ? new Date(`${value}T23:59:59`).toISOString()
+            : null,
         },
       })
       toast.success('Период продления сохранён')
@@ -84,7 +101,13 @@ function GracePeriodPicker({
           className="h-7 text-xs"
         />
       </Field>
-      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={handleSave} disabled={saving}>
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-7 text-xs"
+        onClick={handleSave}
+        disabled={saving}
+      >
         {saving ? <Loader2 className="size-3 animate-spin" /> : 'Сохранить'}
       </Button>
       {value && (
@@ -94,7 +117,9 @@ function GracePeriodPicker({
           className="h-7 text-xs"
           onClick={async () => {
             setValue('')
-            await setPausedUntil({ data: { contractVmId: vm.id, pausedUntil: null } })
+            await setPausedUntil({
+              data: { contractVmId, pausedUntil: null },
+            })
             onSaved()
           }}
         >
@@ -106,9 +131,6 @@ function GracePeriodPicker({
 }
 
 function VmRow({ vm, onRemoved }: { vm: ContractVm; onRemoved: () => void }) {
-  const queryClient = useQueryClient()
-  const [showGrace, setShowGrace] = useState(false)
-
   const handleRemove = async () => {
     try {
       await removeContractVm({ data: { id: vm.id } })
@@ -118,19 +140,18 @@ function VmRow({ vm, onRemoved }: { vm: ContractVm; onRemoved: () => void }) {
     }
   }
 
-  const pausedUntilDate = vm.pausedUntil ? new Date(vm.pausedUntil) : null
-  const isGraceActive = pausedUntilDate && pausedUntilDate > new Date()
-
   return (
-    <div className="rounded border px-3 py-2 flex flex-col gap-1">
+    <div className="border px-3 py-2 flex flex-col gap-1">
       <div className="flex items-start justify-between gap-2">
         <div>
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">
               {vm.vmType === 'qemu' ? '🖥' : '📦'} {vm.name}
             </span>
-            <span className="text-xs text-muted-foreground font-mono">VMID {vm.vmid}</span>
-            <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+            <span className="text-xs text-muted-foreground font-mono">
+              VMID {vm.vmid}
+            </span>
+            <span className="text-xs px-1.5 py-0.5 bg-muted text-muted-foreground">
               {vm.vmType}
             </span>
           </div>
@@ -138,37 +159,19 @@ function VmRow({ vm, onRemoved }: { vm: ContractVm; onRemoved: () => void }) {
             Нода: {vm.proxmoxNode.name} ({vm.proxmoxNode.host})
           </div>
           <VmStatusBadge isPausedBySystem={vm.isPausedBySystem} />
-          {isGraceActive && (
-            <span className="text-xs text-green-600">
-              Продлена до: {format(pausedUntilDate!, 'd MMM yyyy', { locale: ru })}
-            </span>
-          )}
         </div>
 
         <div className="flex gap-1 shrink-0">
           <Button
-            variant="outline"
-            size="sm"
-            className="text-xs h-7"
-            onClick={() => setShowGrace((v) => !v)}
+            variant="ghost"
+            size="icon"
+            className="size-7"
+            onClick={handleRemove}
           >
-            Продлить
-          </Button>
-          <Button variant="ghost" size="icon" className="size-7" onClick={handleRemove}>
             <Trash2 className="size-3.5" />
           </Button>
         </div>
       </div>
-
-      {showGrace && (
-        <GracePeriodPicker
-          vm={vm}
-          onSaved={() => {
-            queryClient.invalidateQueries({ queryKey: contractVmsQueryKey(vm.contractId) })
-            setShowGrace(false)
-          }}
-        />
-      )}
     </div>
   )
 }
@@ -191,10 +194,15 @@ function BrowseVmsDialog({
     queryFn: () => fetchProxmoxNodes(),
   })
 
-  const { data: vms = [], isLoading: loadingVms } = useQuery({
+  const {
+    data: vms = [],
+    isLoading: loadingVms,
+    error: vmsError,
+  } = useQuery({
     queryKey: ['proxmox-vms-for-node', selectedNodeId],
     queryFn: () => fetchProxmoxVmsForNode({ data: { nodeId: selectedNodeId } }),
     enabled: !!selectedNodeId,
+    retry: false,
   })
 
   const { data: boundVms = [] } = useQuery({
@@ -202,7 +210,9 @@ function BrowseVmsDialog({
     queryFn: () => fetchContractVms({ data: { contractId } }),
   })
 
-  const boundVmids = new Set(boundVms.map((v) => `${v.proxmoxNodeId}:${v.vmid}`))
+  const boundVmids = new Set(
+    boundVms.map((v) => `${v.proxmoxNodeId}:${v.vmid}`),
+  )
 
   const handleBind = async (vm: ProxmoxVm) => {
     setBindingVmid(vm.vmid)
@@ -216,7 +226,9 @@ function BrowseVmsDialog({
           name: vm.name,
         },
       })
-      await queryClient.invalidateQueries({ queryKey: contractVmsQueryKey(contractId) })
+      await queryClient.invalidateQueries({
+        queryKey: contractVmsQueryKey(contractId),
+      })
       toast.success(`${vm.name} привязана к договору`)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Ошибка')
@@ -227,7 +239,10 @@ function BrowseVmsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent aria-describedby={undefined} className="max-w-lg">
+      <DialogContent
+        aria-describedby={undefined}
+        className="flex min-h-auto max-h-[90vh] max-w-lg flex-col "
+      >
         <DialogHeader>
           <DialogTitle>Привязать ВМ / контейнер</DialogTitle>
         </DialogHeader>
@@ -236,7 +251,10 @@ function BrowseVmsDialog({
           <Field>
             <FieldLabel>Нода Proxmox</FieldLabel>
             <Combobox
-              options={nodes.map((n) => ({ value: n.id, label: `${n.name} (${n.host})` }))}
+              options={nodes.map((n) => ({
+                value: n.id,
+                label: `${n.name} (${n.host})`,
+              }))}
               value={selectedNodeId}
               onValueChange={setSelectedNodeId}
               placeholder="Выберите ноду"
@@ -244,21 +262,31 @@ function BrowseVmsDialog({
           </Field>
 
           {selectedNodeId && (
-            <div className="flex flex-col gap-1.5">
+            <div className="flex max-h-[50vh] flex-col gap-1.5 overflow-y-auto">
               {loadingVms ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
                   <Loader2 className="size-4 animate-spin" />
                   Загрузка ВМ…
                 </div>
+              ) : vmsError ? (
+                <p className="text-sm text-destructive py-2">
+                  {vmsError instanceof Error
+                    ? vmsError.message
+                    : 'Ошибка загрузки ВМ'}
+                </p>
               ) : vms.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-2">ВМ не найдены</p>
+                <p className="text-sm text-muted-foreground py-2">
+                  ВМ не найдены
+                </p>
               ) : (
                 vms.map((vm) => {
-                  const alreadyBound = boundVmids.has(`${selectedNodeId}:${vm.vmid}`)
+                  const alreadyBound = boundVmids.has(
+                    `${selectedNodeId}:${vm.vmid}`,
+                  )
                   return (
                     <div
                       key={`${vm.type}-${vm.vmid}`}
-                      className="flex items-center justify-between rounded border px-3 py-2"
+                      className="flex items-center justify-between border px-3 py-2"
                     >
                       <div>
                         <div className="text-sm font-medium">
@@ -298,19 +326,53 @@ function BrowseVmsDialog({
   )
 }
 
-export function ContractIntegrationsSection({ contractId }: { contractId: string }) {
+export function ContractIntegrationsSection({
+  contractId,
+}: {
+  contractId: string
+}) {
   const queryClient = useQueryClient()
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [showGrace, setShowGrace] = useState(false)
 
   const { data: vms = [], isLoading } = useQuery({
     queryKey: contractVmsQueryKey(contractId),
     queryFn: () => fetchContractVms({ data: { contractId } }),
+  })
+  const { data: paymentTerm } = useQuery({
+    queryKey: contractPaymentTermQueryKey(contractId),
+    queryFn: () => fetchContractPaymentTerm({ data: { contractId } }),
   })
 
   const { data: nodes = [] } = useQuery({
     queryKey: proxmoxNodesQueryKey,
     queryFn: () => fetchProxmoxNodes(),
   })
+
+  const graceSourceVmId = vms[0]?.id ?? null
+  const latestPausedUntil =
+    vms
+      .map((vm) => (vm.pausedUntil ? new Date(vm.pausedUntil) : null))
+      .filter((value): value is Date => value !== null)
+      .sort((a, b) => b.getTime() - a.getTime())
+      .at(0) ?? null
+  const invoiceDueDate = paymentTerm?.dueDate
+    ? new Date(paymentTerm.dueDate)
+    : null
+  const now = new Date()
+  const effectiveUntil =
+    invoiceDueDate !== null
+      ? latestPausedUntil && latestPausedUntil > invoiceDueDate
+        ? latestPausedUntil
+        : invoiceDueDate
+      : latestPausedUntil && latestPausedUntil > now
+        ? latestPausedUntil
+        : null
+  const isEffectiveActive = effectiveUntil !== null && effectiveUntil > now
+  const isEffectiveExpired = effectiveUntil !== null && effectiveUntil <= now
+  const effectiveLabel = effectiveUntil
+    ? format(effectiveUntil, 'd MMM yyyy', { locale: ru })
+    : ''
 
   if (nodes.length === 0) {
     return (
@@ -325,21 +387,66 @@ export function ContractIntegrationsSection({ contractId }: { contractId: string
   }
 
   return (
-    <div className="flex flex-col gap-2 py-2">
+    <div className="flex flex-col gap-2 p-2">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-muted-foreground">
           Привязанные ВМ и контейнеры
         </span>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-7 text-xs"
-          onClick={() => setDialogOpen(true)}
-        >
-          <Plus className="size-3" />
-          Привязать ВМ
-        </Button>
+        <div className="flex items-center gap-1">
+          {vms.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => setShowGrace((prev) => !prev)}
+            >
+              Продлить
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={() => setDialogOpen(true)}
+          >
+            <Plus className="size-3" />
+            Привязать ВМ
+          </Button>
+        </div>
       </div>
+
+      {vms.length > 0 && (
+        <>
+          {isEffectiveActive && (
+            <span className="text-xs text-green-600">
+              Срок действия до: {effectiveLabel}
+            </span>
+          )}
+          {isEffectiveExpired && (
+            <span className="text-xs text-red-600">
+              Срок действия истёк: {effectiveLabel}
+            </span>
+          )}
+          {!effectiveUntil && (
+            <span className="text-xs text-muted-foreground">
+              Срок действия не ограничен
+            </span>
+          )}
+        </>
+      )}
+
+      {showGrace && graceSourceVmId && (
+        <GracePeriodPicker
+          contractVmId={graceSourceVmId}
+          pausedUntil={latestPausedUntil?.toISOString() ?? null}
+          onSaved={() => {
+            queryClient.invalidateQueries({
+              queryKey: contractVmsQueryKey(contractId),
+            })
+            setShowGrace(false)
+          }}
+        />
+      )}
 
       {isLoading && (
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -357,7 +464,9 @@ export function ContractIntegrationsSection({ contractId }: { contractId: string
           key={vm.id}
           vm={vm}
           onRemoved={() =>
-            queryClient.invalidateQueries({ queryKey: contractVmsQueryKey(contractId) })
+            queryClient.invalidateQueries({
+              queryKey: contractVmsQueryKey(contractId),
+            })
           }
         />
       ))}

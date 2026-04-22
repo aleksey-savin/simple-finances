@@ -61,7 +61,7 @@ export const RecurringForm = ({
   const { data: contracts = [] } = useQuery({
     queryKey: contractsQueryKey,
     queryFn: () => fetchContracts(),
-    select: (data) => data.map((c) => ({ id: c.id, name: c.name })),
+    select: (data) => data.map((c) => ({ id: c.id, name: c.name, counterpartyId: c.counterpartyId })),
   })
 
   const paymentIncomeCategories = categories.filter(
@@ -86,10 +86,12 @@ export const RecurringForm = ({
     fieldChange: (v: string) => void,
     resetPaymentAccount: () => void,
     resetPaymentCategory: () => void,
+    resetContract: () => void,
   ) => {
     fieldChange(val)
     resetPaymentAccount()
     resetPaymentCategory()
+    resetContract()
     setPaymentAccounts([])
 
     if (!val) return
@@ -250,33 +252,39 @@ export const RecurringForm = ({
                 {(paymentAccountField) => (
                   <form.Field name="paymentCategoryId">
                     {(paymentCategoryField) => (
-                      <Field>
-                        <FieldLabel>Контрагент</FieldLabel>
-                        <Combobox
-                          options={[
-                            { value: '__none__', label: 'Не указан' },
-                            ...counterparties.map((c) => ({
-                              value: c.id,
-                              label: c.name,
-                            })),
-                          ]}
-                          value={field.state.value || '__none__'}
-                          onValueChange={(v) => {
-                            const val = v === '__none__' ? '' : v
-                            if (type === 'payable') {
-                              handleCounterpartyChange(
-                                val,
-                                field.handleChange,
-                                () => paymentAccountField.handleChange(''),
-                                () => paymentCategoryField.handleChange(''),
-                              )
-                            } else {
-                              field.handleChange(val)
-                            }
-                          }}
-                          placeholder="Выберите контрагента (необязательно)"
-                        />
-                      </Field>
+                      <form.Field name="contractId">
+                        {(contractField) => (
+                          <Field>
+                            <FieldLabel>Контрагент</FieldLabel>
+                            <Combobox
+                              options={[
+                                { value: '__none__', label: 'Не указан' },
+                                ...counterparties.map((c) => ({
+                                  value: c.id,
+                                  label: c.name,
+                                })),
+                              ]}
+                              value={field.state.value || '__none__'}
+                              onValueChange={(v) => {
+                                const val = v === '__none__' ? '' : v
+                                if (type === 'payable') {
+                                  handleCounterpartyChange(
+                                    val,
+                                    field.handleChange,
+                                    () => paymentAccountField.handleChange(''),
+                                    () => paymentCategoryField.handleChange(''),
+                                    () => contractField.handleChange(''),
+                                  )
+                                } else {
+                                  field.handleChange(val)
+                                  contractField.handleChange('')
+                                }
+                              }}
+                              placeholder="Выберите контрагента (необязательно)"
+                            />
+                          </Field>
+                        )}
+                      </form.Field>
                     )}
                   </form.Field>
                 )}
@@ -474,25 +482,33 @@ export const RecurringForm = ({
       </form.Field>
 
       {/* Contract */}
-      {contracts.length > 0 && (
-        <form.Field name="contractId">
-          {(field) => (
-            <Field>
-              <FieldLabel>Договор</FieldLabel>
-              <Combobox
-                options={[
-                  { value: '__none__', label: 'Не указан' },
-                  ...contracts.map((c) => ({ value: c.id, label: c.name })),
-                ]}
-                value={field.state.value || '__none__'}
-                onValueChange={(v) => field.handleChange(v === '__none__' ? '' : v)}
-                placeholder="Выберите договор (необязательно)"
-                onBlur={field.handleBlur}
-              />
-            </Field>
-          )}
-        </form.Field>
-      )}
+      <form.Subscribe selector={(s) => s.values.counterpartyId}>
+        {(counterpartyId) => {
+          const filtered = contracts.filter(
+            (c) => counterpartyId && c.counterpartyId === counterpartyId,
+          )
+          if (!counterpartyId || filtered.length === 0) return null
+          return (
+            <form.Field name="contractId">
+              {(field) => (
+                <Field>
+                  <FieldLabel>Договор</FieldLabel>
+                  <Combobox
+                    options={[
+                      { value: '__none__', label: 'Не указан' },
+                      ...filtered.map((c) => ({ value: c.id, label: c.name })),
+                    ]}
+                    value={field.state.value || '__none__'}
+                    onValueChange={(v) => field.handleChange(v === '__none__' ? '' : v)}
+                    placeholder="Выберите договор (необязательно)"
+                    onBlur={field.handleBlur}
+                  />
+                </Field>
+              )}
+            </form.Field>
+          )
+        }}
+      </form.Subscribe>
 
       <DialogFooter className="mt-2">
         <Button type="button" variant="outline" onClick={onClose}>

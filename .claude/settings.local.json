@@ -10,7 +10,8 @@
       "Bash(npx tsc *)",
       "Bash(python3 -c \"import json,sys; j=json.load\\(sys.stdin\\); [print\\(e['idx'], e['tag']\\) for e in j['entries']]\")",
       "Bash(node -e ' *)",
-      "Bash(python3 -c \"import json,sys; p=json.load\\(sys.stdin\\); [print\\(k,':',v\\) for k,v in p.get\\('scripts',{}\\).items\\(\\)]\")"
+      "Bash(python3 -c \"import json,sys; p=json.load\\(sys.stdin\\); [print\\(k,':',v\\) for k,v in p.get\\('scripts',{}\\).items\\(\\)]\")",
+      "Bash(psql \"postgresql://f1lab:HMuL7hJERqSqTwmwYaoXGeS8yf275XZC5U5hmVyd2psa3V2q9nZhWMTcPfTssiAQ@localhost:5432/smb-budget\" -c \"SELECT id, created_at FROM drizzle.__drizzle_migrations ORDER BY created_at DESC LIMIT 5;\")"
     ]
   }
 }

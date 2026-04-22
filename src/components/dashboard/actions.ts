@@ -8,12 +8,10 @@ import {
   bankTransaction,
   currentAccount,
   invoice,
-  recurringRule,
   settlement,
 } from '#/db/schema'
 import { getPaymentState } from '#/lib/invoice-payment'
 import { resolveScopedAccountIds } from '#/lib/company-scope'
-import { syncRecurringRulesForAccounts } from '#/lib/recurring'
 import type { DashboardLoaderData } from '#/types'
 import { auth } from 'utils/auth'
 
@@ -55,8 +53,6 @@ export const fetchDashboardData = createServerFn().handler(async () => {
   } satisfies DashboardLoaderData
 
   if (accountIds.length === 0) return empty
-
-  await syncRecurringRulesForAccounts(accountIds)
 
   const now = new Date()
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)

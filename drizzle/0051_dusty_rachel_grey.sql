@@ -1,0 +1,1 @@
+ALTER TABLE "proxmox_account_settings" ALTER COLUMN "reminder_days_before" SET DEFAULT 5;

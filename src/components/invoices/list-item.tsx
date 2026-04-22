@@ -11,7 +11,10 @@ import {
   ChevronRight,
   Clock,
   Copy,
+  ExternalLink,
+  FileText,
   Link2,
+  Loader2,
   MoreHorizontal,
   Pencil,
   Trash2,
@@ -21,6 +24,7 @@ import { toast } from 'sonner'
 
 import type { Invoice } from '#/types'
 
+import { resolveDocumentUrl } from '@/components/contracts/actions'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import { Item, ItemContent } from '../ui/item'
@@ -106,6 +110,8 @@ export function InvoiceListItem({
     string | null
   >(null)
   const [linkedDocumentsOpen, setLinkedDocumentsOpen] = useState(false)
+  const [contractDetailOpen, setContractDetailOpen] = useState(false)
+  const [openingDocId, setOpeningDocId] = useState<string | null>(null)
 
   const isPayable = item.kind === 'payable'
   const isLinkedReceivable = !isPayable && !!item.linkedInvoiceId
@@ -348,49 +354,63 @@ export function InvoiceListItem({
     </div>
   )
 
-  const linkedDocumentsSection =
-    linkedBankDocuments.length > 0 ? (
-      <div className="flex flex-col gap-2 border border-border/60 bg-muted/20 p-2">
-        <button
-          type="button"
-          className="flex items-center justify-between gap-2 text-left"
-          onClick={() => setLinkedDocumentsOpen((open) => !open)}
-          aria-expanded={linkedDocumentsOpen}
-        >
-          <div className="flex items-center gap-2">
-            {linkedDocumentsOpen ? (
-              <ChevronDown className="size-4 text-muted-foreground" />
-            ) : (
-              <ChevronRight className="size-4 text-muted-foreground" />
-            )}
-            <span className="text-sm font-medium">Связанные документы</span>
-          </div>
-          <span className="text-xs text-muted-foreground">
-            {linkedBankDocuments.length}
-          </span>
-        </button>
+  const hasLinkedItems = linkedBankDocuments.length > 0 || !!item.contract
+  const linkedDocumentsSection = hasLinkedItems ? (
+    <div className="flex flex-col gap-2 border border-border/60 bg-muted/20 p-2">
+      <button
+        type="button"
+        className="flex items-center justify-between gap-2 text-left"
+        onClick={() => setLinkedDocumentsOpen((open) => !open)}
+        aria-expanded={linkedDocumentsOpen}
+      >
+        <div className="flex items-center gap-2">
+          {linkedDocumentsOpen ? (
+            <ChevronDown className="size-4 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="size-4 text-muted-foreground" />
+          )}
+          <span className="text-sm font-medium">Связанные документы</span>
+        </div>
+        <span className="text-xs text-muted-foreground">
+          {linkedBankDocuments.length + (item.contract ? 1 : 0)}
+        </span>
+      </button>
 
-        {linkedDocumentsOpen ? (
-          <div className="flex flex-col gap-1">
-            {linkedBankDocuments.map((settlement) => (
-              <button
-                key={settlement.bankTransaction.id}
-                type="button"
-                className="flex items-start gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted"
-                onClick={() =>
-                  setActiveLinkedDocumentId(settlement.bankTransaction.id)
-                }
-              >
-                <Link2 className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
-                <span className="text-foreground">
-                  {formatLinkedDocumentLabel(settlement.bankTransaction)}
-                </span>
-              </button>
-            ))}
-          </div>
-        ) : null}
-      </div>
-    ) : null
+      {linkedDocumentsOpen ? (
+        <div className="flex flex-col gap-1">
+          {item.contract && (
+            <button
+              type="button"
+              className="flex items-start gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted"
+              onClick={() => setContractDetailOpen(true)}
+            >
+              <FileText className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+              <span className="text-foreground">
+                {item.contract.number
+                  ? `Договор №${item.contract.number}`
+                  : item.contract.name}
+              </span>
+            </button>
+          )}
+          {linkedBankDocuments.map((settlement) => (
+            <button
+              key={settlement.bankTransaction.id}
+              type="button"
+              className="flex items-start gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted"
+              onClick={() =>
+                setActiveLinkedDocumentId(settlement.bankTransaction.id)
+              }
+            >
+              <Link2 className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+              <span className="text-foreground">
+                {formatLinkedDocumentLabel(settlement.bankTransaction)}
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  ) : null
 
   const dialogs = (
     <>
@@ -498,6 +518,88 @@ export function InvoiceListItem({
                   }}
                 >
                   Открыть импорт
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={contractDetailOpen} onOpenChange={setContractDetailOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Договор</DialogTitle>
+            <DialogDescription>
+              Договор, привязанный к этой записи.
+            </DialogDescription>
+          </DialogHeader>
+          {item.contract && (
+            <div className="flex flex-col gap-4 text-sm">
+              <div className="grid gap-3 sm:grid-cols-2">
+                {item.contract.number && (
+                  <LinkedDocumentField
+                    label="Номер договора"
+                    value={`№${item.contract.number}`}
+                  />
+                )}
+                <LinkedDocumentField label="Название" value={item.contract.name} />
+                {item.contract.signedAt && (
+                  <LinkedDocumentField
+                    label="Дата договора"
+                    value={new Intl.DateTimeFormat('ru-RU').format(new Date(item.contract.signedAt))}
+                  />
+                )}
+                {item.counterparty && (
+                  <LinkedDocumentField
+                    label="Контрагент"
+                    value={item.counterparty.name}
+                  />
+                )}
+              </div>
+
+              {item.contract.contractDocuments.length > 0 && (
+                <div className="flex flex-col gap-1">
+                  <p className="text-xs font-medium text-muted-foreground">Документы</p>
+                  {item.contract.contractDocuments.map(({ document: doc }) => (
+                    <button
+                      key={doc.id}
+                      type="button"
+                      disabled={openingDocId === doc.id}
+                      className="flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-primary transition-colors hover:bg-muted hover:underline disabled:opacity-50"
+                      onClick={async () => {
+                        const popup = window.open('about:blank', '_blank')
+                        if (!popup) {
+                          toast.error('Браузер заблокировал всплывающее окно')
+                          return
+                        }
+                        try {
+                          setOpeningDocId(doc.id)
+                          const { url } = await resolveDocumentUrl({ data: { documentId: doc.id } })
+                          popup.location.replace(url)
+                        } catch {
+                          popup.close()
+                          toast.error('Не удалось открыть документ')
+                        } finally {
+                          setOpeningDocId(null)
+                        }
+                      }}
+                    >
+                      {openingDocId === doc.id
+                        ? <Loader2 className="size-3.5 shrink-0 animate-spin" />
+                        : <ExternalLink className="size-3.5 shrink-0" />}
+                      {doc.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void router.navigate({ to: '/contracts' })}
+                >
+                  Открыть договоры
                 </Button>
               </div>
             </div>

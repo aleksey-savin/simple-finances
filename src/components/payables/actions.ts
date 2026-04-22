@@ -15,7 +15,6 @@ import {
   resolveScopedAccountIds,
 } from '#/lib/company-scope'
 import { getPaymentState } from '#/lib/invoice-payment'
-import { syncRecurringRulesForAccounts } from '#/lib/recurring'
 import { auth } from 'utils/auth'
 
 export const fetchPayables = createServerFn().handler(async () => {
@@ -44,8 +43,6 @@ export const fetchPayables = createServerFn().handler(async () => {
       tagTotals: [],
     } satisfies PayablesLoaderData
   }
-
-  await syncRecurringRulesForAccounts(accountIds)
 
   const now = new Date()
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)

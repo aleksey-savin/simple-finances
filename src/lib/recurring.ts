@@ -14,6 +14,7 @@ type RecurringExecutionRule = {
   categoryId: string
   counterpartyId: string | null
   currentAccountId: string
+  contractId: string | null
   dueDaysFromCreation: number | null
   createdBy: string
   updatedBy: string
@@ -48,6 +49,7 @@ export async function createRecurringEntry(
           dueDate,
           recurringRuleId: rule.id,
           recurringOccurrenceAt: occurrenceAt,
+          contractId: rule.contractId,
           createdBy: actorUserId,
           updatedBy: actorUserId,
         })
@@ -60,7 +62,7 @@ export async function createRecurringEntry(
         })
         .returning({ id: invoice.id })
 
-      let invoiceId: string | null = insertedInvoice?.id ?? null
+      let invoiceId: string | null = insertedInvoice.id
 
       if (!invoiceId) {
         const existingInvoice = await tx.query.invoice.findFirst({
@@ -88,6 +90,7 @@ export async function createRecurringEntry(
             linkedInvoiceId: invoiceId,
             recurringRuleId: rule.id,
             recurringOccurrenceAt: occurrenceAt,
+            contractId: rule.contractId,
             createdBy: actorUserId,
             updatedBy: actorUserId,
           })
@@ -116,6 +119,7 @@ export async function createRecurringEntry(
         dueDate,
         recurringRuleId: rule.id,
         recurringOccurrenceAt: occurrenceAt,
+        contractId: rule.contractId,
         createdBy: actorUserId,
         updatedBy: actorUserId,
       })
@@ -133,7 +137,9 @@ export async function syncRecurringRulesForAccounts(
   accountIds: string[],
   now = new Date(),
 ) {
-  if (accountIds.length === 0) return
+  if (accountIds.length === 0) {
+    return { processedRules: 0, processedOccurrences: 0, totalDueRules: 0 }
+  }
 
   const dueRules = await db.query.recurringRule.findMany({
     where: and(
@@ -149,6 +155,7 @@ export async function syncRecurringRulesForAccounts(
       categoryId: true,
       counterpartyId: true,
       currentAccountId: true,
+      contractId: true,
       cronExpression: true,
       dueDaysFromCreation: true,
       nextRunAt: true,
@@ -159,6 +166,9 @@ export async function syncRecurringRulesForAccounts(
       paymentCategoryId: true,
     },
   })
+
+  let processedRules = 0
+  let processedOccurrences = 0
 
   for (const rule of dueRules) {
     if (!rule.nextRunAt) continue
@@ -179,10 +189,15 @@ export async function syncRecurringRulesForAccounts(
         const occurrenceAt = nextOccurrence
         await createRecurringEntry(rule, occurrenceAt)
 
+        processedOccurrences++
         processedAt = occurrenceAt
         nextOccurrence = schedule.nextRun(new Date(occurrenceAt.getTime() + 1))
       }
-    } catch {
+    } catch (err) {
+      console.error(
+        `[recurring] Failed to process rule ${rule.id} (${rule.cronExpression})`,
+        err,
+      )
       continue
     }
 
@@ -195,5 +210,13 @@ export async function syncRecurringRulesForAccounts(
         nextRunAt: nextOccurrence,
       })
       .where(eq(recurringRule.id, rule.id))
+
+    processedRules++
+  }
+
+  return {
+    processedRules,
+    processedOccurrences,
+    totalDueRules: dueRules.length,
   }
 }

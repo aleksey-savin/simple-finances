@@ -15,7 +15,6 @@ import type {
 import { db } from '#/db'
 import { clientCounterparty, counterparty, currentAccount, invoiceTag } from '#/db/schema'
 import { getPaymentState } from '#/lib/invoice-payment'
-import { syncRecurringRulesForAccounts } from '#/lib/recurring'
 import { auth } from 'utils/auth'
 
 export const fetchReceivables = createServerFn().handler(async () => {
@@ -42,8 +41,6 @@ export const fetchReceivables = createServerFn().handler(async () => {
       tagTotals: [],
     } satisfies ReceivablesLoaderData
   }
-
-  await syncRecurringRulesForAccounts(accountIds)
 
   const [rawRows, accounts, counterparties] = await Promise.all([
     db.query.invoice.findMany({

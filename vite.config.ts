@@ -14,11 +14,10 @@ const config = defineConfig({
     devtools(),
     nitro({
       rollupConfig: { external: [/^@sentry\//] },
+      serverDir: 'server',
       experimental: { tasks: true, vite: {} },
       scheduledTasks: {
-        '* * * * *': ['recurring'],
-        '0 * * * *': ['proxmox-vm-manager'],
-        '0 8 * * *': ['invoice-reminders'],
+        '* * * * *': ['recurring', 'proxmox-vm-manager', 'invoice-reminders'],
       },
     }),
     tsconfigPaths({ projects: ['./tsconfig.json'] }),

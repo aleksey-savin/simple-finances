@@ -30,6 +30,7 @@ export type Invoice = Pick<
   | 'createdBy'
   | 'linkedInvoiceId'
   | 'archivedAt'
+  | 'contractId'
 > & {
   manualPaid: boolean
   settledAmount: number
@@ -54,6 +55,13 @@ export type Invoice = Pick<
     }
   }>
   category: Pick<DBCategory, 'id' | 'name'>
+  contract: {
+    id: string
+    name: string
+    number: string | null
+    signedAt: string | null
+    contractDocuments: { document: { id: string; name: string } }[]
+  } | null
   currentAccount: Pick<CurrentAccount, 'id' | 'name'>
   counterparty: Pick<DBCounterparty, 'id' | 'name'> | null
   createdByUser: { id: string; name: string }

@@ -1,10 +1,17 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
-import { and, eq } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, isNotNull, isNull } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { db } from '@/db'
-import { contractVm, proxmoxNode } from '@/db/schema'
+import { contractVm, invoice, proxmoxNode, recurringRule } from '@/db/schema'
+import {
+  formatDateRu,
+  getContractNotificationContext,
+} from '#/lib/contract-notifications'
+import { sendEmail } from '#/lib/email'
+import { buildGracePeriodExtendedEmail } from '#/lib/email-templates'
+import { runProxmoxVmManager } from '#/lib/proxmox-vm-manager'
 import { createProxmoxClient } from '#/lib/proxmox'
 import { auth } from 'utils/auth'
 
@@ -12,13 +19,15 @@ import { auth } from 'utils/auth'
 
 export const contractVmsQueryKey = (contractId: string) =>
   ['contract-vms', contractId] as const
+export const contractPaymentTermQueryKey = (contractId: string) =>
+  ['contract-payment-term', contractId] as const
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 async function requireSession() {
   const request = getRequest()
   const session = await auth.api.getSession({ headers: request.headers })
-  if (!session?.user?.id) throw new Error('Не авторизован')
+  if (!session.user.id) throw new Error('Не авторизован')
   return session.user.id
 }
 
@@ -38,6 +47,61 @@ export const fetchContractVms = createServerFn({ method: 'POST' })
     })
   })
 
+export const fetchContractPaymentTerm = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ contractId: z.string() }))
+  .handler(async ({ data }) => {
+    await requireSession()
+    const now = new Date()
+
+    const nearestUnpaidInvoice = await db.query.invoice.findFirst({
+      where: and(
+        eq(invoice.contractId, data.contractId),
+        isNull(invoice.paidAt),
+        isNull(invoice.archivedAt),
+        isNotNull(invoice.dueDate),
+      ),
+      columns: { dueDate: true },
+      orderBy: [asc(invoice.dueDate)],
+    })
+
+    if (nearestUnpaidInvoice?.dueDate) {
+      return { dueDate: nearestUnpaidInvoice.dueDate.toISOString() }
+    }
+
+    const upcomingRecurring = await db.query.recurringRule.findMany({
+      where: and(
+        eq(recurringRule.contractId, data.contractId),
+        eq(recurringRule.isActive, true),
+        isNotNull(recurringRule.nextRunAt),
+        gte(recurringRule.nextRunAt, now),
+      ),
+      columns: {
+        nextRunAt: true,
+        dueDaysFromCreation: true,
+      },
+      orderBy: [asc(recurringRule.nextRunAt)],
+    })
+
+    const recurringDueDate =
+      upcomingRecurring
+        .map((rule) => {
+          if (!rule.nextRunAt) return null
+          if (!rule.dueDaysFromCreation || rule.dueDaysFromCreation <= 0) {
+            return null
+          }
+          return new Date(
+            rule.nextRunAt.getTime() + rule.dueDaysFromCreation * 86400000,
+          )
+        })
+        .filter((date): date is Date => date !== null)
+        .sort((a, b) => a.getTime() - b.getTime())
+        .at(0) ?? null
+
+    return {
+      dueDate: recurringDueDate ? recurringDueDate.toISOString() : null,
+    }
+  })
+
 // ─── Fetch VMs available on a Proxmox node ────────────────────────────────────
 
 export const fetchProxmoxVmsForNode = createServerFn({ method: 'POST' })
@@ -45,11 +109,9 @@ export const fetchProxmoxVmsForNode = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     await requireSession()
 
-    const [node] = await db
-      .select()
-      .from(proxmoxNode)
-      .where(eq(proxmoxNode.id, data.nodeId))
-      .limit(1)
+    const node = await db.query.proxmoxNode.findFirst({
+      where: eq(proxmoxNode.id, data.nodeId),
+    })
     if (!node) throw new Error('Нода не найдена')
 
     const client = createProxmoxClient({
@@ -65,10 +127,9 @@ export const fetchProxmoxVmsForNode = createServerFn({ method: 'POST' })
     const nodes = await client.request<Array<{ node: string }>>('/nodes')
     if (!nodes.length) return []
 
-    const allVms = await Promise.all(
-      nodes.map((n) => client.listVms(n.node).catch(() => [])),
-    )
-    return allVms.flat()
+    const allVms = await Promise.all(nodes.map((n) => client.listVms(n.node)))
+
+    return allVms.flat().sort((a, b) => a.vmid - b.vmid)
   })
 
 // ─── Bind VM to contract ──────────────────────────────────────────────────────
@@ -122,8 +183,77 @@ export const setPausedUntil = createServerFn({ method: 'POST' })
   )
   .handler(async ({ data }) => {
     await requireSession()
+    const binding = await db.query.contractVm.findFirst({
+      where: eq(contractVm.id, data.contractVmId),
+      columns: { contractId: true },
+    })
+
+    if (!binding) throw new Error('Привязка ВМ не найдена')
+
+    const previousPausedUntilRows = await db
+      .select({ pausedUntil: contractVm.pausedUntil })
+      .from(contractVm)
+      .where(
+        and(
+          eq(contractVm.contractId, binding.contractId),
+          isNotNull(contractVm.pausedUntil),
+        ),
+      )
+      .orderBy(desc(contractVm.pausedUntil))
+      .limit(1)
+    const previousPausedUntil = previousPausedUntilRows[0]?.pausedUntil ?? null
+
     await db
       .update(contractVm)
-      .set({ pausedUntil: data.pausedUntil ? new Date(data.pausedUntil) : null })
-      .where(eq(contractVm.id, data.contractVmId))
+      .set({
+        pausedUntil: data.pausedUntil ? new Date(data.pausedUntil) : null,
+      })
+      .where(eq(contractVm.contractId, binding.contractId))
+
+    if (data.pausedUntil) {
+      const newPausedUntil = new Date(data.pausedUntil)
+      const changed =
+        !previousPausedUntil ||
+        previousPausedUntil.getTime() !== newPausedUntil.getTime()
+
+      if (changed) {
+        const notificationContext = await getContractNotificationContext(
+          binding.contractId,
+        )
+
+        if (notificationContext) {
+          const emailTemplate = buildGracePeriodExtendedEmail({
+            contactName: notificationContext.contactName,
+            contractLabel: notificationContext.contractLabel,
+            extendedUntilLabel: formatDateRu(newPausedUntil),
+          })
+
+          await sendEmail({
+            to: notificationContext.toEmail,
+            subject: emailTemplate.subject,
+            html: emailTemplate.html,
+            text: emailTemplate.text,
+          }).catch((error) => {
+            console.error(
+              `[proxmox-actions] Failed to send grace-period notification for contract ${binding.contractId}:`,
+              error,
+            )
+          })
+        } else {
+          console.log(
+            `[proxmox-actions] Grace-period notification skipped: no contact email for contract ${binding.contractId}`,
+          )
+        }
+      }
+    }
+
+    await runProxmoxVmManager({
+      contractId: binding.contractId,
+      source: 'manual-paused-until-update',
+    }).catch((error) => {
+      console.error(
+        '[proxmox-actions] Failed to run proxmox-vm-manager immediately after pausedUntil update',
+        error,
+      )
+    })
   })

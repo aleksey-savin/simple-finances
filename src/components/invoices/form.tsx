@@ -9,7 +9,10 @@ import z from 'zod'
 import type { Invoice } from '@/db/types'
 
 import { addInvoice, fetchPaymentAccounts, updateInvoice } from './actions'
-import { contractsQueryKey, fetchContracts } from '@/components/contracts/actions'
+import {
+  contractsQueryKey,
+  fetchContracts,
+} from '@/components/contracts/actions'
 
 import { Button } from '@/components/ui/button'
 import { Combobox } from '@/components/ui/combobox'
@@ -74,7 +77,12 @@ export function InvoiceForm({
   const { data: contracts = [] } = useQuery({
     queryKey: contractsQueryKey,
     queryFn: () => fetchContracts(),
-    select: (data) => data.map((c) => ({ id: c.id, name: c.name })),
+    select: (data) =>
+      data.map((c) => ({
+        id: c.id,
+        name: c.name,
+        counterpartyId: c.counterpartyId,
+      })),
   })
   const router = useRouter()
   const isEdit = currentInvoice !== undefined
@@ -92,10 +100,12 @@ export function InvoiceForm({
     fieldChange: (nextValue: string) => void,
     resetPaymentAccount: () => void,
     resetPaymentCategory: () => void,
+    resetContract: () => void,
   ) => {
     fieldChange(value)
     resetPaymentAccount()
     resetPaymentCategory()
+    resetContract()
     setPaymentAccounts([])
 
     if (kind !== 'payable' || !value) return
@@ -260,7 +270,7 @@ export function InvoiceForm({
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
             return (
-                <Field data-invalid={isInvalid}>
+              <Field data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Категория</FieldLabel>
                 <Combobox
                   options={filteredCategories.map((category) => ({
@@ -283,7 +293,7 @@ export function InvoiceForm({
             const isInvalid =
               field.state.meta.isTouched && !field.state.meta.isValid
             return (
-                <Field data-invalid={isInvalid}>
+              <Field data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Счёт</FieldLabel>
                 <Combobox
                   options={accounts.map((account) => ({
@@ -302,133 +312,157 @@ export function InvoiceForm({
         </form.Field>
       </div>
 
-      {counterparties.length > 0 && (
-        <form.Field name="counterpartyId">
-          {(field) => (
-            <form.Field name="paymentAccountId">
-              {(paymentAccountField) => (
-                <form.Field name="paymentCategoryId">
-                  {(paymentCategoryField) => (
-                    <Field className="sm:w-1/2 sm:pe-2">
-                      <FieldLabel htmlFor={field.name}>Контрагент</FieldLabel>
+      <div className="flex gap-2">
+        {counterparties.length > 0 && (
+          <form.Field name="counterpartyId">
+            {(field) => (
+              <form.Field name="paymentAccountId">
+                {(paymentAccountField) => (
+                  <form.Field name="paymentCategoryId">
+                    {(paymentCategoryField) => (
+                      <form.Field name="contractId">
+                        {(contractField) => (
+                          <Field className="sm:w-1/2 sm:pe-2">
+                            <FieldLabel htmlFor={field.name}>
+                              Контрагент
+                            </FieldLabel>
+                            <Combobox
+                              options={[
+                                { value: '__none__', label: 'Не указан' },
+                                ...counterparties.map((counterparty) => ({
+                                  value: counterparty.id,
+                                  label: counterparty.name,
+                                })),
+                              ]}
+                              value={field.state.value || '__none__'}
+                              onValueChange={(value) =>
+                                handleCounterpartyChange(
+                                  value === '__none__' ? '' : value,
+                                  field.handleChange,
+                                  () => paymentAccountField.handleChange(''),
+                                  () => paymentCategoryField.handleChange(''),
+                                  () => contractField.handleChange(''),
+                                )
+                              }
+                              placeholder="Выберите контрагента"
+                              onBlur={field.handleBlur}
+                            />
+                          </Field>
+                        )}
+                      </form.Field>
+                    )}
+                  </form.Field>
+                )}
+              </form.Field>
+            )}
+          </form.Field>
+        )}
+
+        {!isEdit && kind === 'payable' && (
+          <>
+            {isFetchingPayments && (
+              <div className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
+                <Loader2 className="size-3 animate-spin" />
+                Загрузка счетов для оплаты…
+              </div>
+            )}
+
+            {!isFetchingPayments && paymentAccounts.length > 0 && (
+              <div className="flex flex-col gap-3 rounded-md border border-dashed p-3 sm:w-1/2">
+                <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                  <ArrowRight className="size-3.5" />
+                  Зачислить доход контрагенту
+                </p>
+
+                <form.Field name="paymentAccountId">
+                  {(field) => (
+                    <Field>
+                      <FieldLabel htmlFor={field.name}>
+                        Счёт получателя
+                      </FieldLabel>
                       <Combobox
-                        options={[
-                          { value: '__none__', label: 'Не указан' },
-                          ...counterparties.map((counterparty) => ({
-                            value: counterparty.id,
-                            label: counterparty.name,
-                          })),
-                        ]}
-                        value={field.state.value || '__none__'}
-                        onValueChange={(value) =>
-                          handleCounterpartyChange(
-                            value === '__none__' ? '' : value,
-                            field.handleChange,
-                            () => paymentAccountField.handleChange(''),
-                            () => paymentCategoryField.handleChange(''),
-                          )
-                        }
-                        placeholder="Выберите контрагента"
+                        options={paymentAccounts.map((account) => ({
+                          value: account.id,
+                          label: account.name,
+                        }))}
+                        value={field.state.value}
+                        onValueChange={(value) => field.handleChange(value)}
+                        placeholder="Выберите счёт"
                         onBlur={field.handleBlur}
                       />
                     </Field>
                   )}
                 </form.Field>
-              )}
-            </form.Field>
-          )}
-        </form.Field>
-      )}
 
-      {!isEdit && kind === 'payable' && (
-        <>
-          {isFetchingPayments && (
-            <div className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
-              <Loader2 className="size-3 animate-spin" />
-              Загрузка счетов для оплаты…
-            </div>
-          )}
+                <form.Subscribe
+                  selector={(state) => state.values.paymentAccountId}
+                >
+                  {(paymentAccountId) =>
+                    paymentAccountId ? (
+                      <form.Field name="paymentCategoryId">
+                        {(field) => (
+                          <Field>
+                            <FieldLabel htmlFor={field.name}>
+                              Категория дохода
+                            </FieldLabel>
+                            <Combobox
+                              options={sharedReceivableCategories.map(
+                                (category) => ({
+                                  value: category.id,
+                                  label: category.name,
+                                }),
+                              )}
+                              value={field.state.value}
+                              onValueChange={(value) =>
+                                field.handleChange(value)
+                              }
+                              placeholder="Выберите категорию"
+                              onBlur={field.handleBlur}
+                            />
+                          </Field>
+                        )}
+                      </form.Field>
+                    ) : null
+                  }
+                </form.Subscribe>
+              </div>
+            )}
+          </>
+        )}
 
-          {!isFetchingPayments && paymentAccounts.length > 0 && (
-            <div className="flex flex-col gap-3 rounded-md border border-dashed p-3 sm:w-1/2">
-              <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                <ArrowRight className="size-3.5" />
-                Зачислить доход контрагенту
-              </p>
-
-              <form.Field name="paymentAccountId">
+        <form.Subscribe selector={(s) => s.values.counterpartyId}>
+          {(counterpartyId) => {
+            const filtered = contracts.filter(
+              (c) => counterpartyId && c.counterpartyId === counterpartyId,
+            )
+            if (!counterpartyId || filtered.length === 0) return null
+            return (
+              <form.Field name="contractId">
                 {(field) => (
-                  <Field>
-                    <FieldLabel htmlFor={field.name}>
-                      Счёт получателя
-                    </FieldLabel>
+                  <Field className="sm:w-1/2">
+                    <FieldLabel htmlFor={field.name}>Договор</FieldLabel>
                     <Combobox
-                      options={paymentAccounts.map((account) => ({
-                        value: account.id,
-                        label: account.name,
-                      }))}
-                      value={field.state.value}
-                      onValueChange={(value) => field.handleChange(value)}
-                      placeholder="Выберите счёт"
+                      options={[
+                        { value: '__none__', label: 'Не указан' },
+                        ...filtered.map((c) => ({
+                          value: c.id,
+                          label: c.name,
+                        })),
+                      ]}
+                      value={field.state.value || '__none__'}
+                      onValueChange={(value) =>
+                        field.handleChange(value === '__none__' ? '' : value)
+                      }
+                      placeholder="Выберите договор"
                       onBlur={field.handleBlur}
                     />
                   </Field>
                 )}
               </form.Field>
-
-              <form.Subscribe
-                selector={(state) => state.values.paymentAccountId}
-              >
-                {(paymentAccountId) =>
-                  paymentAccountId ? (
-                    <form.Field name="paymentCategoryId">
-                      {(field) => (
-                        <Field>
-                          <FieldLabel htmlFor={field.name}>
-                            Категория дохода
-                          </FieldLabel>
-                          <Combobox
-                            options={sharedReceivableCategories.map((category) => ({
-                              value: category.id,
-                              label: category.name,
-                            }))}
-                            value={field.state.value}
-                            onValueChange={(value) => field.handleChange(value)}
-                            placeholder="Выберите категорию"
-                            onBlur={field.handleBlur}
-                          />
-                        </Field>
-                      )}
-                    </form.Field>
-                  ) : null
-                }
-              </form.Subscribe>
-            </div>
-          )}
-        </>
-      )}
-
-      {contracts.length > 0 && (
-        <form.Field name="contractId">
-          {(field) => (
-            <Field className="sm:w-1/2">
-              <FieldLabel htmlFor={field.name}>Договор</FieldLabel>
-              <Combobox
-                options={[
-                  { value: '__none__', label: 'Не указан' },
-                  ...contracts.map((c) => ({ value: c.id, label: c.name })),
-                ]}
-                value={field.state.value || '__none__'}
-                onValueChange={(value) =>
-                  field.handleChange(value === '__none__' ? '' : value)
-                }
-                placeholder="Выберите договор"
-                onBlur={field.handleBlur}
-              />
-            </Field>
-          )}
-        </form.Field>
-      )}
+            )
+          }}
+        </form.Subscribe>
+      </div>
 
       <div className="flex gap-2">
         <form.Field name="createdAt">

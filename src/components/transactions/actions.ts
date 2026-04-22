@@ -14,7 +14,6 @@ import {
   invoiceTag,
 } from '#/db/schema'
 import { getPaymentState } from '#/lib/invoice-payment'
-import { syncRecurringRulesForAccounts } from '#/lib/recurring'
 import {
   getScopedCounterpartyIds,
   resolveScopedAccountIds,
@@ -75,8 +74,6 @@ export const fetchTransactionsData = createServerFn().handler(async () => {
     }
   }
 
-  await syncRecurringRulesForAccounts(accountIds)
-
   const [invoices, categories, counterparties, accountsData] =
     await Promise.all([
       db.query.invoice.findMany({
@@ -95,9 +92,20 @@ export const fetchTransactionsData = createServerFn().handler(async () => {
           archivedAt: true,
           createdBy: true,
           linkedInvoiceId: true,
+          contractId: true,
         },
         with: {
           category: { columns: { id: true, name: true } },
+          contract: {
+            columns: { id: true, name: true, number: true, signedAt: true },
+            with: {
+              contractDocuments: {
+                with: {
+                  document: { columns: { id: true, name: true } },
+                },
+              },
+            },
+          },
           counterparty: { columns: { id: true, name: true } },
           currentAccount: { columns: { id: true, name: true } },
           createdByUser: { columns: { id: true, name: true } },

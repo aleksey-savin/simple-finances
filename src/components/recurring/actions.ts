@@ -12,10 +12,7 @@ import {
 import { eq, inArray, or } from 'drizzle-orm'
 import { Cron } from 'croner'
 import { auth } from 'utils/auth'
-import {
-  createRecurringEntry,
-  syncRecurringRulesForAccounts,
-} from '#/lib/recurring'
+import { createRecurringEntry } from '#/lib/recurring'
 import {
   getScopedCounterpartyIds,
   resolveScopedAccountIds,
@@ -64,8 +61,6 @@ export const fetchRecurringData = createServerFn().handler(async () => {
       },
     } satisfies RecurringLoaderData
   }
-
-  await syncRecurringRulesForAccounts(accountIds)
 
   const [rules, categories, accounts, counterparties] = await Promise.all([
     db.query.recurringRule.findMany({

@@ -1229,16 +1229,19 @@ export const documentRelations = relations(document, ({ one }) => ({
   }),
 }))
 
-export const contractDocumentRelations = relations(contractDocument, ({ one }) => ({
-  contract: one(contract, {
-    fields: [contractDocument.contractId],
-    references: [contract.id],
+export const contractDocumentRelations = relations(
+  contractDocument,
+  ({ one }) => ({
+    contract: one(contract, {
+      fields: [contractDocument.contractId],
+      references: [contract.id],
+    }),
+    document: one(document, {
+      fields: [contractDocument.documentId],
+      references: [document.id],
+    }),
   }),
-  document: one(document, {
-    fields: [contractDocument.documentId],
-    references: [document.id],
-  }),
-}))
+)
 
 export const contractPriceRevisionRelations = relations(
   contractPriceRevision,
@@ -1307,28 +1310,30 @@ export const recurringRuleRelations = relations(recurringRule, ({ one }) => ({
   }),
 }))
 
-export const smtpSettings = pgTable('smtp_settings', {
-  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-  currentAccountId: text('current_account_id')
-    .notNull()
-    .references(() => currentAccount.id, { onDelete: 'cascade' }),
-  host: text('host').notNull(),
-  port: integer('port').notNull().default(587),
-  secure: boolean('secure').notNull().default(false),
-  username: text('username').notNull(),
-  password: text('password').notNull(),
-  fromName: text('from_name').notNull(),
-  fromEmail: text('from_email').notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-}, (table) => [
-  unique('smtp_settings_account_unique').on(table.currentAccountId),
-])
+export const smtpSettings = pgTable(
+  'smtp_settings',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    host: text('host').notNull(),
+    port: integer('port').notNull().default(587),
+    secure: boolean('secure').notNull().default(false),
+    username: text('username').notNull(),
+    password: text('password').notNull(),
+    fromName: text('from_name').notNull(),
+    fromEmail: text('from_email').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  }
+)
 
 export const proxmoxNode = pgTable(
   'proxmox_node',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     currentAccountId: text('current_account_id')
       .notNull()
       .references(() => currentAccount.id, { onDelete: 'cascade' }),
@@ -1350,11 +1355,13 @@ export const proxmoxNode = pgTable(
 export const proxmoxAccountSettings = pgTable(
   'proxmox_account_settings',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     currentAccountId: text('current_account_id')
       .notNull()
       .references(() => currentAccount.id, { onDelete: 'cascade' }),
-    reminderDaysBefore: integer('reminder_days_before').notNull().default(3),
+    reminderDaysBefore: integer('reminder_days_before').notNull().default(5),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
       .defaultNow()
@@ -1369,7 +1376,9 @@ export const proxmoxAccountSettings = pgTable(
 export const contractVm = pgTable(
   'contract_vm',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     contractId: text('contract_id')
       .notNull()
       .references(() => contract.id, { onDelete: 'cascade' }),
@@ -1393,7 +1402,9 @@ export const contractVm = pgTable(
 export const invoiceReminderLog = pgTable(
   'invoice_reminder_log',
   {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     invoiceId: text('invoice_id')
       .notNull()
       .references(() => invoice.id, { onDelete: 'cascade' }),

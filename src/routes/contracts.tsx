@@ -2,12 +2,7 @@ import { createFileRoute, Outlet } from '@tanstack/react-router'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
-import {
-  Paperclip,
-  Pencil,
-  Search,
-  X,
-} from 'lucide-react'
+import { Paperclip, Pencil, Search, Server, X } from 'lucide-react'
 
 import type { ContractType } from '@/db/types'
 import { EditContractForm } from '@/components/contracts'
@@ -17,6 +12,7 @@ import {
   resolveDocumentUrl,
 } from '@/components/contracts/actions'
 import { ContractDocuments } from '@/components/contracts/documents'
+import { ContractIntegrationsSection } from '@/components/contracts/proxmox-integrations'
 import { ContractsTable } from '@/components/contracts/table'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -28,6 +24,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Input } from '@/components/ui/input'
 
 const contractTypeLabel: Record<ContractType, string> = {
@@ -46,6 +49,9 @@ function ContractsPage() {
   const [typeFilter, setTypeFilter] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [docsContractId, setDocsContractId] = useState<string | null>(null)
+  const [proxmoxContractId, setProxmoxContractId] = useState<string | null>(
+    null,
+  )
   const [openingDocId, setOpeningDocId] = useState<string | null>(null)
 
   const editingContract =
@@ -94,9 +100,7 @@ function ContractsPage() {
     } catch (error) {
       popup.close()
       toast.error(
-        error instanceof Error
-          ? error.message
-          : 'Не удалось открыть документ',
+        error instanceof Error ? error.message : 'Не удалось открыть документ',
       )
     } finally {
       setOpeningDocId((prev) => (prev === documentId ? null : prev))
@@ -171,7 +175,8 @@ function ContractsPage() {
                         {contractTypeLabel[contract.contractType]}
                       </p>
                       <p className="mt-1 text-sm text-muted-foreground">
-                        {contract.counterparty.name} · {contract.businessLine.name}
+                        {contract.counterparty.name} ·{' '}
+                        {contract.businessLine.name}
                       </p>
                       <p className="mt-1 text-sm text-muted-foreground">
                         {contract.amount
@@ -180,6 +185,15 @@ function ContractsPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8"
+                        title="Proxmox"
+                        onClick={() => setProxmoxContractId(contract.id)}
+                      >
+                        <Server className="size-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -212,6 +226,15 @@ function ContractsPage() {
                 showType
                 renderActions={(contract) => (
                   <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-8"
+                      title="Proxmox"
+                      onClick={() => setProxmoxContractId(contract.id)}
+                    >
+                      <Server className="size-4" />
+                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -277,6 +300,27 @@ function ContractsPage() {
           ) : null}
         </DialogContent>
       </Dialog>
+
+      <Sheet
+        open={proxmoxContractId !== null}
+        onOpenChange={(open) => {
+          if (!open) setProxmoxContractId(null)
+        }}
+      >
+        <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
+          <SheetHeader>
+            <SheetTitle>Proxmox</SheetTitle>
+            <SheetDescription>
+              {contracts.find((c) => c.id === proxmoxContractId)?.name}
+            </SheetDescription>
+          </SheetHeader>
+          {proxmoxContractId && (
+            <div className="mt-4">
+              <ContractIntegrationsSection contractId={proxmoxContractId} />
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
 
       <Outlet />
     </>

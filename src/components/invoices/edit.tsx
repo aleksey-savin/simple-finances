@@ -59,6 +59,7 @@ export function EditInvoice({
     archivedAt: item.archivedAt,
     createdBy: item.createdBy,
     linkedInvoiceId: item.linkedInvoiceId,
+    contractId: item.contractId,
   } as unknown as DBInvoice
 
   return (

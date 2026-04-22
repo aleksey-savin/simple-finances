@@ -1,14 +1,14 @@
 import { defineTask } from 'nitro/task'
-import { Cron } from 'croner'
 import { db } from '#/db'
-import { recurringRule, expense, income } from '#/db/schema'
+import { recurringRule } from '#/db/schema'
 import { and, eq, isNotNull, lte } from 'drizzle-orm'
+import { syncRecurringRulesForAccounts } from '#/lib/recurring'
 
 export default defineTask({
   meta: {
     name: 'recurring',
     description:
-      'Creates expense / income entries from due recurring rules and schedules the next run.',
+      'Creates invoice entries from due recurring rules and schedules the next run.',
   },
 
   async run() {
@@ -20,84 +20,22 @@ export default defineTask({
         isNotNull(recurringRule.nextRunAt),
         lte(recurringRule.nextRunAt, now),
       ),
+      columns: { id: true, currentAccountId: true },
     })
 
-    let processed = 0
-
-    for (const rule of dueRules) {
-      try {
-        // dueDate = creation time + N calendar days
-        const dueDate =
-          rule.dueDaysFromCreation && rule.dueDaysFromCreation > 0
-            ? new Date(
-                now.getTime() + rule.dueDaysFromCreation * 24 * 60 * 60 * 1000,
-              )
-            : undefined
-
-        if (rule.type === 'expense') {
-          const [inserted] = await db
-            .insert(expense)
-            .values({
-              amount: rule.amount,
-              description: rule.description,
-              categoryId: rule.categoryId,
-              currentAccountId: rule.currentAccountId,
-              counterpartyId: rule.counterpartyId ?? undefined,
-              dueDate,
-              createdBy: rule.createdBy,
-              updatedBy: rule.createdBy,
-            })
-            .returning({ id: expense.id })
-
-          // Mirror the expense as an income in the counterparty's account
-          if (rule.paymentAccountId && rule.paymentCategoryId) {
-            await db.insert(income).values({
-              amount: rule.amount,
-              description: rule.description,
-              categoryId: rule.paymentCategoryId,
-              currentAccountId: rule.paymentAccountId,
-              counterpartyId: rule.counterpartyId ?? undefined,
-              dueDate,
-              createdBy: rule.createdBy,
-              updatedBy: rule.createdBy,
-              linkedExpenseId: inserted.id,
-            })
-          }
-        } else {
-          await db.insert(income).values({
-            amount: rule.amount,
-            description: rule.description,
-            categoryId: rule.categoryId,
-            currentAccountId: rule.currentAccountId,
-            counterpartyId: rule.counterpartyId ?? undefined,
-            dueDate,
-            createdBy: rule.createdBy,
-            updatedBy: rule.createdBy,
-          })
-        }
-
-        // Calculate the next scheduled run using croner (paused = no side-effects)
-        const job = new Cron(rule.cronExpression, { paused: true })
-        const nextRun = job.nextRun()
-
-        await db
-          .update(recurringRule)
-          .set({ lastRunAt: now, nextRunAt: nextRun })
-          .where(eq(recurringRule.id, rule.id))
-
-        processed++
-      } catch (err) {
-        console.error(
-          `[recurring task] Failed to process rule ${rule.id}:`,
-          err,
-        )
+    if (dueRules.length === 0) {
+      return {
+        result: { processedRules: 0, processedOccurrences: 0, totalDueRules: 0 },
       }
     }
 
+    const accountIds = [...new Set(dueRules.map((rule) => rule.currentAccountId))]
+    const summary = await syncRecurringRulesForAccounts(accountIds, now)
+
     console.log(
-      `[recurring task] Processed ${processed} / ${dueRules.length} rules.`,
+      `[recurring task] Processed ${summary.processedRules} rules, ${summary.processedOccurrences} occurrences (due rules: ${summary.totalDueRules}).`,
     )
 
-    return { result: { processed, total: dueRules.length } }
+    return { result: summary }
   },
 })
