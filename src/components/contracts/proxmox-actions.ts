@@ -1,14 +1,15 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
-import { and, asc, desc, eq, gte, isNotNull, isNull } from 'drizzle-orm'
+import { and, desc, eq, isNotNull } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { db } from '@/db'
-import { contractVm, invoice, proxmoxNode, recurringRule } from '@/db/schema'
+import { contractVm, proxmoxNode } from '@/db/schema'
 import {
   formatDateRu,
   getContractNotificationContext,
 } from '#/lib/contract-notifications'
+import { getContractPaymentTermDueDate } from '#/lib/contract-payment-term'
 import { sendEmail } from '#/lib/email'
 import { buildGracePeriodExtendedEmail } from '#/lib/email-templates'
 import { runProxmoxVmManager } from '#/lib/proxmox-vm-manager'
@@ -51,54 +52,10 @@ export const fetchContractPaymentTerm = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ contractId: z.string() }))
   .handler(async ({ data }) => {
     await requireSession()
-    const now = new Date()
-
-    const nearestUnpaidInvoice = await db.query.invoice.findFirst({
-      where: and(
-        eq(invoice.contractId, data.contractId),
-        isNull(invoice.paidAt),
-        isNull(invoice.archivedAt),
-        isNotNull(invoice.dueDate),
-      ),
-      columns: { dueDate: true },
-      orderBy: [asc(invoice.dueDate)],
-    })
-
-    if (nearestUnpaidInvoice?.dueDate) {
-      return { dueDate: nearestUnpaidInvoice.dueDate.toISOString() }
-    }
-
-    const upcomingRecurring = await db.query.recurringRule.findMany({
-      where: and(
-        eq(recurringRule.contractId, data.contractId),
-        eq(recurringRule.isActive, true),
-        isNotNull(recurringRule.nextRunAt),
-        gte(recurringRule.nextRunAt, now),
-      ),
-      columns: {
-        nextRunAt: true,
-        dueDaysFromCreation: true,
-      },
-      orderBy: [asc(recurringRule.nextRunAt)],
-    })
-
-    const recurringDueDate =
-      upcomingRecurring
-        .map((rule) => {
-          if (!rule.nextRunAt) return null
-          if (!rule.dueDaysFromCreation || rule.dueDaysFromCreation <= 0) {
-            return null
-          }
-          return new Date(
-            rule.nextRunAt.getTime() + rule.dueDaysFromCreation * 86400000,
-          )
-        })
-        .filter((date): date is Date => date !== null)
-        .sort((a, b) => a.getTime() - b.getTime())
-        .at(0) ?? null
+    const dueDate = await getContractPaymentTermDueDate(data.contractId)
 
     return {
-      dueDate: recurringDueDate ? recurringDueDate.toISOString() : null,
+      dueDate: dueDate ? dueDate.toISOString() : null,
     }
   })
 

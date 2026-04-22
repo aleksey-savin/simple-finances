@@ -1,7 +1,8 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useRouter } from '@tanstack/react-router'
 import { ArrowDownLeft, ArrowUpRight, Landmark, Rows3 } from 'lucide-react'
 import type { ReactNode } from 'react'
 
+import { BlockedServicesCard } from '#/components/contracts/blocked-services-card'
 import { Button } from '#/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import type { DashboardLoaderData } from '#/types'
@@ -11,9 +12,23 @@ export function DashboardPage({
   totalBalance,
   bankSummary,
   monthlyOutlook,
+  blockedServices,
 }: DashboardLoaderData) {
+  const router = useRouter()
+
   return (
     <div className="flex flex-col gap-4">
+      {blockedServices.length > 0 && (
+        <BlockedServicesCard
+          services={blockedServices}
+          showClientName
+          showVmList
+          onUpdated={async () => {
+            await router.invalidate()
+          }}
+        />
+      )}
+
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <FormulaMetricCard
           title="Ожидаемые поступления"

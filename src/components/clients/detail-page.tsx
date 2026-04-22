@@ -1,14 +1,20 @@
+import { useQueryClient } from '@tanstack/react-query'
+import { useRouter } from '@tanstack/react-router'
 import { ArrowRight } from 'lucide-react'
 
 import type { ClientDetail } from '@/types'
+import { BlockedServicesCard } from '@/components/contracts/blocked-services-card'
 
+import { clientDetailQueryKey, clientsQueryKey } from './actions'
 import { ClientContacts } from './client-contacts'
 import { ClientContracts } from './client-contracts'
 import { ClientCounterparties } from './client-counterparties'
-import { ClientHistoryLog, type HistoryEntry } from './client-history-log'
+import { ClientHistoryLog } from './client-history-log'
 import { ClientInfoCard } from './client-info-card'
-import { ClientPendingActivities, type PendingActivity } from './client-pending-activities'
+import { ClientPendingActivities } from './client-pending-activities'
 import { ClientPendingPayments } from './client-pending-payments'
+import type { HistoryEntry } from './client-history-log'
+import type { PendingActivity } from './client-pending-activities'
 
 const revisionStatusLabel: Record<string, string> = {
   draft: 'Черновик',
@@ -32,7 +38,9 @@ const revisionStatusVariant: Record<
 function formatAmount(value: string) {
   const parsed = Number(value)
   if (!Number.isFinite(parsed)) return value
-  return new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(parsed)
+  return new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(
+    parsed,
+  )
 }
 
 function AmountChange({
@@ -46,7 +54,10 @@ function AmountChange({
     <div className="flex flex-wrap items-center gap-2 text-xs tabular-nums">
       <div className="flex flex-col gap-0.5">
         {previousAmounts.map((amt, i) => (
-          <span key={i} className="font-mono text-muted-foreground line-through">
+          <span
+            key={i}
+            className="font-mono text-muted-foreground line-through"
+          >
             {formatAmount(amt)} ₽
           </span>
         ))}
@@ -55,7 +66,8 @@ function AmountChange({
       <div className="flex flex-col gap-0.5">
         {newAmounts.map((amt, i) => {
           const diff = Number(amt) - Number(previousAmounts[i] ?? '0')
-          const colorClass = diff > 0 ? 'text-success' : diff < 0 ? 'text-destructive' : ''
+          const colorClass =
+            diff > 0 ? 'text-success' : diff < 0 ? 'text-destructive' : ''
           return (
             <span key={i} className={`font-mono font-medium ${colorClass}`}>
               {formatAmount(amt)} ₽
@@ -68,6 +80,9 @@ function AmountChange({
 }
 
 export function ClientDetailPage({ client }: { client: ClientDetail }) {
+  const router = useRouter()
+  const queryClient = useQueryClient()
+
   const activities: PendingActivity[] = client.activeRevisions.map((r) => ({
     id: r.itemId,
     type: 'price_revision',
@@ -86,9 +101,20 @@ export function ClientDetailPage({ client }: { client: ClientDetail }) {
     actor: h.changedByName,
     date: h.changedAt,
     description: (
-      <AmountChange previousAmounts={h.previousAmounts} newAmounts={h.newAmounts} />
+      <AmountChange
+        previousAmounts={h.previousAmounts}
+        newAmounts={h.newAmounts}
+      />
     ),
   }))
+
+  const handleBlockedServicesUpdated = async () => {
+    await queryClient.invalidateQueries({
+      queryKey: clientDetailQueryKey(client.id),
+    })
+    await queryClient.invalidateQueries({ queryKey: clientsQueryKey })
+    await router.invalidate()
+  }
 
   return (
     <div className="space-y-4">
@@ -97,8 +123,21 @@ export function ClientDetailPage({ client }: { client: ClientDetail }) {
         <ClientCounterparties counterparties={client.counterparties} />
       </div>
 
+      {client.blockedServices.length > 0 && (
+        <BlockedServicesCard
+          services={client.blockedServices}
+          title="Заблокированные услуги"
+          showVmList
+          onUpdated={handleBlockedServicesUpdated}
+        />
+      )}
+
       <ClientContacts clientId={client.id} contacts={client.contacts} />
-      <ClientContracts clientId={client.id} counterparties={client.counterparties} contracts={client.contracts} />
+      <ClientContracts
+        clientId={client.id}
+        counterparties={client.counterparties}
+        contracts={client.contracts}
+      />
       <ClientPendingPayments payments={client.pendingPayments} />
       <ClientPendingActivities activities={activities} />
       <ClientHistoryLog entries={historyEntries} />

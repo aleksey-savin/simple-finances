@@ -3,6 +3,7 @@ import { Pencil, User } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 
 import type { Client } from '@/types'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Item,
@@ -34,7 +35,14 @@ function ClientRow({
         </ItemMedia>
 
         <ItemContent>
-          <ItemTitle>{client.name}</ItemTitle>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <ItemTitle>{client.name}</ItemTitle>
+            {client.blockedServicesCount > 0 && (
+              <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">
+                Блок: {client.blockedServicesCount}
+              </Badge>
+            )}
+          </div>
           <p className="mt-0.5 text-xs text-muted-foreground">
             {client.counterparties.length > 0
               ? client.counterparties.map((item) => item.name).join(', ')

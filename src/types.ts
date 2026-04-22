@@ -109,6 +109,19 @@ export type Client = Pick<DBClient, 'id' | 'name' | 'createdBy' | 'companyId'> &
   counterparties: Pick<DBCounterparty, 'id' | 'name'>[]
   managers: { userId: string; name: string }[]
   contacts: { id: string; name: string; position: string | null; phone: string | null; email: string | null }[]
+  blockedServicesCount: number
+}
+
+export type BlockedServiceSummary = {
+  contractId: string
+  contractName: string
+  clientName: string | null
+  contractVmId: string
+  blockedVmNames: string[]
+  totalVmCount: number
+  blockedVmCount: number
+  pausedUntil: string | null
+  paymentTermDueDate: string | null
 }
 
 export type ClientDetail = {
@@ -171,6 +184,7 @@ export type ClientDetail = {
     phone: string | null
     email: string | null
   }[]
+  blockedServices: BlockedServiceSummary[]
 }
 
 export type Company = Pick<DBCompany, 'id' | 'name' | 'createdBy'> & {
@@ -395,6 +409,7 @@ export type DashboardLoaderData = {
   totalBalance: number
   bankSummary: DashboardBankSummary
   monthlyOutlook: DashboardMonthlyOutlook
+  blockedServices: BlockedServiceSummary[]
 }
 
 // ─── Recurring Rule ───────────────────────────────────────────────────────────

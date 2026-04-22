@@ -1,6 +1,7 @@
 import { ExternalLink, FileText, Loader2 } from 'lucide-react'
 
 import type { ContractType } from '@/db/types'
+import { Badge } from '@/components/ui/badge'
 import {
   Table,
   TableBody,
@@ -25,6 +26,7 @@ export type ContractTableRow = {
   businessLine: { id: string; name: string }
   counterparty: { id: string; name: string }
   documents: { id: string; name: string; url: string }[]
+  blockedVmCount?: number
 }
 
 type ContractsTableProps = {
@@ -32,6 +34,7 @@ type ContractsTableProps = {
   openingDocId: string | null
   onOpenDocument: (documentId: string) => void
   showType?: boolean
+  highlightBlocked?: boolean
   renderActions?: (contract: ContractTableRow) => React.ReactNode
 }
 
@@ -53,6 +56,7 @@ export function ContractsTable({
   openingDocId,
   onOpenDocument,
   showType,
+  highlightBlocked,
   renderActions,
 }: ContractsTableProps) {
   return (
@@ -70,8 +74,19 @@ export function ContractsTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {contracts.map((contract) => (
-          <TableRow key={contract.id}>
+        {contracts.map((contract) => {
+          const blockedVmCount = contract.blockedVmCount ?? 0
+          const isBlocked = blockedVmCount > 0
+
+          return (
+            <TableRow
+              key={contract.id}
+              className={
+                highlightBlocked && isBlocked
+                  ? 'bg-destructive/5 hover:bg-destructive/10'
+                  : undefined
+              }
+            >
             <TableCell className="text-sm">{contract.businessLine.name}</TableCell>
             <TableCell>
               <div className="flex items-center gap-2 font-medium">
@@ -79,6 +94,11 @@ export function ContractsTable({
                 {contract.number
                   ? `№${contract.number} от ${formatSignedAt(contract.signedAt)}`
                   : contract.name}
+                {highlightBlocked && isBlocked && (
+                  <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">
+                    Блок
+                  </Badge>
+                )}
               </div>
               {contract.number && (
                 <p className="mt-0.5 text-xs text-muted-foreground">{contract.name}</p>
@@ -86,6 +106,11 @@ export function ContractsTable({
               <p className="mt-0.5 text-xs text-muted-foreground">
                 {contract.counterparty.name}
               </p>
+              {highlightBlocked && isBlocked && (
+                <p className="mt-0.5 text-xs text-destructive">
+                  Заблокировано ВМ: {blockedVmCount}
+                </p>
+              )}
             </TableCell>
             {showType && (
               <TableCell>{contractTypeLabel[contract.contractType]}</TableCell>
@@ -128,8 +153,9 @@ export function ContractsTable({
                 <div className="flex justify-end gap-1">{renderActions(contract)}</div>
               </TableCell>
             )}
-          </TableRow>
-        ))}
+            </TableRow>
+          )
+        })}
       </TableBody>
     </Table>
   )

@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
 import { Cron } from 'croner'
-import { and, desc, eq, gte, inArray, isNull, lt, lte, sql } from 'drizzle-orm'
+import { and, desc, eq, gte, inArray, isNotNull, isNull, lt, lte, sql } from 'drizzle-orm'
 
 import { db } from '#/db'
 import {
@@ -10,6 +10,7 @@ import {
   invoice,
   settlement,
 } from '#/db/schema'
+import { getBlockedServicesByContractIds } from '#/lib/blocked-services'
 import { getPaymentState } from '#/lib/invoice-payment'
 import { resolveScopedAccountIds } from '#/lib/company-scope'
 import type { DashboardLoaderData } from '#/types'
@@ -19,7 +20,7 @@ export const fetchDashboardData = createServerFn().handler(async () => {
   const request = getRequest()
   const session = await auth.api.getSession({ headers: request.headers })
 
-  if (!session?.user?.id) throw new Error('Не авторизован')
+  if (!session.user.id) throw new Error('Не авторизован')
 
   const { accountIds } = await resolveScopedAccountIds(
     session.user.id,
@@ -50,6 +51,7 @@ export const fetchDashboardData = createServerFn().handler(async () => {
       netWithoutPreviousPeriodDebt: 0,
       netWithPreviousPeriodDebt: 0,
     },
+    blockedServices: [],
   } satisfies DashboardLoaderData
 
   if (accountIds.length === 0) return empty
@@ -76,6 +78,7 @@ export const fetchDashboardData = createServerFn().handler(async () => {
     receivableRows,
     currentMonthPayableRows,
     previousUnpaidPayableRows,
+    contractIdsInScopeRows,
   ] = await Promise.all([
     db.query.currentAccount.findMany({
       where: inArray(currentAccount.id, accountIds),
@@ -151,6 +154,16 @@ export const fetchDashboardData = createServerFn().handler(async () => {
         settlements: { columns: { amount: true, settledAt: true } },
       },
     }),
+
+    db
+      .selectDistinct({ contractId: invoice.contractId })
+      .from(invoice)
+      .where(
+        and(
+          inArray(invoice.currentAccountId, accountIds),
+          isNotNull(invoice.contractId),
+        ),
+      ),
   ])
 
   const lastImportedAtByAccountId = new Map(
@@ -237,6 +250,9 @@ export const fetchDashboardData = createServerFn().handler(async () => {
   // ── Bank summary ───────────────────────────────────────────────────────────
 
   const bankSummary = await buildBankSummary(accountIds)
+  const blockedServices = await getBlockedServicesByContractIds(
+    contractIdsInScopeRows.map((row) => row.contractId),
+  )
 
   return {
     accounts,
@@ -259,6 +275,7 @@ export const fetchDashboardData = createServerFn().handler(async () => {
       netWithPreviousPeriodDebt:
         currentMonthIncoming - plannedExpenses - previousPeriodDebt,
     },
+    blockedServices,
   } satisfies DashboardLoaderData
 })
 
@@ -340,8 +357,8 @@ async function buildProjectedReceivablesSummary(
   const now = new Date()
 
   const rules = await db.query.recurringRule.findMany({
-    where: (table, { and }) =>
-      and(
+    where: (table, { and: andWhere }) =>
+      andWhere(
         inArray(table.currentAccountId, accountIds),
         eq(table.type, 'receivable'),
         eq(table.isActive, true),

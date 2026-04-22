@@ -10,12 +10,14 @@ import {
   clientManager,
   contact,
   contract,
+  contractVm,
   contractAmountHistory,
   contractPriceRevision,
   contractPriceRevisionItem,
   invoice,
 } from '@/db/schema'
 import { auth } from 'utils/auth'
+import { getBlockedServicesByContractIds } from '#/lib/blocked-services'
 import { resolveSelectedScope } from '#/lib/company-scope'
 import { getPaymentState } from '#/lib/invoice-payment'
 import type { ClientDetail } from '@/types'
@@ -25,7 +27,7 @@ export const clientsQueryKey = ['clients'] as const
 export const fetchClients = createServerFn().handler(async () => {
   const request = getRequest()
   const session = await auth.api.getSession({ headers: request.headers })
-  if (!session?.user?.id) throw new Error('Не авторизован')
+  if (!session.user.id) throw new Error('Не авторизован')
 
   const { selectedScope } = await resolveSelectedScope(
     session.user.id,
@@ -37,54 +39,97 @@ export const fetchClients = createServerFn().handler(async () => {
       ? eq(client.companyId, selectedScope.id)
       : and(isNull(client.companyId), eq(client.createdBy, session.user.id))
 
-  return db.query.client
-    .findMany({
-      where: whereClause,
-      columns: {
-        id: true,
-        name: true,
-        companyId: true,
-        createdBy: true,
-      },
-      with: {
-        counterparties: {
-          columns: {},
-          with: {
-            counterparty: { columns: { id: true, name: true } },
-          },
-        },
-        managers: {
-          columns: {},
-          with: {
-            user: { columns: { id: true, name: true } },
-          },
-        },
-        contacts: {
-          columns: { id: true, name: true, position: true, phone: true, email: true },
+  const rows = await db.query.client.findMany({
+    where: whereClause,
+    columns: {
+      id: true,
+      name: true,
+      companyId: true,
+      createdBy: true,
+    },
+    with: {
+      counterparties: {
+        columns: {},
+        with: {
+          counterparty: { columns: { id: true, name: true } },
         },
       },
-      orderBy: (table, { asc }) => asc(table.name),
-    })
-    .then((rows) =>
-      rows.map((row) => ({
-        id: row.id,
-        name: row.name,
-        companyId: row.companyId,
-        createdBy: row.createdBy,
-        counterparties: row.counterparties.map((item) => item.counterparty),
-        managers: row.managers.map((item) => ({
-          userId: item.user.id,
-          name: item.user.name,
-        })),
-        contacts: row.contacts.map((c) => ({
-          id: c.id,
-          name: c.name,
-          position: c.position ?? null,
-          phone: c.phone ?? null,
-          email: c.email ?? null,
-        })),
+      managers: {
+        columns: {},
+        with: {
+          user: { columns: { id: true, name: true } },
+        },
+      },
+      contacts: {
+        columns: { id: true, name: true, position: true, phone: true, email: true },
+      },
+    },
+    orderBy: (table, { asc }) => asc(table.name),
+  })
+
+  const allCounterpartyIds = [
+    ...new Set(
+      rows.flatMap((row) => row.counterparties.map((item) => item.counterparty.id)),
+    ),
+  ]
+
+  const blockedContractRows =
+    allCounterpartyIds.length === 0
+      ? []
+      : await db
+          .selectDistinct({
+            contractId: contract.id,
+            counterpartyId: contract.counterpartyId,
+          })
+          .from(contract)
+          .innerJoin(
+            contractVm,
+            and(
+              eq(contractVm.contractId, contract.id),
+              eq(contractVm.isPausedBySystem, true),
+            ),
+          )
+          .where(inArray(contract.counterpartyId, allCounterpartyIds))
+
+  const blockedContractIdsByCounterpartyId = new Map<string, Set<string>>()
+  for (const row of blockedContractRows) {
+    const existing =
+      blockedContractIdsByCounterpartyId.get(row.counterpartyId) ?? new Set<string>()
+    existing.add(row.contractId)
+    blockedContractIdsByCounterpartyId.set(row.counterpartyId, existing)
+  }
+
+  return rows.map((row) => {
+    const blockedContractIds = new Set<string>()
+    for (const item of row.counterparties) {
+      const blockedForCounterparty =
+        blockedContractIdsByCounterpartyId.get(item.counterparty.id)
+      if (!blockedForCounterparty) continue
+      for (const contractId of blockedForCounterparty) {
+        blockedContractIds.add(contractId)
+      }
+    }
+
+    return {
+      id: row.id,
+      name: row.name,
+      companyId: row.companyId,
+      createdBy: row.createdBy,
+      counterparties: row.counterparties.map((item) => item.counterparty),
+      managers: row.managers.map((item) => ({
+        userId: item.user.id,
+        name: item.user.name,
       })),
-    )
+      contacts: row.contacts.map((c) => ({
+        id: c.id,
+        name: c.name,
+        position: c.position ?? null,
+        phone: c.phone ?? null,
+        email: c.email ?? null,
+      })),
+      blockedServicesCount: blockedContractIds.size,
+    }
+  })
 })
 
 export type ClientSummary = {
@@ -98,12 +143,13 @@ export type ClientSummary = {
   contractsCount: number
   totalRevenue: number
   activitiesCount: number
+  blockedServicesCount: number
 }
 
 export const fetchClientsWithSummary = createServerFn().handler(async (): Promise<ClientSummary[]> => {
   const request = getRequest()
   const session = await auth.api.getSession({ headers: request.headers })
-  if (!session?.user?.id) throw new Error('Не авторизован')
+  if (!session.user.id) throw new Error('Не авторизован')
 
   const { selectedScope } = await resolveSelectedScope(session.user.id, request.headers)
 
@@ -137,7 +183,7 @@ export const fetchClientsWithSummary = createServerFn().handler(async (): Promis
     ),
   ]
 
-  const [contractRows, invoiceRows, revisionItemRows] = await Promise.all([
+  const [contractRows, invoiceRows] = await Promise.all([
     allCounterpartyIds.length === 0
       ? []
       : db.query.contract.findMany({
@@ -154,7 +200,6 @@ export const fetchClientsWithSummary = createServerFn().handler(async (): Promis
           columns: { counterpartyId: true, amount: true, paidAt: true },
           with: { settlements: { columns: { amount: true, settledAt: true } } },
         }),
-    Promise.resolve([]),
   ])
 
   const contractIdsByCounterpartyId = new Map<string, string[]>()
@@ -166,6 +211,22 @@ export const fetchClientsWithSummary = createServerFn().handler(async (): Promis
   }
 
   const allContractIds = contractRows.map((c) => c.id)
+  const blockedContractRows =
+    allContractIds.length === 0
+      ? []
+      : await db
+          .selectDistinct({ contractId: contractVm.contractId })
+          .from(contractVm)
+          .where(
+            and(
+              inArray(contractVm.contractId, allContractIds),
+              eq(contractVm.isPausedBySystem, true),
+            ),
+          )
+  const blockedContractIdSet = new Set(
+    blockedContractRows.map((row) => row.contractId),
+  )
+
   const activeRevisionItems =
     allContractIds.length === 0
       ? []
@@ -215,6 +276,9 @@ export const fetchClientsWithSummary = createServerFn().handler(async (): Promis
       (sum, id) => sum + (activeRevisionCountByContractId.get(id) ?? 0),
       0,
     )
+    const blockedServicesCount = [
+      ...new Set(clientContractIds),
+    ].filter((id) => blockedContractIdSet.has(id)).length
 
     return {
       id: row.id,
@@ -233,6 +297,7 @@ export const fetchClientsWithSummary = createServerFn().handler(async (): Promis
       contractsCount,
       totalRevenue,
       activitiesCount,
+      blockedServicesCount,
     }
   })
 })
@@ -254,7 +319,7 @@ export const addClient = createServerFn({ method: 'POST' })
     const request = getRequest()
     const session = await auth.api.getSession({ headers: request.headers })
 
-    if (!session?.user?.id) {
+    if (!session.user.id) {
       throw new Error('Не авторизован')
     }
 
@@ -296,7 +361,7 @@ export const updateClient = createServerFn({ method: 'POST' })
     const request = getRequest()
     const session = await auth.api.getSession({ headers: request.headers })
 
-    if (!session?.user?.id) {
+    if (!session.user.id) {
       throw new Error('Не авторизован')
     }
 
@@ -352,7 +417,7 @@ export const fetchClientDetail = createServerFn()
   .handler(async ({ data }): Promise<ClientDetail> => {
     const request = getRequest()
     const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    if (!session.user.id) throw new Error('Не авторизован')
 
     const row = await db.query.client.findFirst({
       where: eq(client.id, data.id),
@@ -407,6 +472,7 @@ export const fetchClientDetail = createServerFn()
           })
 
     const contractIds = contractRows.map((c) => c.id)
+    const blockedServices = await getBlockedServicesByContractIds(contractIds)
 
     // ── Pending payments ───────────────────────────────────────────────────
     const paymentRows =
@@ -504,8 +570,8 @@ export const fetchClientDetail = createServerFn()
         signedAt: c.signedAt ?? null,
         contractType: c.contractType,
         amount: c.amount,
-        businessLine: c.businessLine!,
-        counterparty: c.counterparty!,
+        businessLine: c.businessLine,
+        counterparty: c.counterparty,
         documents: c.contractDocuments.map((cd) => cd.document),
       })),
       pendingPayments: paymentRows.map((p) => ({
@@ -529,11 +595,11 @@ export const fetchClientDetail = createServerFn()
       amountHistory: historyRows.map((h) => ({
         id: h.id,
         contractId: h.contractId,
-        contractName: h.contract?.name ?? '',
+        contractName: h.contract.name,
         previousAmounts: h.previousAmounts,
         newAmounts: h.newAmounts,
         changedAt: h.changedAt,
-        changedByName: h.changedByUser?.name ?? '',
+        changedByName: h.changedByUser.name,
       })),
       contacts: row.contacts.map((c) => ({
         id: c.id,
@@ -542,6 +608,7 @@ export const fetchClientDetail = createServerFn()
         phone: c.phone ?? null,
         email: c.email ?? null,
       })),
+      blockedServices,
     }
   })
 
@@ -560,7 +627,7 @@ export const addContact = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const request = getRequest()
     const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    if (!session.user.id) throw new Error('Не авторизован')
 
     const [inserted] = await db
       .insert(contact)
@@ -581,7 +648,7 @@ export const updateContact = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const request = getRequest()
     const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    if (!session.user.id) throw new Error('Не авторизован')
 
     await db
       .update(contact)

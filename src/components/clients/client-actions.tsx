@@ -22,7 +22,7 @@ export function ClientActions({ client }: { client: ClientDetail }) {
   const queryClient = useQueryClient()
   const [editOpen, setEditOpen] = useState(false)
 
-  // EditClientForm expects the Client shape (id, name, companyId, createdBy, counterparties, managers)
+  // EditClientForm expects Client shape from shared types.
   const clientForForm = {
     id: client.id,
     name: client.name,
@@ -30,6 +30,8 @@ export function ClientActions({ client }: { client: ClientDetail }) {
     createdBy: client.createdBy,
     counterparties: client.counterparties.map((c) => ({ id: c.id, name: c.name })),
     managers: client.managers,
+    contacts: client.contacts,
+    blockedServicesCount: client.blockedServices.length,
   }
 
   const handleEditDone = async () => {

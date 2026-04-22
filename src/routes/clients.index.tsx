@@ -172,16 +172,33 @@ function ClientsPage() {
           <>
             <div className="flex flex-col gap-3 sm:hidden">
               {filteredClients.map((client) => (
-                <Card key={client.id} className="p-4">
+                <Card
+                  key={client.id}
+                  className={`p-4 ${
+                    client.blockedServicesCount > 0
+                      ? 'border-destructive/40 bg-destructive/5'
+                      : ''
+                  }`}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <Link
-                        to="/clients/$id"
-                        params={{ id: client.id }}
-                        className="font-medium hover:underline"
-                      >
-                        {client.name}
-                      </Link>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <Link
+                          to="/clients/$id"
+                          params={{ id: client.id }}
+                          className="font-medium hover:underline"
+                        >
+                          {client.name}
+                        </Link>
+                        {client.blockedServicesCount > 0 && (
+                          <Badge
+                            variant="destructive"
+                            className="h-5 px-1.5 text-[10px]"
+                          >
+                            Блок: {client.blockedServicesCount}
+                          </Badge>
+                        )}
+                      </div>
                       <p className="mt-1 text-sm text-muted-foreground">
                         {client.counterparties.length > 0
                           ? client.counterparties
@@ -244,7 +261,14 @@ function ClientsPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredClients.map((client) => (
-                    <TableRow key={client.id}>
+                    <TableRow
+                      key={client.id}
+                      className={
+                        client.blockedServicesCount > 0
+                          ? 'bg-destructive/5 hover:bg-destructive/10'
+                          : undefined
+                      }
+                    >
                       <TableCell>
                         <div className="flex items-center gap-2 font-medium">
                           <User className="size-4 text-muted-foreground" />
@@ -255,6 +279,14 @@ function ClientsPage() {
                           >
                             {client.name}
                           </Link>
+                          {client.blockedServicesCount > 0 && (
+                            <Badge
+                              variant="destructive"
+                              className="h-5 px-1.5 text-[10px]"
+                            >
+                              Блок: {client.blockedServicesCount}
+                            </Badge>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="w-48 max-w-48">

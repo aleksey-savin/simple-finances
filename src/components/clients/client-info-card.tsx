@@ -34,6 +34,7 @@ export function ClientInfoCard({ client }: { client: ClientDetail }) {
     })),
     managers: client.managers,
     contacts: client.contacts,
+    blockedServicesCount: client.blockedServices.length,
   }
 
   const handleEditDone = async () => {

@@ -14,6 +14,7 @@ import {
 import { ContractDocuments } from '@/components/contracts/documents'
 import { ContractIntegrationsSection } from '@/components/contracts/proxmox-integrations'
 import { ContractsTable } from '@/components/contracts/table'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Combobox } from '@/components/ui/combobox'
@@ -164,58 +165,83 @@ function ContractsPage() {
         ) : (
           <>
             <div className="flex flex-col gap-3 sm:hidden">
-              {filteredContracts.map((contract) => (
-                <Card key={contract.id} className="p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="font-medium">
-                        {`Договор №${contract.number} от ${formatSignedAt(contract.signedAt)}`}
-                      </p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {contractTypeLabel[contract.contractType]}
-                      </p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {contract.counterparty.name} ·{' '}
-                        {contract.businessLine.name}
-                      </p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {contract.amount
-                          .map((amount) => `${formatAmount(amount)} ₽`)
-                          .join(', ')}
-                      </p>
+              {filteredContracts.map((contract) => {
+                const blockedVmCount = contract.blockedVmCount
+                const isBlocked = blockedVmCount > 0
+
+                return (
+                  <Card
+                    key={contract.id}
+                    className={`p-4 ${
+                      isBlocked ? 'border-destructive/40 bg-destructive/5' : ''
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <p className="font-medium">
+                            {`Договор №${contract.number} от ${formatSignedAt(contract.signedAt)}`}
+                          </p>
+                          {isBlocked && (
+                            <Badge
+                              variant="destructive"
+                              className="h-5 px-1.5 text-[10px]"
+                            >
+                              Блок
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {contractTypeLabel[contract.contractType]}
+                        </p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {contract.counterparty.name} ·{' '}
+                          {contract.businessLine.name}
+                        </p>
+                        {isBlocked && (
+                          <p className="mt-1 text-xs text-destructive">
+                            Заблокировано ВМ: {blockedVmCount}
+                          </p>
+                        )}
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {contract.amount
+                            .map((amount) => `${formatAmount(amount)} ₽`)
+                            .join(', ')}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8"
+                          title="Proxmox"
+                          onClick={() => setProxmoxContractId(contract.id)}
+                        >
+                          <Server className="size-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8"
+                          title="Документы"
+                          onClick={() => setDocsContractId(contract.id)}
+                        >
+                          <Paperclip className="size-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8"
+                          onClick={() => setEditingId(contract.id)}
+                        >
+                          <Pencil className="size-4" />
+                        </Button>
+                        <DeleteContract entityId={contract.id} />
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-8"
-                        title="Proxmox"
-                        onClick={() => setProxmoxContractId(contract.id)}
-                      >
-                        <Server className="size-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-8"
-                        title="Документы"
-                        onClick={() => setDocsContractId(contract.id)}
-                      >
-                        <Paperclip className="size-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-8"
-                        onClick={() => setEditingId(contract.id)}
-                      >
-                        <Pencil className="size-4" />
-                      </Button>
-                      <DeleteContract entityId={contract.id} />
-                    </div>
-                  </div>
-                </Card>
-              ))}
+                  </Card>
+                )
+              })}
             </div>
 
             <Card className="hidden p-4 sm:block">
@@ -224,6 +250,7 @@ function ContractsPage() {
                 openingDocId={openingDocId}
                 onOpenDocument={(id) => void openDocumentFile(id)}
                 showType
+                highlightBlocked
                 renderActions={(contract) => (
                   <>
                     <Button

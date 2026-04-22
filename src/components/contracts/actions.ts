@@ -48,7 +48,7 @@ export const DOCUMENT_FILE_ACCEPT = DOCUMENT_FILE_ALLOWED_EXTENSIONS.map(
 export const fetchContracts = createServerFn().handler(async () => {
   const request = getRequest()
   const session = await auth.api.getSession({ headers: request.headers })
-  if (!session?.user?.id) throw new Error('Не авторизован')
+  if (!session.user.id) throw new Error('Не авторизован')
 
   const { selectedScope } = await resolveSelectedScope(
     session.user.id,
@@ -99,24 +99,25 @@ export const fetchContracts = createServerFn().handler(async () => {
             },
           },
         },
+        contractVms: {
+          columns: {
+            id: true,
+            isPausedBySystem: true,
+          },
+        },
       },
       orderBy: (table, { asc }) => asc(table.name),
     })
     .then((rows) =>
       rows.map((row) => {
-        if (row.businessLine === null) {
-          throw new Error('Для договора не найдено направление')
-        }
-        if (row.counterparty === null) {
-          throw new Error('Для договора не найден контрагент')
-        }
-
         return {
           ...row,
           businessLine: row.businessLine,
           counterparty: row.counterparty,
           companyId: row.companyId,
           documents: row.contractDocuments.map((cd) => cd.document),
+          blockedVmCount: row.contractVms.filter((vm) => vm.isPausedBySystem)
+            .length,
         }
       }),
     )
@@ -155,7 +156,7 @@ export const uploadDocument = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const request = getRequest()
     const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    if (!session.user.id) throw new Error('Не авторизован')
 
     if (data.fileSize > DOCUMENT_FILE_MAX_SIZE_BYTES) {
       throw new Error(`Размер файла превышает ${DOCUMENT_FILE_MAX_SIZE_MB} МБ`)
@@ -202,14 +203,14 @@ export const resolveDocumentUrl = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const request = getRequest()
     const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    if (!session.user.id) throw new Error('Не авторизован')
 
     const doc = await db.query.document.findFirst({
       where: eq(document.id, data.documentId),
       columns: { url: true },
     })
 
-    if (!doc?.url) {
+    if (!doc) {
       throw new Error('Документ не найден')
     }
 
@@ -237,7 +238,7 @@ export const addContractDocument = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const request = getRequest()
     const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    if (!session.user.id) throw new Error('Не авторизован')
 
     await db.insert(contractDocument).values({
       contractId: data.contractId,
@@ -250,7 +251,7 @@ export const removeContractDocument = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const request = getRequest()
     const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    if (!session.user.id) throw new Error('Не авторизован')
 
     const cd = await db.query.contractDocument.findFirst({
       where: and(
@@ -266,7 +267,7 @@ export const removeContractDocument = createServerFn({ method: 'POST' })
 
     await db.delete(document).where(eq(document.id, data.documentId))
 
-    const fileRef = cd.document.url?.trim()
+    const fileRef = cd.document.url.trim()
     if (fileRef && !/^https?:\/\//i.test(fileRef)) {
       await deleteS3Object(fileRef).catch(() => {})
     }
@@ -277,7 +278,7 @@ export const addContract = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const request = getRequest()
     const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    if (!session.user.id) throw new Error('Не авторизован')
 
     const [inserted] = await db
       .insert(contract)
@@ -306,7 +307,7 @@ export const updateContract = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const request = getRequest()
     const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    if (!session.user.id) throw new Error('Не авторизован')
 
     await db
       .update(contract)
