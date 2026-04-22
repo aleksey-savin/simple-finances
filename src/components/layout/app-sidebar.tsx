@@ -158,6 +158,12 @@ const navMain = [
         icon: <Wallet className="size-5" />,
         url: '/current-accounts',
       },
+    ],
+  },
+  {
+    title: '',
+    collapsible: false,
+    items: [
       {
         title: 'Настройки',
         icon: <Settings className="size-5" />,

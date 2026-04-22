@@ -76,10 +76,17 @@ export const fetchContracts = createServerFn().handler(async () => {
         createdBy: true,
       },
       with: {
+        company: {
+          columns: {
+            id: true,
+            name: true,
+          },
+        },
         businessLine: {
           columns: {
             id: true,
             name: true,
+            allowServerBindings: true,
           },
         },
         counterparty: {
@@ -112,6 +119,7 @@ export const fetchContracts = createServerFn().handler(async () => {
       rows.map((row) => {
         return {
           ...row,
+          company: row.company,
           businessLine: row.businessLine,
           counterparty: row.counterparty,
           companyId: row.companyId,
@@ -131,16 +139,28 @@ const amountItemSchema = z
   .refine((value) => !Number.isNaN(Number(value)), 'Сумма должна быть числом')
   .refine((value) => Number(value) > 0, 'Сумма должна быть больше нуля')
 
-const contractSchema = z.object({
-  name: z.string().min(2, 'Минимум 2 символа'),
-  number: z.string().trim().min(1, 'Укажите номер договора'),
-  signedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Укажите дату заключения'),
-  contractType: z.enum(contractTypeEnum.enumValues),
-  businessLineId: z.string().min(1, 'Выберите направление'),
-  counterpartyId: z.string().min(1, 'Выберите контрагента'),
-  companyId: z.string().optional(),
-  amount: z.array(amountItemSchema).min(1, 'Добавьте хотя бы одну сумму'),
-})
+const contractSchema = z
+  .object({
+    name: z.string().min(2, 'Минимум 2 символа'),
+    number: z.string().trim().min(1, 'Укажите номер договора'),
+    signedAt: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Укажите дату заключения'),
+    contractType: z.enum(contractTypeEnum.enumValues),
+    businessLineId: z.string().nullable().optional(),
+    counterpartyId: z.string().min(1, 'Выберите контрагента'),
+    companyId: z.string().optional(),
+    amount: z.array(amountItemSchema).min(1, 'Добавьте хотя бы одну сумму'),
+  })
+  .superRefine((value, ctx) => {
+    if (value.contractType === 'customer' && !value.businessLineId?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Выберите направление',
+        path: ['businessLineId'],
+      })
+    }
+  })
 
 export const addContractSchema = contractSchema
 
@@ -280,6 +300,9 @@ export const addContract = createServerFn({ method: 'POST' })
     const session = await auth.api.getSession({ headers: request.headers })
     if (!session.user.id) throw new Error('Не авторизован')
 
+    const businessLineId =
+      data.contractType === 'supplier' ? null : (data.businessLineId ?? null)
+
     const [inserted] = await db
       .insert(contract)
       .values({
@@ -287,7 +310,7 @@ export const addContract = createServerFn({ method: 'POST' })
         number: data.number,
         signedAt: data.signedAt,
         contractType: data.contractType,
-        businessLineId: data.businessLineId,
+        businessLineId,
         counterpartyId: data.counterpartyId,
         companyId: data.companyId ?? null,
         amount: data.amount,
@@ -309,6 +332,9 @@ export const updateContract = createServerFn({ method: 'POST' })
     const session = await auth.api.getSession({ headers: request.headers })
     if (!session.user.id) throw new Error('Не авторизован')
 
+    const businessLineId =
+      data.contractType === 'supplier' ? null : (data.businessLineId ?? null)
+
     await db
       .update(contract)
       .set({
@@ -316,7 +342,7 @@ export const updateContract = createServerFn({ method: 'POST' })
         number: data.number,
         signedAt: data.signedAt,
         contractType: data.contractType,
-        businessLineId: data.businessLineId,
+        businessLineId,
         counterpartyId: data.counterpartyId,
         companyId: data.companyId ?? null,
         amount: data.amount,

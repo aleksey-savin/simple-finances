@@ -36,9 +36,9 @@ function BusinessLineRow({
         <ItemContent>
           <ItemTitle>{businessLine.name}</ItemTitle>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {businessLine.contracts.length > 0
-              ? businessLine.contracts.map((item) => item.name).join(', ')
-              : 'Договоры не привязаны'}
+            {`Договоров: ${businessLine.contracts.length} · Серверы: ${
+              businessLine.allowServerBindings ? 'разрешены' : 'запрещены'
+            } · Уведомления: ${businessLine.allowNotifications ? 'вкл' : 'выкл'}`}
           </p>
         </ItemContent>
 

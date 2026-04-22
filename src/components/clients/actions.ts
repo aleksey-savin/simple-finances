@@ -463,7 +463,9 @@ export const fetchClientDetail = createServerFn()
               counterpartyId: true,
             },
             with: {
-              businessLine: { columns: { id: true, name: true } },
+              businessLine: {
+                columns: { id: true, name: true, allowServerBindings: true },
+              },
               counterparty: { columns: { id: true, name: true } },
               contractDocuments: {
                 with: { document: { columns: { id: true, name: true, url: true } } },
@@ -570,7 +572,7 @@ export const fetchClientDetail = createServerFn()
         signedAt: c.signedAt ?? null,
         contractType: c.contractType,
         amount: c.amount,
-        businessLine: c.businessLine,
+        businessLine: c.businessLine ?? null,
         counterparty: c.counterparty,
         documents: c.contractDocuments.map((cd) => cd.document),
       })),

@@ -1,0 +1,1 @@
+ALTER TABLE "business_line" ADD COLUMN "allow_server_bindings" boolean DEFAULT true NOT NULL;

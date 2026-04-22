@@ -1,12 +1,26 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from '@tanstack/react-form'
-import { Eye, EyeOff, Loader2, Pencil, Plus, Server, Trash2 } from 'lucide-react'
+import {
+  Eye,
+  EyeOff,
+  Loader2,
+  Pencil,
+  Plus,
+  Server,
+  Trash2,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import z from 'zod'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import {
@@ -72,16 +86,17 @@ function NodeForm({ node, onDone }: NodeFormProps) {
 
   return (
     <form
-      className="grid gap-3"
+      className="grid gap-4"
       onSubmit={(e) => {
         e.preventDefault()
         form.handleSubmit()
       }}
     >
-      <div className="grid sm:grid-cols-2 gap-3">
+      <div className="grid sm:grid-cols-2 gap-4">
         <form.Field name="name">
           {(field) => {
-            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
             return (
               <Field data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Название</FieldLabel>
@@ -102,7 +117,8 @@ function NodeForm({ node, onDone }: NodeFormProps) {
         <div className="flex gap-2">
           <form.Field name="host">
             {(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
               return (
                 <Field data-invalid={isInvalid} className="flex-1">
                   <FieldLabel htmlFor={field.name}>Адрес</FieldLabel>
@@ -141,7 +157,8 @@ function NodeForm({ node, onDone }: NodeFormProps) {
 
       <form.Field name="tokenId">
         {(field) => {
-          const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+          const isInvalid =
+            field.state.meta.isTouched && !field.state.meta.isValid
           return (
             <Field data-invalid={isInvalid}>
               <FieldLabel htmlFor={field.name}>API Token ID</FieldLabel>
@@ -162,7 +179,8 @@ function NodeForm({ node, onDone }: NodeFormProps) {
 
       <form.Field name="tokenSecret">
         {(field) => {
-          const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+          const isInvalid =
+            field.state.meta.isTouched && !field.state.meta.isValid
           return (
             <Field data-invalid={isInvalid}>
               <FieldLabel htmlFor={field.name}>API Token Secret</FieldLabel>
@@ -183,7 +201,11 @@ function NodeForm({ node, onDone }: NodeFormProps) {
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   tabIndex={-1}
                 >
-                  {showSecret ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  {showSecret ? (
+                    <EyeOff className="size-4" />
+                  ) : (
+                    <Eye className="size-4" />
+                  )}
                 </button>
               </div>
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
@@ -255,14 +277,14 @@ function NodeRow({ node }: { node: ProxmoxNode }) {
 
   if (isEditing) {
     return (
-      <div className="rounded-md border p-3">
+      <div className="rounded-none border p-3">
         <NodeForm node={node} onDone={() => setIsEditing(false)} />
       </div>
     )
   }
 
   return (
-    <div className="flex items-center justify-between rounded-md border px-3 py-2">
+    <div className="flex items-center justify-between rounded-none border px-3 py-2">
       <div className="flex flex-col gap-0.5">
         <span className="text-sm font-medium">{node.name}</span>
         <span className="text-xs text-muted-foreground font-mono">
@@ -277,13 +299,27 @@ function NodeRow({ node }: { node: ProxmoxNode }) {
           disabled={isTesting}
           className="text-xs"
         >
-          {isTesting ? <Loader2 className="size-3 animate-spin" /> : <Server className="size-3" />}
+          {isTesting ? (
+            <Loader2 className="size-3 animate-spin" />
+          ) : (
+            <Server className="size-3" />
+          )}
           Тест
         </Button>
-        <Button variant="ghost" size="icon" className="size-8" onClick={() => setIsEditing(true)}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-8"
+          onClick={() => setIsEditing(true)}
+        >
           <Pencil className="size-3.5" />
         </Button>
-        <Button variant="ghost" size="icon" className="size-8" onClick={handleDelete}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-8"
+          onClick={handleDelete}
+        >
           <Trash2 className="size-3.5" />
         </Button>
       </div>
@@ -304,7 +340,9 @@ function ReminderSettings() {
     onSubmit: async ({ value }) => {
       try {
         await saveProxmoxAccountSettings({ data: value })
-        await queryClient.invalidateQueries({ queryKey: proxmoxSettingsQueryKey })
+        await queryClient.invalidateQueries({
+          queryKey: proxmoxSettingsQueryKey,
+        })
         toast.success('Настройки сохранены')
       } catch (err) {
         toast.error(err instanceof Error ? err.message : 'Произошла ошибка')
@@ -314,7 +352,7 @@ function ReminderSettings() {
 
   return (
     <form
-      className="flex items-end gap-3"
+      className="grid gap-4"
       onSubmit={(e) => {
         e.preventDefault()
         form.handleSubmit()
@@ -341,12 +379,29 @@ function ReminderSettings() {
       </form.Field>
       <form.Subscribe selector={(s) => s.isSubmitting}>
         {(isSubmitting) => (
-          <Button type="submit" size="sm" disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting} className="w-fit">
             {isSubmitting ? 'Сохранение…' : 'Сохранить'}
           </Button>
         )}
       </form.Subscribe>
     </form>
+  )
+}
+
+export function NotificationsPreferencesPanel() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Напоминания об оплате</CardTitle>
+        <CardDescription>
+          Email-уведомление контактному лицу клиента за N дней до срока оплаты
+          по счёту, привязанному к договору
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="max-w-lg">
+        <ReminderSettings />
+      </CardContent>
+    </Card>
   )
 }
 
@@ -359,58 +414,44 @@ export function ProxmoxPreferencesPanel() {
   })
 
   return (
-    <div className="flex flex-col gap-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Напоминания об оплате</CardTitle>
-          <CardDescription>
-            Email-уведомление контактному лицу клиента за N дней до срока оплаты по счёту,
-            привязанному к договору
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ReminderSettings />
-        </CardContent>
-      </Card>
+    <Card>
+      <CardHeader>
+        <CardTitle>Ноды Proxmox</CardTitle>
+        <CardDescription>
+          Подключения к серверам Proxmox для управления виртуальными машинами и
+          контейнерами
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        {isLoading && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />
+            Загрузка…
+          </div>
+        )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Ноды Proxmox</CardTitle>
-          <CardDescription>
-            Подключения к серверам Proxmox для управления виртуальными машинами и контейнерами
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          {isLoading && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" />
-              Загрузка…
-            </div>
-          )}
+        {nodes.map((node) => (
+          <NodeRow key={node.id} node={node} />
+        ))}
 
-          {nodes.map((node) => (
-            <NodeRow key={node.id} node={node} />
-          ))}
+        {!isAdding && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="self-start"
+            onClick={() => setIsAdding(true)}
+          >
+            <Plus className="size-4" />
+            Добавить ноду
+          </Button>
+        )}
 
-          {!isAdding && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="self-start"
-              onClick={() => setIsAdding(true)}
-            >
-              <Plus className="size-4" />
-              Добавить ноду
-            </Button>
-          )}
-
-          {isAdding && (
-            <div className="rounded-md border p-3">
-              <NodeForm onDone={() => setIsAdding(false)} />
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+        {isAdding && (
+          <div className="rounded-none border p-3">
+            <NodeForm onDone={() => setIsAdding(false)} />
+          </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }

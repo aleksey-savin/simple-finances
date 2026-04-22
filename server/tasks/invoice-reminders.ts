@@ -93,6 +93,11 @@ export default defineTask({
           with: {
             contract: {
               columns: { id: true, name: true, number: true },
+              with: {
+                businessLine: {
+                  columns: { allowNotifications: true },
+                },
+              },
             },
           },
         })
@@ -106,6 +111,13 @@ export default defineTask({
           if (!inv.counterpartyId) {
             console.log(
               `[invoice-reminders] Invoice ${inv.id} skipped: no counterpartyId`,
+            )
+            continue
+          }
+
+          if (inv.contract?.businessLine?.allowNotifications === false) {
+            console.log(
+              `[invoice-reminders] Invoice ${inv.id} skipped: notifications disabled for business line`,
             )
             continue
           }

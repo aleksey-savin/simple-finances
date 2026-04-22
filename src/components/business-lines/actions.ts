@@ -12,13 +12,15 @@ export const businessLinesQueryKey = ['business-lines'] as const
 export const fetchBusinessLines = createServerFn().handler(async () => {
   const request = getRequest()
   const session = await auth.api.getSession({ headers: request.headers })
-  if (!session?.user?.id) throw new Error('Не авторизован')
+  if (!session.user.id) throw new Error('Не авторизован')
 
   return db.query.businessLine
     .findMany({
       columns: {
         id: true,
         name: true,
+        allowServerBindings: true,
+        allowNotifications: true,
         createdBy: true,
       },
       with: {
@@ -35,6 +37,8 @@ export const fetchBusinessLines = createServerFn().handler(async () => {
       rows.map((row) => ({
         id: row.id,
         name: row.name,
+        allowServerBindings: row.allowServerBindings,
+        allowNotifications: row.allowNotifications,
         createdBy: row.createdBy,
         contracts: row.contracts,
       })),
@@ -43,6 +47,8 @@ export const fetchBusinessLines = createServerFn().handler(async () => {
 
 const businessLineSchema = z.object({
   name: z.string().min(2, 'Минимум 2 символа'),
+  allowServerBindings: z.boolean(),
+  allowNotifications: z.boolean(),
 })
 
 export const addBusinessLineSchema = businessLineSchema
@@ -52,10 +58,12 @@ export const addBusinessLine = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const request = getRequest()
     const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    if (!session.user.id) throw new Error('Не авторизован')
 
     await db.insert(businessLine).values({
       name: data.name,
+      allowServerBindings: data.allowServerBindings,
+      allowNotifications: data.allowNotifications,
       createdBy: session.user.id,
     })
   })
@@ -69,12 +77,14 @@ export const updateBusinessLine = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const request = getRequest()
     const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    if (!session.user.id) throw new Error('Не авторизован')
 
     await db
       .update(businessLine)
       .set({
         name: data.name,
+        allowServerBindings: data.allowServerBindings,
+        allowNotifications: data.allowNotifications,
       })
       .where(eq(businessLine.id, data.id))
   })

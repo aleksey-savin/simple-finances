@@ -4,7 +4,7 @@ import { and, desc, eq, isNotNull } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { db } from '@/db'
-import { contractVm, proxmoxNode } from '@/db/schema'
+import { contract, contractVm, proxmoxNode } from '@/db/schema'
 import {
   formatDateRu,
   getContractNotificationContext,
@@ -22,6 +22,8 @@ export const contractVmsQueryKey = (contractId: string) =>
   ['contract-vms', contractId] as const
 export const contractPaymentTermQueryKey = (contractId: string) =>
   ['contract-payment-term', contractId] as const
+export const contractVmBindingAccessQueryKey = (contractId: string) =>
+  ['contract-vm-binding-access', contractId] as const
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -30,6 +32,29 @@ async function requireSession() {
   const session = await auth.api.getSession({ headers: request.headers })
   if (!session.user.id) throw new Error('Не авторизован')
   return session.user.id
+}
+
+async function getContractVmBindingAccess(contractId: string) {
+  const contractRow = await db.query.contract.findFirst({
+    where: eq(contract.id, contractId),
+    columns: { id: true },
+    with: {
+      businessLine: {
+        columns: {
+          name: true,
+          allowServerBindings: true,
+        },
+      },
+    },
+  })
+
+  if (!contractRow) throw new Error('Договор не найден')
+
+  return {
+    contractId: contractRow.id,
+    businessLineName: contractRow.businessLine?.name ?? 'Без направления',
+    allowServerBindings: contractRow.businessLine?.allowServerBindings ?? false,
+  }
 }
 
 // ─── Fetch VMs bound to a contract ────────────────────────────────────────────
@@ -57,6 +82,13 @@ export const fetchContractPaymentTerm = createServerFn({ method: 'POST' })
     return {
       dueDate: dueDate ? dueDate.toISOString() : null,
     }
+  })
+
+export const fetchContractVmBindingAccess = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ contractId: z.string().min(1) }))
+  .handler(async ({ data }) => {
+    await requireSession()
+    return getContractVmBindingAccess(data.contractId)
   })
 
 // ─── Fetch VMs available on a Proxmox node ────────────────────────────────────
@@ -103,6 +135,14 @@ export const addContractVm = createServerFn({ method: 'POST' })
   .inputValidator(addContractVmSchema)
   .handler(async ({ data }) => {
     await requireSession()
+    const access = await getContractVmBindingAccess(data.contractId)
+
+    if (!access.allowServerBindings) {
+      throw new Error(
+        `Для направления «${access.businessLineName}» привязка ВМ отключена`,
+      )
+    }
+
     try {
       await db.insert(contractVm).values({
         contractId: data.contractId,

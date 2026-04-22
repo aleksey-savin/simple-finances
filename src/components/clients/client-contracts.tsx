@@ -90,6 +90,7 @@ export function ClientContracts({
             contracts={contracts}
             openingDocId={openingDocId}
             onOpenDocument={(id) => void handleOpenDocument(id)}
+            directionMode="cashflow"
             renderActions={(contract) => (
               <>
                 <Button
@@ -127,6 +128,7 @@ export function ClientContracts({
           </DialogHeader>
           <AddContractForm
             defaultCounterpartyId={defaultCounterpartyId}
+            hideBusinessLineWhenSupplier
             onSuccess={handleContractAdded}
           />
         </DialogContent>

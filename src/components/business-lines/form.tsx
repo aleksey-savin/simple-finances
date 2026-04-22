@@ -8,6 +8,7 @@ import type { BusinessLine } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 import {
   addBusinessLine,
   businessLinesQueryKey,
@@ -16,10 +17,12 @@ import {
 
 const uiFormSchema = z.object({
   name: z.string().min(2, 'Минимум 2 символа'),
+  allowServerBindings: z.boolean(),
+  allowNotifications: z.boolean(),
 })
 
 type BusinessLineFormProps =
-  | { businessLine?: undefined; onDone?: undefined }
+  | { businessLine?: undefined; onDone?: () => void }
   | { businessLine: BusinessLine; onDone: () => void }
 
 export const BusinessLineForm = ({
@@ -33,6 +36,8 @@ export const BusinessLineForm = ({
   const form = useForm({
     defaultValues: {
       name: current?.name ?? '',
+      allowServerBindings: current?.allowServerBindings ?? true,
+      allowNotifications: current?.allowNotifications ?? true,
     },
     validators: { onSubmit: uiFormSchema },
     onSubmit: async ({ value }) => {
@@ -42,6 +47,8 @@ export const BusinessLineForm = ({
             data: {
               id: current.id,
               name: value.name,
+              allowServerBindings: value.allowServerBindings,
+              allowNotifications: value.allowNotifications,
             },
           })
           await router.invalidate()
@@ -57,6 +64,8 @@ export const BusinessLineForm = ({
         await addBusinessLine({
           data: {
             name: value.name,
+            allowServerBindings: value.allowServerBindings,
+            allowNotifications: value.allowNotifications,
           },
         })
         await router.invalidate()
@@ -65,6 +74,7 @@ export const BusinessLineForm = ({
         })
         form.reset()
         toast.success('Направление добавлено')
+        onDone?.()
       } catch (error) {
         toast.error(error instanceof Error ? error.message : 'Произошла ошибка')
       }
@@ -117,13 +127,61 @@ export const BusinessLineForm = ({
           }}
         </form.Field>
 
+        <form.Field name="allowServerBindings">
+          {(field) => (
+            <Field>
+              <div className="flex items-center justify-between gap-2 rounded-md border px-3 py-2">
+                <div className="space-y-0.5">
+                  <FieldLabel htmlFor={field.name} className="cursor-pointer">
+                    Разрешить привязку серверов
+                  </FieldLabel>
+                  <p className="text-xs text-muted-foreground">
+                    В договорах этого направления можно привязывать ВМ Proxmox
+                  </p>
+                </div>
+                <Switch
+                  id={field.name}
+                  checked={field.state.value}
+                  onCheckedChange={field.handleChange}
+                  onBlur={field.handleBlur}
+                />
+              </div>
+            </Field>
+          )}
+        </form.Field>
+
+        <form.Field name="allowNotifications">
+          {(field) => (
+            <Field>
+              <div className="flex items-center justify-between gap-2 rounded-md border px-3 py-2">
+                <div className="space-y-0.5">
+                  <FieldLabel htmlFor={field.name} className="cursor-pointer">
+                    Отправлять уведомления об оплате
+                  </FieldLabel>
+                  <p className="text-xs text-muted-foreground">
+                    Email-напоминания по счетам договоров этого направления
+                  </p>
+                </div>
+                <Switch
+                  id={field.name}
+                  checked={field.state.value}
+                  onCheckedChange={field.handleChange}
+                  onBlur={field.handleBlur}
+                />
+              </div>
+            </Field>
+          )}
+        </form.Field>
+
         <Button type="submit">{isEdit ? 'Сохранить' : 'Создать'}</Button>
       </div>
     </form>
   )
 }
 
-export const AddBusinessLineForm = () => <BusinessLineForm />
+export const AddBusinessLineForm = ({ onDone }: { onDone?: () => void }) => (
+  <BusinessLineForm onDone={onDone} />
+)
 
 export const EditBusinessLineForm = ({
   businessLine,

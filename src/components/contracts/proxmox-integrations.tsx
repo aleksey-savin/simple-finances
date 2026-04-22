@@ -1,6 +1,12 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Loader2, Plus, Server, Trash2, PauseCircle } from 'lucide-react'
+import {
+  Loader2,
+  PauseCircle,
+  Plus,
+  Server,
+  Trash2,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
@@ -16,8 +22,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import {
+  contractVmBindingAccessQueryKey,
   contractVmsQueryKey,
   contractPaymentTermQueryKey,
+  fetchContractVmBindingAccess,
   fetchContractVms,
   fetchContractPaymentTerm,
   fetchProxmoxVmsForNode,
@@ -180,10 +188,12 @@ function BrowseVmsDialog({
   contractId,
   open,
   onOpenChange,
+  canBindVms,
 }: {
   contractId: string
   open: boolean
   onOpenChange: (open: boolean) => void
+  canBindVms: boolean
 }) {
   const queryClient = useQueryClient()
   const [selectedNodeId, setSelectedNodeId] = useState('')
@@ -215,6 +225,8 @@ function BrowseVmsDialog({
   )
 
   const handleBind = async (vm: ProxmoxVm) => {
+    if (!canBindVms) return
+
     setBindingVmid(vm.vmid)
     try {
       await addContractVm({
@@ -303,7 +315,9 @@ function BrowseVmsDialog({
                         size="sm"
                         variant={alreadyBound ? 'outline' : 'default'}
                         className="text-xs h-7"
-                        disabled={alreadyBound || bindingVmid === vm.vmid}
+                        disabled={
+                          !canBindVms || alreadyBound || bindingVmid === vm.vmid
+                        }
                         onClick={() => handleBind(vm)}
                       >
                         {bindingVmid === vm.vmid ? (
@@ -348,6 +362,12 @@ export function ContractIntegrationsSection({
     queryKey: proxmoxNodesQueryKey,
     queryFn: () => fetchProxmoxNodes(),
   })
+  const { data: vmBindingAccess, isLoading: bindingAccessLoading } = useQuery({
+    queryKey: contractVmBindingAccessQueryKey(contractId),
+    queryFn: () => fetchContractVmBindingAccess({ data: { contractId } }),
+  })
+
+  const canBindVms = vmBindingAccess?.allowServerBindings ?? false
 
   const graceSourceVmId = vms[0]?.id ?? null
   const latestPausedUntil =
@@ -403,15 +423,17 @@ export function ContractIntegrationsSection({
               Продлить
             </Button>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 text-xs"
-            onClick={() => setDialogOpen(true)}
-          >
-            <Plus className="size-3" />
-            Привязать ВМ
-          </Button>
+          {!bindingAccessLoading && canBindVms && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => setDialogOpen(true)}
+            >
+              <Plus className="size-3" />
+              Привязать ВМ
+            </Button>
+          )}
         </div>
       </div>
 
@@ -475,6 +497,7 @@ export function ContractIntegrationsSection({
         contractId={contractId}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
+        canBindVms={canBindVms}
       />
     </div>
   )

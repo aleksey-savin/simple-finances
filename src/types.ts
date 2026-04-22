@@ -146,7 +146,11 @@ export type ClientDetail = {
     signedAt: string | null
     contractType: 'customer' | 'supplier'
     amount: string[]
-    businessLine: { id: string; name: string }
+    businessLine: {
+      id: string
+      name: string
+      allowServerBindings: boolean
+    } | null
     counterparty: { id: string; name: string }
     documents: { id: string; name: string; url: string }[]
   }[]
@@ -192,7 +196,10 @@ export type Company = Pick<DBCompany, 'id' | 'name' | 'createdBy'> & {
   members: { userId: string; name: string; email: string; role: string }[]
 }
 
-export type BusinessLine = Pick<DBBusinessLine, 'id' | 'name' | 'createdBy'> & {
+export type BusinessLine = Pick<
+  DBBusinessLine,
+  'id' | 'name' | 'createdBy' | 'allowServerBindings' | 'allowNotifications'
+> & {
   contracts: Pick<DBContract, 'id' | 'name'>[]
 }
 
@@ -209,7 +216,11 @@ export type Contract = Pick<
   | 'companyId'
   | 'createdBy'
 > & {
-  businessLine: Pick<DBBusinessLine, 'id' | 'name'>
+  company: Pick<DBCompany, 'id' | 'name'> | null
+  businessLine: Pick<
+    DBBusinessLine,
+    'id' | 'name' | 'allowServerBindings'
+  > | null
   counterparty: Pick<DBCounterparty, 'id' | 'name'>
   documents: Pick<DBDocument, 'id' | 'name' | 'url'>[]
 }

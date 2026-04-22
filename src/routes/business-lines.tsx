@@ -6,7 +6,6 @@ import { Briefcase, Pencil, Search, X } from 'lucide-react'
 import { EditBusinessLineForm } from '@/components/business-lines'
 import { DeleteBusinessLine } from '@/components/business-lines/delete'
 import { fetchBusinessLines } from '@/components/business-lines/actions'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
@@ -100,19 +99,15 @@ function BusinessLinesPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="font-medium">{businessLine.name}</p>
-                      {businessLine.contracts.length > 0 ? (
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          {businessLine.contracts.map((contract) => (
-                            <Badge key={contract.id} variant="secondary">
-                              {contract.name}
-                            </Badge>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          Договоры не привязаны
-                        </p>
-                      )}
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Договоров: {businessLine.contracts.length}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Серверы:{' '}
+                        {businessLine.allowServerBindings
+                          ? 'разрешены'
+                          : 'запрещены'}
+                      </p>
                     </div>
                     <div className="flex items-center gap-1">
                       <Button
@@ -151,19 +146,15 @@ function BusinessLinesPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {businessLine.contracts.length > 0 ? (
-                          <div className="flex flex-wrap gap-1">
-                            {businessLine.contracts.map((contract) => (
-                              <Badge key={contract.id} variant="secondary">
-                                {contract.name}
-                              </Badge>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">
-                            Договоры не привязаны
+                        <div className="flex flex-col text-sm text-muted-foreground">
+                          <span>Договоров: {businessLine.contracts.length}</span>
+                          <span>
+                            Серверы:{' '}
+                            {businessLine.allowServerBindings
+                              ? 'разрешены'
+                              : 'запрещены'}
                           </span>
-                        )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex justify-end gap-1">

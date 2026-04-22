@@ -67,7 +67,7 @@ function ContractsPage() {
         contract.name,
         contract.number,
         contract.counterparty.name,
-        contract.businessLine.name,
+        contract.businessLine?.name,
         contract.amount.join(' '),
       ]
         .join(' ')
@@ -196,7 +196,7 @@ function ContractsPage() {
                         </p>
                         <p className="mt-1 text-sm text-muted-foreground">
                           {contract.counterparty.name} ·{' '}
-                          {contract.businessLine.name}
+                          {contract.businessLine?.name ?? 'Без направления'}
                         </p>
                         {isBlocked && (
                           <p className="mt-1 text-xs text-destructive">
@@ -210,15 +210,17 @@ function ContractsPage() {
                         </p>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-8"
-                          title="Proxmox"
-                          onClick={() => setProxmoxContractId(contract.id)}
-                        >
-                          <Server className="size-4" />
-                        </Button>
+                        {contract.businessLine?.allowServerBindings && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-8"
+                            title="Proxmox"
+                            onClick={() => setProxmoxContractId(contract.id)}
+                          >
+                            <Server className="size-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
@@ -253,15 +255,17 @@ function ContractsPage() {
                 highlightBlocked
                 renderActions={(contract) => (
                   <>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-8"
-                      title="Proxmox"
-                      onClick={() => setProxmoxContractId(contract.id)}
-                    >
-                      <Server className="size-4" />
-                    </Button>
+                    {contract.businessLine?.allowServerBindings && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8"
+                        title="Proxmox"
+                        onClick={() => setProxmoxContractId(contract.id)}
+                      >
+                        <Server className="size-4" />
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"

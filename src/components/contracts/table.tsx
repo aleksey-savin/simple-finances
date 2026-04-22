@@ -23,7 +23,11 @@ export type ContractTableRow = {
   signedAt: string | null
   contractType: ContractType
   amount: string[]
-  businessLine: { id: string; name: string }
+  businessLine: {
+    id: string
+    name: string
+    allowServerBindings: boolean
+  } | null
   counterparty: { id: string; name: string }
   documents: { id: string; name: string; url: string }[]
   blockedVmCount?: number
@@ -35,6 +39,7 @@ type ContractsTableProps = {
   onOpenDocument: (documentId: string) => void
   showType?: boolean
   highlightBlocked?: boolean
+  directionMode?: 'businessLine' | 'cashflow'
   renderActions?: (contract: ContractTableRow) => React.ReactNode
 }
 
@@ -57,13 +62,18 @@ export function ContractsTable({
   onOpenDocument,
   showType,
   highlightBlocked,
+  directionMode = 'businessLine',
   renderActions,
 }: ContractsTableProps) {
+  const useCashflowDirection = directionMode === 'cashflow'
+
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="font-bold">Направление</TableHead>
+          <TableHead className="font-bold">
+            {useCashflowDirection ? 'Поток' : 'Направление'}
+          </TableHead>
           <TableHead className="font-bold">Договор</TableHead>
           {showType && <TableHead className="font-bold">Тип</TableHead>}
           <TableHead className="font-bold">Суммы</TableHead>
@@ -87,7 +97,17 @@ export function ContractsTable({
                   : undefined
               }
             >
-            <TableCell className="text-sm">{contract.businessLine.name}</TableCell>
+            <TableCell className="text-sm">
+              {useCashflowDirection ? (
+                contract.contractType === 'supplier' ? (
+                  <Badge variant="warning">Расход</Badge>
+                ) : (
+                  <Badge variant="success">Доход</Badge>
+                )
+              ) : (
+                contract.businessLine?.name ?? '—'
+              )}
+            </TableCell>
             <TableCell>
               <div className="flex items-center gap-2 font-medium">
                 <FileText className="size-4 shrink-0 text-muted-foreground" />

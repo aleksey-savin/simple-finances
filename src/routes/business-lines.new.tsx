@@ -23,7 +23,7 @@ function NewBusinessLinePage() {
       title="Новое направление"
       description="Создайте бизнес-направление для связки с договорами."
     >
-      <AddBusinessLineForm />
+      <AddBusinessLineForm onDone={handleClose} />
     </ResponsiveDialog>
   )
 }

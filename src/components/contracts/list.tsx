@@ -68,7 +68,8 @@ function ContractRow({
   setIntegrationsId: (id: string | null) => void
 }) {
   const isEditing = editingId === contract.id
-  const isIntegrationsOpen = integrationsId === contract.id
+  const canManageProxmox = contract.businessLine?.allowServerBindings ?? false
+  const isIntegrationsOpen = canManageProxmox && integrationsId === contract.id
 
   return (
     <div className="flex flex-col">
@@ -86,7 +87,7 @@ function ContractRow({
             {' · '}
             {contract.counterparty.name}
             {' · '}
-            {contract.businessLine.name}
+            {contract.businessLine?.name ?? 'Без направления'}
           </p>
           <p className="mt-0.5 text-xs text-muted-foreground">
             {contract.name}
@@ -118,18 +119,20 @@ function ContractRow({
         </ItemContent>
 
         <ItemActions>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-7"
-            title="Интеграции Proxmox"
-            onClick={() => {
-              setIntegrationsId(isIntegrationsOpen ? null : contract.id)
-              if (isEditing) setEditingId(null)
-            }}
-          >
-            <Server className="size-3.5" />
-          </Button>
+          {canManageProxmox && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7"
+              title="Интеграции Proxmox"
+              onClick={() => {
+                setIntegrationsId(isIntegrationsOpen ? null : contract.id)
+                if (isEditing) setEditingId(null)
+              }}
+            >
+              <Server className="size-3.5" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"

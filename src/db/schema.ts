@@ -424,6 +424,12 @@ export const businessLine = pgTable('business_line', {
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
   name: text('name').notNull(),
+  allowServerBindings: boolean('allow_server_bindings')
+    .notNull()
+    .default(true),
+  allowNotifications: boolean('allow_notifications')
+    .notNull()
+    .default(true),
   createdBy: text('created_by')
     .notNull()
     .references(() => user.id),
@@ -447,7 +453,6 @@ export const contract = pgTable(
       .notNull()
       .default('customer'),
     businessLineId: text('business_line_id')
-      .notNull()
       .references(() => businessLine.id),
     counterpartyId: text('counterparty_id')
       .notNull()

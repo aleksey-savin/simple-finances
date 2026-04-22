@@ -28,6 +28,7 @@ const ROUTE_LABELS: Record<string, { label: string; showAddButton: boolean }> =
     'current-accounts': { label: 'Расчётные счета', showAddButton: true },
     categories: { label: 'Категории', showAddButton: true },
     users: { label: 'Пользователи', showAddButton: true },
+    preferences: { label: 'Настройки', showAddButton: false },
   }
 
 // Context-aware labels for known child segments.
