@@ -48,6 +48,7 @@ function ContractsPage() {
   const contracts = Route.useLoaderData()
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
+  const [businessLineFilter, setBusinessLineFilter] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [docsContractId, setDocsContractId] = useState<string | null>(null)
   const [proxmoxContractId, setProxmoxContractId] = useState<string | null>(
@@ -78,10 +79,22 @@ function ContractsPage() {
 
     if (typeFilter && contract.contractType !== typeFilter) return false
 
+    if (businessLineFilter && contract.businessLine?.id !== businessLineFilter)
+      return false
+
     return true
   })
 
-  const hasActiveFilters = search.trim() !== '' || typeFilter !== ''
+  const businessLineOptions = Array.from(
+    new Map(
+      contracts
+        .filter((c) => c.businessLine)
+        .map((c) => [c.businessLine!.id, c.businessLine!]),
+    ).values(),
+  ).map((bl) => ({ value: bl.id, label: bl.name }))
+
+  const hasActiveFilters =
+    search.trim() !== '' || typeFilter !== '' || businessLineFilter !== ''
 
   const openDocumentFile = async (documentId: string) => {
     const popup = window.open('about:blank', '_blank')
@@ -137,6 +150,17 @@ function ContractsPage() {
               clearLabel="Очистить тип"
             />
 
+            <Combobox
+              options={businessLineOptions}
+              value={businessLineFilter}
+              onValueChange={setBusinessLineFilter}
+              placeholder="Все направления"
+              searchPlaceholder="Поиск направления..."
+              className="w-60"
+              allowClear
+              clearLabel="Очистить направление"
+            />
+
             {hasActiveFilters && (
               <Button
                 variant="ghost"
@@ -144,6 +168,7 @@ function ContractsPage() {
                 onClick={() => {
                   setSearch('')
                   setTypeFilter('')
+                  setBusinessLineFilter('')
                 }}
                 className="gap-1.5"
               >
