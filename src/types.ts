@@ -407,6 +407,10 @@ export type DashboardMonthlyOutlook = {
   currentMonthIncoming: number
   previousPeriodDebt: number
   previousPeriodDebtCount: number
+  overduePreviousPeriodDebt: number
+  overduePreviousPeriodDebtCount: number
+  plannedPreviousPeriodRepayment: number
+  plannedPreviousPeriodRepaymentCount: number
   plannedExpenses: number
   plannedExpensesCount: number
   expensesWithDebt: number

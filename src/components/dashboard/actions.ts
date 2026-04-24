@@ -12,6 +12,7 @@ import {
 } from '#/db/schema'
 import { getBlockedServicesByContractIds } from '#/lib/blocked-services'
 import { getPaymentState } from '#/lib/invoice-payment'
+import { getDueMeta } from '#/components/payables/utils'
 import { resolveScopedAccountIds } from '#/lib/company-scope'
 import type { DashboardLoaderData } from '#/types'
 import { auth } from 'utils/auth'
@@ -44,6 +45,10 @@ export const fetchDashboardData = createServerFn().handler(async () => {
       currentMonthIncoming: 0,
       previousPeriodDebt: 0,
       previousPeriodDebtCount: 0,
+      overduePreviousPeriodDebt: 0,
+      overduePreviousPeriodDebtCount: 0,
+      plannedPreviousPeriodRepayment: 0,
+      plannedPreviousPeriodRepaymentCount: 0,
       plannedExpenses: 0,
       plannedExpensesCount: 0,
       expensesWithDebt: 0,
@@ -130,6 +135,7 @@ export const fetchDashboardData = createServerFn().handler(async () => {
         id: true,
         amount: true,
         currentAccountId: true,
+        dueDate: true,
         paidAt: true,
       },
       with: {
@@ -148,6 +154,7 @@ export const fetchDashboardData = createServerFn().handler(async () => {
         id: true,
         amount: true,
         currentAccountId: true,
+        dueDate: true,
         paidAt: true,
       },
       with: {
@@ -241,6 +248,24 @@ export const fetchDashboardData = createServerFn().handler(async () => {
     (sum, row) => sum + row.paymentState.outstandingAmount,
     0,
   )
+  const overduePreviousPeriodDebtRows = previousUnpaidPayables.filter((row) =>
+    getDueMeta(row.dueDate ? new Date(row.dueDate).toISOString() : null)
+      .isOverdue,
+  )
+  const plannedPreviousPeriodRepaymentRows = previousUnpaidPayables.filter(
+    (row) =>
+      !getDueMeta(row.dueDate ? new Date(row.dueDate).toISOString() : null)
+        .isOverdue,
+  )
+  const overduePreviousPeriodDebt = overduePreviousPeriodDebtRows.reduce(
+    (sum, row) => sum + row.paymentState.outstandingAmount,
+    0,
+  )
+  const plannedPreviousPeriodRepayment =
+    plannedPreviousPeriodRepaymentRows.reduce(
+      (sum, row) => sum + row.paymentState.outstandingAmount,
+      0,
+    )
   const previousPeriodDebt = previousUnpaidPayables.reduce(
     (sum, row) => sum + row.paymentState.outstandingAmount,
     0,
@@ -266,6 +291,11 @@ export const fetchDashboardData = createServerFn().handler(async () => {
       currentMonthIncoming,
       previousPeriodDebt,
       previousPeriodDebtCount: previousUnpaidPayables.length,
+      overduePreviousPeriodDebt,
+      overduePreviousPeriodDebtCount: overduePreviousPeriodDebtRows.length,
+      plannedPreviousPeriodRepayment,
+      plannedPreviousPeriodRepaymentCount:
+        plannedPreviousPeriodRepaymentRows.length,
       plannedExpenses,
       plannedExpensesCount: plannedExpenseRows.length,
       expensesWithDebt,

@@ -1,5 +1,6 @@
 import { Link, useRouter } from '@tanstack/react-router'
-import { ArrowDownLeft, ArrowUpRight, Landmark, Rows3 } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, Rows3 } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 
 import { BlockedServicesCard } from '#/components/contracts/blocked-services-card'
@@ -66,62 +67,20 @@ export function DashboardPage({
             },
           ]}
         />
-        <NetMetricCard
+        <SaldoMetricCard
           title="Сальдо"
-          href="/transactions"
-          primaryLabel="Без учёта задолженности"
-          primaryValue={monthlyOutlook.netWithoutPreviousPeriodDebt}
-          secondaryLabel="С учётом задолженности"
-          secondaryValue={monthlyOutlook.netWithPreviousPeriodDebt}
-          search={{ page: 1, pageSize: 25 }}
+          accounts={accounts}
+          baseValue={
+            monthlyOutlook.currentMonthIncoming - monthlyOutlook.plannedExpenses
+          }
+          overduePreviousPeriodDebt={monthlyOutlook.overduePreviousPeriodDebt}
+          plannedPreviousPeriodRepayment={
+            monthlyOutlook.plannedPreviousPeriodRepayment
+          }
         />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[1.2fr_1fr]">
-        <Card>
-          <CardHeader className="flex flex-row items-start justify-between gap-4">
-            <div className="space-y-1">
-              <CardTitle>Баланс текущих счетов</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Суммарный остаток по доступным расчётным счетам.
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-muted-foreground">Всего</p>
-              <p className="text-2xl font-semibold tabular-nums">
-                {formatMoney(totalBalance)} ₽
-              </p>
-            </div>
-          </CardHeader>
-          <CardContent className="grid gap-3 md:grid-cols-2">
-            {accounts.length === 0 ? (
-              <div className="border border-dashed bg-muted/10 p-4 text-sm text-muted-foreground">
-                В выбранном scope нет счетов
-              </div>
-            ) : (
-              accounts.map((account) => (
-                <div key={account.id} className="border bg-muted/20 p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-1">
-                      <p className="font-medium">{account.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {account.bankNameInitials ?? 'Банк не указан'}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatShortDate(account.lastImportedAt)}
-                      </p>
-                    </div>
-                    <Landmark className="size-4 text-muted-foreground" />
-                  </div>
-                  <p className="mt-4 text-xl font-semibold tabular-nums">
-                    {formatMoney(account.balance)} ₽
-                  </p>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-
+      <div className="grid gap-4">
         <Card className="flex h-full flex-col">
           <CardHeader className="space-y-3">
             <div className="space-y-1">
@@ -238,37 +197,113 @@ function FormulaMetricCard({
   )
 }
 
-function NetMetricCard({
+function SaldoMetricCard({
   title,
-  href,
-  primaryLabel,
-  primaryValue,
-  secondaryLabel,
-  secondaryValue,
-  search,
+  accounts,
+  baseValue,
+  overduePreviousPeriodDebt,
+  plannedPreviousPeriodRepayment,
 }: {
   title: string
-  href: '/transactions'
-  primaryLabel: string
-  primaryValue: number
-  secondaryLabel: string
-  secondaryValue: number
-  search: { page: number; pageSize: 25 | 50 | 100 }
+  accounts: DashboardLoaderData['accounts']
+  baseValue: number
+  overduePreviousPeriodDebt: number
+  plannedPreviousPeriodRepayment: number
 }) {
+  const [includedAccountIds, setIncludedAccountIds] = useState(
+    () => new Set<string>(),
+  )
+  const [includeOverdueDebt, setIncludeOverdueDebt] = useState(false)
+  const [includePlannedRepayment, setIncludePlannedRepayment] = useState(false)
+
+  const includedAccountsBalance = useMemo(
+    () =>
+      accounts.reduce(
+        (sum, account) =>
+          includedAccountIds.has(account.id) ? sum + account.balance : sum,
+        0,
+      ),
+    [accounts, includedAccountIds],
+  )
+
+  const saldo =
+    baseValue +
+    includedAccountsBalance +
+    (includePlannedRepayment ? -plannedPreviousPeriodRepayment : 0) +
+    (includeOverdueDebt ? -overduePreviousPeriodDebt : 0)
+
+  const toggleAccount = (accountId: string) => {
+    setIncludedAccountIds((current) => {
+      const next = new Set(current)
+
+      if (next.has(accountId)) {
+        next.delete(accountId)
+      } else {
+        next.add(accountId)
+      }
+
+      return next
+    })
+  }
+
   return (
     <Card className="flex h-full flex-col">
       <CardHeader className="space-y-1">
         <CardTitle className="text-base">{title}</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Денежный результат месяца в двух сценариях.
+          База: ожидаемые поступления минус обязательства. Переключатели
+          добавляют сценарные корректировки поверх базы.
         </p>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-4">
-        <NetValue label={primaryLabel} value={primaryValue} />
-        <NetValue label={secondaryLabel} value={secondaryValue} />
+        <p
+          className={`text-3xl font-semibold tabular-nums ${
+            saldo >= 0 ? 'text-success' : 'text-destructive'
+          }`}
+        >
+          {formatMoney(saldo)} ₽
+        </p>
+
+        <div className="flex flex-wrap gap-2">
+          {accounts.map((account) => {
+            const isIncluded = includedAccountIds.has(account.id)
+
+            return (
+              <Button
+                key={account.id}
+                variant={isIncluded ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => toggleAccount(account.id)}
+              >
+                {isIncluded ? '+' : ''} {account.name}:{' '}
+                {formatMoney(account.balance)} ₽
+              </Button>
+            )
+          })}
+
+          <Button
+            variant={includeOverdueDebt ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setIncludeOverdueDebt((current) => !current)}
+          >
+            {includeOverdueDebt ? '+' : ''} Просроченная задолженность:{' '}
+            {formatMoney(overduePreviousPeriodDebt)} ₽
+          </Button>
+
+          <Button
+            variant={includePlannedRepayment ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setIncludePlannedRepayment((current) => !current)}
+          >
+            {includePlannedRepayment ? '+' : ''} Задолженность с будущим сроком
+            оплаты:{' '}
+            {formatMoney(plannedPreviousPeriodRepayment)} ₽
+          </Button>
+        </div>
+
         <div className="mt-auto flex justify-end">
           <Button asChild variant="outline" size="sm">
-            <Link to={href} search={search}>
+            <Link to="/transactions" search={{ page: 1, pageSize: 25 }}>
               Открыть
             </Link>
           </Button>
@@ -298,21 +333,6 @@ function BreakdownRow({
   )
 }
 
-function NetValue({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="border bg-muted/20 px-4 py-3">
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p
-        className={`mt-1 text-2xl font-semibold tabular-nums ${
-          value >= 0 ? 'text-success' : 'text-destructive'
-        }`}
-      >
-        {formatMoney(value)} ₽
-      </p>
-    </div>
-  )
-}
-
 function MiniStat({
   label,
   value,
@@ -338,10 +358,4 @@ function formatMoney(value: number) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
-}
-
-function formatShortDate(value: string | null) {
-  if (!value) return '—'
-
-  return new Date(value).toLocaleDateString('ru-RU')
 }
