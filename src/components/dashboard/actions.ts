@@ -6,6 +6,7 @@ import { and, desc, eq, gte, inArray, isNotNull, isNull, lt, lte, sql } from 'dr
 import { db } from '#/db'
 import {
   bankTransaction,
+  contractPriceRevision,
   currentAccount,
   invoice,
   settlement,
@@ -13,8 +14,9 @@ import {
 import { getBlockedServicesByContractIds } from '#/lib/blocked-services'
 import { getPaymentState } from '#/lib/invoice-payment'
 import { getDueMeta } from '#/components/payables/utils'
+import type { AppScope } from '#/lib/company-scope'
 import { resolveScopedAccountIds } from '#/lib/company-scope'
-import type { DashboardLoaderData } from '#/types'
+import type { DashboardLoaderData, DashboardTask } from '#/types'
 import { auth } from 'utils/auth'
 
 export const fetchDashboardData = createServerFn().handler(async () => {
@@ -23,7 +25,7 @@ export const fetchDashboardData = createServerFn().handler(async () => {
 
   if (!session.user.id) throw new Error('Не авторизован')
 
-  const { accountIds } = await resolveScopedAccountIds(
+  const { accountIds, selectedScope } = await resolveScopedAccountIds(
     session.user.id,
     request.headers,
   )
@@ -37,6 +39,7 @@ export const fetchDashboardData = createServerFn().handler(async () => {
       incomingRemaining: 0,
       outgoingRemaining: 0,
     },
+    tasks: [],
     monthlyOutlook: {
       receivablesAmount: 0,
       receivablesCount: 0,
@@ -296,15 +299,20 @@ export const fetchDashboardData = createServerFn().handler(async () => {
 
   // ── Bank summary ───────────────────────────────────────────────────────────
 
-  const bankSummary = await buildBankSummary(accountIds)
+  const [bankSummary, priceRevisionTasks] = await Promise.all([
+    buildBankSummary(accountIds),
+    buildOpenPriceRevisionTasks(session.user.id, selectedScope),
+  ])
   const blockedServices = await getBlockedServicesByContractIds(
     contractIdsInScopeRows.map((row) => row.contractId),
   )
+  const tasks = buildDashboardTasks(bankSummary, priceRevisionTasks)
 
   return {
     accounts,
     totalBalance,
     bankSummary,
+    tasks,
     monthlyOutlook: {
       receivablesAmount,
       receivablesCount,
@@ -340,6 +348,87 @@ export const fetchDashboardData = createServerFn().handler(async () => {
 function serializeDateValue(value: Date | string | null) {
   if (!value) return null
   return typeof value === 'string' ? value : value.toISOString()
+}
+
+function buildDashboardTasks(
+  bankSummary: DashboardLoaderData['bankSummary'],
+  priceRevisionTasks: DashboardTask[],
+) {
+  const tasks: DashboardTask[] = []
+
+  if (bankSummary.totalCount > 0) {
+    tasks.push({
+      id: 'bank-import',
+      kind: 'bank-import',
+      title: 'Неразнесённые платежи',
+      description: 'Есть строки выписки, которые ещё не привязаны к счетам.',
+      count: bankSummary.totalCount,
+      amount: bankSummary.totalRemaining,
+      incomingAmount: bankSummary.incomingRemaining,
+      outgoingAmount: bankSummary.outgoingRemaining,
+    })
+  }
+
+  tasks.push(...priceRevisionTasks)
+
+  return tasks
+}
+
+async function buildOpenPriceRevisionTasks(
+  userId: string,
+  selectedScope: AppScope,
+) {
+  const whereClause =
+    selectedScope.kind === 'company'
+      ? and(
+          eq(contractPriceRevision.companyId, selectedScope.id),
+          isNull(contractPriceRevision.completedAt),
+        )
+      : and(
+          isNull(contractPriceRevision.companyId),
+          eq(contractPriceRevision.createdBy, userId),
+          isNull(contractPriceRevision.completedAt),
+        )
+
+  const revisions = await db.query.contractPriceRevision.findMany({
+    where: whereClause,
+    columns: {
+      id: true,
+      name: true,
+      createdAt: true,
+    },
+    with: {
+      businessLine: { columns: { name: true } },
+      items: {
+        columns: {
+          included: true,
+          status: true,
+        },
+      },
+    },
+    orderBy: (table, { desc: orderDesc }) => orderDesc(table.createdAt),
+  })
+
+  return revisions.map((revision) => {
+    const activeItems = revision.items.filter((item) => item.included)
+    const unfinishedCount = activeItems.filter(
+      (item) => item.status !== 'success',
+    ).length
+
+    return {
+      id: `price-revision:${revision.id}`,
+      kind: 'price-revision',
+      title: revision.name,
+      description:
+        unfinishedCount > 0
+          ? `${unfinishedCount} из ${activeItems.length} договоров не завершены`
+          : `${activeItems.length} договоров готовы к завершению`,
+      itemCount: activeItems.length,
+      createdAt: revision.createdAt.toISOString(),
+      revisionId: revision.id,
+      businessLineName: revision.businessLine.name,
+    } satisfies DashboardTask
+  })
 }
 
 async function buildBankSummary(accountIds: string[]) {

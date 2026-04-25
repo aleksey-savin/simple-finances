@@ -399,6 +399,28 @@ export type DashboardBankSummary = {
   outgoingRemaining: number
 }
 
+export type DashboardTask =
+  | {
+      id: 'bank-import'
+      kind: 'bank-import'
+      title: string
+      description: string
+      count: number
+      amount: number
+      incomingAmount: number
+      outgoingAmount: number
+    }
+  | {
+      id: string
+      kind: 'price-revision'
+      title: string
+      description: string
+      itemCount: number
+      createdAt: string
+      revisionId: string
+      businessLineName: string
+    }
+
 export type DashboardMonthlyOutlook = {
   receivablesAmount: number
   receivablesCount: number
@@ -427,6 +449,7 @@ export type DashboardLoaderData = {
   accounts: DashboardAccountBalance[]
   totalBalance: number
   bankSummary: DashboardBankSummary
+  tasks: DashboardTask[]
   monthlyOutlook: DashboardMonthlyOutlook
   blockedServices: BlockedServiceSummary[]
 }
