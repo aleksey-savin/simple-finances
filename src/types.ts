@@ -402,6 +402,10 @@ export type DashboardBankSummary = {
 export type DashboardMonthlyOutlook = {
   receivablesAmount: number
   receivablesCount: number
+  overdueReceivablesAmount: number
+  overdueReceivablesCount: number
+  currentReceivablesAmount: number
+  currentReceivablesCount: number
   unissuedInvoicesAmount: number
   unissuedInvoicesCount: number
   currentMonthIncoming: number

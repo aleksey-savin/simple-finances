@@ -40,6 +40,10 @@ export const fetchDashboardData = createServerFn().handler(async () => {
     monthlyOutlook: {
       receivablesAmount: 0,
       receivablesCount: 0,
+      overdueReceivablesAmount: 0,
+      overdueReceivablesCount: 0,
+      currentReceivablesAmount: 0,
+      currentReceivablesCount: 0,
       unissuedInvoicesAmount: 0,
       unissuedInvoicesCount: 0,
       currentMonthIncoming: 0,
@@ -116,6 +120,7 @@ export const fetchDashboardData = createServerFn().handler(async () => {
         id: true,
         amount: true,
         currentAccountId: true,
+        dueDate: true,
         paidAt: true,
       },
       with: {
@@ -208,6 +213,23 @@ export const fetchDashboardData = createServerFn().handler(async () => {
     0,
   )
   const receivablesCount = unpaidReceivables.length
+  const overdueReceivableRows = unpaidReceivables.filter((row) =>
+    getDueMeta(row.dueDate ? new Date(row.dueDate).toISOString() : null)
+      .isOverdue,
+  )
+  const currentReceivableRows = unpaidReceivables.filter(
+    (row) =>
+      !getDueMeta(row.dueDate ? new Date(row.dueDate).toISOString() : null)
+        .isOverdue,
+  )
+  const overdueReceivablesAmount = overdueReceivableRows.reduce(
+    (sum, row) => sum + row.paymentState.outstandingAmount,
+    0,
+  )
+  const currentReceivablesAmount = currentReceivableRows.reduce(
+    (sum, row) => sum + row.paymentState.outstandingAmount,
+    0,
+  )
 
   // ── Projected (unissued) receivables from recurring rules ─────────────────
 
@@ -286,6 +308,10 @@ export const fetchDashboardData = createServerFn().handler(async () => {
     monthlyOutlook: {
       receivablesAmount,
       receivablesCount,
+      overdueReceivablesAmount,
+      overdueReceivablesCount: overdueReceivableRows.length,
+      currentReceivablesAmount,
+      currentReceivablesCount: currentReceivableRows.length,
       unissuedInvoicesAmount: projectedIncoming.amount,
       unissuedInvoicesCount: projectedIncoming.count,
       currentMonthIncoming,

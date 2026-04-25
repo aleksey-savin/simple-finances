@@ -10,12 +10,59 @@ import type { DashboardLoaderData } from '#/types'
 
 export function DashboardPage({
   accounts,
-  totalBalance,
   bankSummary,
   monthlyOutlook,
   blockedServices,
 }: DashboardLoaderData) {
   const router = useRouter()
+  const [includedAccountIds, setIncludedAccountIds] = useState(
+    () => new Set(accounts.map((account) => account.id)),
+  )
+  const [includeOverdueReceivables, setIncludeOverdueReceivables] =
+    useState(true)
+  const [includeCurrentReceivables, setIncludeCurrentReceivables] =
+    useState(true)
+  const [includeUnissuedInvoices, setIncludeUnissuedInvoices] = useState(true)
+  const [includePlannedExpenses, setIncludePlannedExpenses] = useState(true)
+  const [includeOverdueDebt, setIncludeOverdueDebt] = useState(true)
+  const [includePlannedRepayment, setIncludePlannedRepayment] = useState(true)
+
+  const includedAccountsBalance = useMemo(
+    () =>
+      accounts.reduce(
+        (sum, account) =>
+          includedAccountIds.has(account.id) ? sum + account.balance : sum,
+        0,
+      ),
+    [accounts, includedAccountIds],
+  )
+
+  const selectedIncoming =
+    (includeOverdueReceivables ? monthlyOutlook.overdueReceivablesAmount : 0) +
+    (includeCurrentReceivables ? monthlyOutlook.currentReceivablesAmount : 0) +
+    (includeUnissuedInvoices ? monthlyOutlook.unissuedInvoicesAmount : 0) +
+    includedAccountsBalance
+
+  const selectedObligations =
+    (includePlannedExpenses ? monthlyOutlook.plannedExpenses : 0) +
+    (includeOverdueDebt ? monthlyOutlook.overduePreviousPeriodDebt : 0) +
+    (includePlannedRepayment
+      ? monthlyOutlook.plannedPreviousPeriodRepayment
+      : 0)
+
+  const toggleAccount = (accountId: string) => {
+    setIncludedAccountIds((current) => {
+      const next = new Set(current)
+
+      if (next.has(accountId)) {
+        next.delete(accountId)
+      } else {
+        next.add(accountId)
+      }
+
+      return next
+    })
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -31,52 +78,57 @@ export function DashboardPage({
       )}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <FormulaMetricCard
-          title="Ожидаемые поступления"
-          caption="Открытая дебиторка плюс счета, которые ещё будут выставлены."
-          href="/receivables"
-          total={monthlyOutlook.currentMonthIncoming}
-          totalTone="success"
-          rows={[
-            {
-              label: `Дебиторская задолженность (${monthlyOutlook.receivablesCount})`,
-              value: monthlyOutlook.receivablesAmount,
-            },
-            {
-              label: `Ещё не выставлено (${monthlyOutlook.unissuedInvoicesCount})`,
-              value: monthlyOutlook.unissuedInvoicesAmount,
-              prefix: '+',
-            },
-          ]}
+        <IncomingMetricCard
+          total={selectedIncoming}
+          overdueReceivablesAmount={monthlyOutlook.overdueReceivablesAmount}
+          overdueReceivablesCount={monthlyOutlook.overdueReceivablesCount}
+          includeOverdueReceivables={includeOverdueReceivables}
+          onToggleOverdueReceivables={() =>
+            setIncludeOverdueReceivables((current) => !current)
+          }
+          currentReceivablesAmount={monthlyOutlook.currentReceivablesAmount}
+          currentReceivablesCount={monthlyOutlook.currentReceivablesCount}
+          includeCurrentReceivables={includeCurrentReceivables}
+          onToggleCurrentReceivables={() =>
+            setIncludeCurrentReceivables((current) => !current)
+          }
+          unissuedInvoicesAmount={monthlyOutlook.unissuedInvoicesAmount}
+          unissuedInvoicesCount={monthlyOutlook.unissuedInvoicesCount}
+          includeUnissuedInvoices={includeUnissuedInvoices}
+          onToggleUnissuedInvoices={() =>
+            setIncludeUnissuedInvoices((current) => !current)
+          }
+          accounts={accounts}
+          includedAccountIds={includedAccountIds}
+          onToggleAccount={toggleAccount}
         />
-        <FormulaMetricCard
-          title="Обязательства"
-          caption="Плановые расходы текущего месяца плюс просроченные обязательства."
-          href="/payables"
-          total={monthlyOutlook.expensesWithDebt}
-          totalTone="warning"
-          rows={[
-            {
-              label: `Плановые расходы (${monthlyOutlook.plannedExpensesCount})`,
-              value: monthlyOutlook.plannedExpenses,
-            },
-            {
-              label: `Долг прошлых периодов (${monthlyOutlook.previousPeriodDebtCount})`,
-              value: monthlyOutlook.previousPeriodDebt,
-              prefix: '+',
-            },
-          ]}
+        <ObligationsMetricCard
+          total={selectedObligations}
+          plannedExpenses={monthlyOutlook.plannedExpenses}
+          plannedExpensesCount={monthlyOutlook.plannedExpensesCount}
+          includePlannedExpenses={includePlannedExpenses}
+          onTogglePlannedExpenses={() =>
+            setIncludePlannedExpenses((current) => !current)
+          }
+          overdueDebt={monthlyOutlook.overduePreviousPeriodDebt}
+          overdueDebtCount={monthlyOutlook.overduePreviousPeriodDebtCount}
+          includeOverdueDebt={includeOverdueDebt}
+          onToggleOverdueDebt={() =>
+            setIncludeOverdueDebt((current) => !current)
+          }
+          plannedRepayment={monthlyOutlook.plannedPreviousPeriodRepayment}
+          plannedRepaymentCount={
+            monthlyOutlook.plannedPreviousPeriodRepaymentCount
+          }
+          includePlannedRepayment={includePlannedRepayment}
+          onTogglePlannedRepayment={() =>
+            setIncludePlannedRepayment((current) => !current)
+          }
         />
         <SaldoMetricCard
           title="Сальдо"
-          accounts={accounts}
-          baseValue={
-            monthlyOutlook.currentMonthIncoming - monthlyOutlook.plannedExpenses
-          }
-          overduePreviousPeriodDebt={monthlyOutlook.overduePreviousPeriodDebt}
-          plannedPreviousPeriodRepayment={
-            monthlyOutlook.plannedPreviousPeriodRepayment
-          }
+          incomingValue={selectedIncoming}
+          obligationsValue={selectedObligations}
         />
       </div>
 
@@ -138,131 +190,82 @@ export function DashboardPage({
   )
 }
 
-function FormulaMetricCard({
-  title,
-  caption,
-  href,
+function IncomingMetricCard({
   total,
-  totalTone,
-  rows,
+  overdueReceivablesAmount,
+  overdueReceivablesCount,
+  includeOverdueReceivables,
+  onToggleOverdueReceivables,
+  currentReceivablesAmount,
+  currentReceivablesCount,
+  includeCurrentReceivables,
+  onToggleCurrentReceivables,
+  unissuedInvoicesAmount,
+  unissuedInvoicesCount,
+  includeUnissuedInvoices,
+  onToggleUnissuedInvoices,
+  accounts,
+  includedAccountIds,
+  onToggleAccount,
 }: {
-  title: string
-  caption: string
-  href: '/receivables' | '/payables'
   total: number
-  totalTone: 'default' | 'success' | 'warning' | 'danger'
-  rows: Array<{
-    label: string
-    value: number
-    prefix?: '+' | '-'
-  }>
+  overdueReceivablesAmount: number
+  overdueReceivablesCount: number
+  includeOverdueReceivables: boolean
+  onToggleOverdueReceivables: () => void
+  currentReceivablesAmount: number
+  currentReceivablesCount: number
+  includeCurrentReceivables: boolean
+  onToggleCurrentReceivables: () => void
+  unissuedInvoicesAmount: number
+  unissuedInvoicesCount: number
+  includeUnissuedInvoices: boolean
+  onToggleUnissuedInvoices: () => void
+  accounts: DashboardLoaderData['accounts']
+  includedAccountIds: Set<string>
+  onToggleAccount: (accountId: string) => void
 }) {
   return (
     <Card className="flex h-full flex-col">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-base">{title}</CardTitle>
-        <p className="text-sm text-muted-foreground">{caption}</p>
+        <CardTitle className="text-base">Ожидаемые поступления</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Открытая дебиторка, счета к выставлению и выбранные расчётные счета.
+        </p>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-4">
-        <p
-          className={`text-3xl font-semibold tabular-nums ${
-            totalTone === 'success'
-              ? 'text-success'
-              : totalTone === 'warning'
-                ? 'text-warning'
-                : totalTone === 'danger'
-                  ? 'text-destructive'
-                  : ''
-          }`}
-        >
+        <p className="text-success text-3xl font-semibold tabular-nums">
           {formatMoney(total)} ₽
         </p>
-        <div className="space-y-2">
-          {rows.map((row) => (
-            <BreakdownRow
-              key={row.label}
-              label={row.label}
-              value={row.value}
-              prefix={row.prefix}
-            />
-          ))}
-        </div>
-        <div className="mt-auto flex justify-end">
-          <Button asChild variant="outline" size="sm">
-            <Link to={href}>Открыть</Link>
+
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant={includeOverdueReceivables ? 'default' : 'outline'}
+            size="sm"
+            onClick={onToggleOverdueReceivables}
+          >
+            {includeOverdueReceivables ? '+' : ''} Просроченная дебиторка:{' '}
+            {formatMoney(overdueReceivablesAmount)} ₽
+          </Button>
+
+          <Button
+            variant={includeCurrentReceivables ? 'default' : 'outline'}
+            size="sm"
+            onClick={onToggleCurrentReceivables}
+          >
+            {includeCurrentReceivables ? '+' : ''} Дебиторка в срок:{' '}
+            {formatMoney(currentReceivablesAmount)} ₽
+          </Button>
+
+          <Button
+            variant={includeUnissuedInvoices ? 'default' : 'outline'}
+            size="sm"
+            onClick={onToggleUnissuedInvoices}
+          >
+            {includeUnissuedInvoices ? '+' : ''} Ещё не выставлено:{' '}
+            {formatMoney(unissuedInvoicesAmount)} ₽
           </Button>
         </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-function SaldoMetricCard({
-  title,
-  accounts,
-  baseValue,
-  overduePreviousPeriodDebt,
-  plannedPreviousPeriodRepayment,
-}: {
-  title: string
-  accounts: DashboardLoaderData['accounts']
-  baseValue: number
-  overduePreviousPeriodDebt: number
-  plannedPreviousPeriodRepayment: number
-}) {
-  const [includedAccountIds, setIncludedAccountIds] = useState(
-    () => new Set<string>(),
-  )
-  const [includeOverdueDebt, setIncludeOverdueDebt] = useState(false)
-  const [includePlannedRepayment, setIncludePlannedRepayment] = useState(false)
-
-  const includedAccountsBalance = useMemo(
-    () =>
-      accounts.reduce(
-        (sum, account) =>
-          includedAccountIds.has(account.id) ? sum + account.balance : sum,
-        0,
-      ),
-    [accounts, includedAccountIds],
-  )
-
-  const saldo =
-    baseValue +
-    includedAccountsBalance +
-    (includePlannedRepayment ? -plannedPreviousPeriodRepayment : 0) +
-    (includeOverdueDebt ? -overduePreviousPeriodDebt : 0)
-
-  const toggleAccount = (accountId: string) => {
-    setIncludedAccountIds((current) => {
-      const next = new Set(current)
-
-      if (next.has(accountId)) {
-        next.delete(accountId)
-      } else {
-        next.add(accountId)
-      }
-
-      return next
-    })
-  }
-
-  return (
-    <Card className="flex h-full flex-col">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-base">{title}</CardTitle>
-        <p className="text-sm text-muted-foreground">
-          База: ожидаемые поступления минус обязательства. Переключатели
-          добавляют сценарные корректировки поверх базы.
-        </p>
-      </CardHeader>
-      <CardContent className="flex flex-1 flex-col gap-4">
-        <p
-          className={`text-3xl font-semibold tabular-nums ${
-            saldo >= 0 ? 'text-success' : 'text-destructive'
-          }`}
-        >
-          {formatMoney(saldo)} ₽
-        </p>
 
         <div className="flex flex-wrap gap-2">
           {accounts.map((account) => {
@@ -273,33 +276,133 @@ function SaldoMetricCard({
                 key={account.id}
                 variant={isIncluded ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => toggleAccount(account.id)}
+                onClick={() => onToggleAccount(account.id)}
               >
                 {isIncluded ? '+' : ''} {account.name}:{' '}
                 {formatMoney(account.balance)} ₽
               </Button>
             )
           })}
+        </div>
+
+        <div className="mt-auto flex justify-end">
+          <Button asChild variant="outline" size="sm">
+            <Link to="/receivables">Открыть</Link>
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function ObligationsMetricCard({
+  total,
+  plannedExpenses,
+  plannedExpensesCount,
+  includePlannedExpenses,
+  onTogglePlannedExpenses,
+  overdueDebt,
+  overdueDebtCount,
+  includeOverdueDebt,
+  onToggleOverdueDebt,
+  plannedRepayment,
+  plannedRepaymentCount,
+  includePlannedRepayment,
+  onTogglePlannedRepayment,
+}: {
+  total: number
+  plannedExpenses: number
+  plannedExpensesCount: number
+  includePlannedExpenses: boolean
+  onTogglePlannedExpenses: () => void
+  overdueDebt: number
+  overdueDebtCount: number
+  includeOverdueDebt: boolean
+  onToggleOverdueDebt: () => void
+  plannedRepayment: number
+  plannedRepaymentCount: number
+  includePlannedRepayment: boolean
+  onTogglePlannedRepayment: () => void
+}) {
+  return (
+    <Card className="flex h-full flex-col">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-base">Обязательства</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Плановые расходы плюс выбранные долги прошлых периодов.
+        </p>
+      </CardHeader>
+      <CardContent className="flex flex-1 flex-col gap-4">
+        <p className="text-warning text-3xl font-semibold tabular-nums">
+          {formatMoney(total)} ₽
+        </p>
+
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant={includePlannedExpenses ? 'default' : 'outline'}
+            size="sm"
+            onClick={onTogglePlannedExpenses}
+          >
+            {includePlannedExpenses ? '+' : ''} Плановые расходы:{' '}
+            {formatMoney(plannedExpenses)} ₽
+          </Button>
 
           <Button
             variant={includeOverdueDebt ? 'default' : 'outline'}
             size="sm"
-            onClick={() => setIncludeOverdueDebt((current) => !current)}
+            onClick={onToggleOverdueDebt}
           >
             {includeOverdueDebt ? '+' : ''} Просроченная задолженность:{' '}
-            {formatMoney(overduePreviousPeriodDebt)} ₽
+            {formatMoney(overdueDebt)} ₽
           </Button>
 
           <Button
             variant={includePlannedRepayment ? 'default' : 'outline'}
             size="sm"
-            onClick={() => setIncludePlannedRepayment((current) => !current)}
+            onClick={onTogglePlannedRepayment}
           >
             {includePlannedRepayment ? '+' : ''} Задолженность с будущим сроком
-            оплаты:{' '}
-            {formatMoney(plannedPreviousPeriodRepayment)} ₽
+            оплаты: {formatMoney(plannedRepayment)} ₽
           </Button>
         </div>
+
+        <div className="mt-auto flex justify-end">
+          <Button asChild variant="outline" size="sm">
+            <Link to="/payables">Открыть</Link>
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function SaldoMetricCard({
+  title,
+  incomingValue,
+  obligationsValue,
+}: {
+  title: string
+  incomingValue: number
+  obligationsValue: number
+}) {
+  const saldo = incomingValue - obligationsValue
+
+  return (
+    <Card className="flex h-full flex-col">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-base">{title}</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Выбранные поступления минус выбранные обязательства.
+        </p>
+      </CardHeader>
+      <CardContent className="flex flex-1 flex-col gap-4">
+        <p
+          className={`text-3xl font-semibold tabular-nums ${
+            saldo >= 0 ? 'text-success' : 'text-destructive'
+          }`}
+        >
+          {formatMoney(saldo)} ₽
+        </p>
 
         <div className="mt-auto flex justify-end">
           <Button asChild variant="outline" size="sm">
