@@ -4,9 +4,11 @@ import {
   Scripts,
   createRootRouteWithContext,
 } from '@tanstack/react-router'
+import { createServerFn } from '@tanstack/react-start'
 import { ShieldOff } from 'lucide-react'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
+import { useEffect, useState } from 'react'
 
 import TanStackQueryProvider from '../integrations/tanstack-query/root-provider'
 
@@ -23,13 +25,22 @@ import { authClient } from 'utils/auth-client'
 import { ThemeProvider } from '#/components/theme-provider'
 import { AppHeader } from '#/components/layout/app-header'
 import { Toaster } from '#/components/ui/sonner'
-import { Skeleton } from '#/components/ui/skeleton'
 
 interface MyRouterContext {
   queryClient: QueryClient
 }
 
 const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;}catch(e){}})();`
+
+const fetchRootSession = createServerFn({ method: 'GET' }).handler(async () => {
+  const [{ auth }, { getRequest }] = await Promise.all([
+    import('#/utils/auth.server'),
+    import('#/utils/session.server'),
+  ])
+  const request = await getRequest()
+
+  return auth.api.getSession({ headers: request.headers })
+})
 
 function RootError({ error }: { error: unknown }) {
   const isForbidden =
@@ -89,6 +100,7 @@ function NotFound() {
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
+  loader: () => fetchRootSession(),
   head: () => ({
     meta: [
       {
@@ -118,7 +130,16 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-  const { data: session, isPending } = authClient.useSession()
+  const initialSession = Route.useLoaderData()
+  const [isHydrated, setIsHydrated] = useState(false)
+  const { data: clientSession, isPending } = authClient.useSession()
+  const session =
+    isHydrated && !isPending ? (clientSession ?? null) : initialSession
+
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
+
   return (
     <html lang="ru" suppressHydrationWarning>
       <head>
@@ -129,16 +150,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <TanStackQueryProvider>
           <ThemeProvider>
             <TooltipProvider>
-              {isPending ? (
-                <div className="flex min-h-svh w-full">
-                  <Skeleton className="h-svh w-64 shrink-0 rounded-none" />
-                  <div className="flex flex-1 flex-col gap-4 p-6">
-                    <Skeleton className="h-10 w-full rounded" />
-                    <Skeleton className="h-40 w-full rounded" />
-                    <Skeleton className="h-64 w-full rounded" />
-                  </div>
-                </div>
-              ) : session?.user ? (
+              {session?.user ? (
                 <SidebarProvider>
                   <AppSidebar />
                   <SidebarInset>
