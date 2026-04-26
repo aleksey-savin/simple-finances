@@ -1,8 +1,3 @@
-import { Buffer } from 'node:buffer'
-import { randomUUID } from 'node:crypto'
-import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
-
 import { extractFileExtension, normalizeBase64Payload } from './file-upload'
 
 const DEFAULT_S3_REGION = 'ru-central1'
@@ -26,7 +21,10 @@ function getRequiredEnv(name: string): string {
   return value
 }
 
-function parseBooleanEnv(value: string | undefined, fallback: boolean): boolean {
+function parseBooleanEnv(
+  value: string | undefined,
+  fallback: boolean,
+): boolean {
   if (!value) return fallback
   const normalized = value.trim().toLowerCase()
   if (normalized === 'true') return true
@@ -54,11 +52,12 @@ function formatDatetimeForKey(date: Date): string {
   return date.toISOString().replace(/[-:]/g, '').replace('T', '_').slice(0, 15)
 }
 
-function buildObjectKey(
+async function buildObjectKey(
   pathPrefix: string,
   fileName: string,
   fileNamePrefix?: string,
-): string {
+): Promise<string> {
+  const { randomUUID } = await import('node:crypto')
   const extension = extractFileExtension(fileName)
   const extensionSuffix = extension ? `.${extension}` : ''
   const normalizedPrefix = trimSlashes(pathPrefix) || DEFAULT_UPLOADS_PREFIX
@@ -68,6 +67,20 @@ function buildObjectKey(
     : randomUUID()
 
   return `${normalizedPrefix}/${baseName}${extensionSuffix}`
+}
+
+async function createS3Client(config: S3Config) {
+  const { S3Client } = await import('@aws-sdk/client-s3')
+
+  return new S3Client({
+    region: config.region,
+    endpoint: config.endpoint,
+    forcePathStyle: config.forcePathStyle,
+    credentials: {
+      accessKeyId: config.accessKeyId,
+      secretAccessKey: config.secretAccessKey,
+    },
+  })
 }
 
 export type UploadBase64FileToS3Input = {
@@ -87,6 +100,9 @@ export type UploadBase64FileToS3Result = {
 export async function uploadBase64FileToS3(
   params: UploadBase64FileToS3Input,
 ): Promise<UploadBase64FileToS3Result> {
+  const { Buffer } = await import('node:buffer')
+  const { PutObjectCommand } = await import('@aws-sdk/client-s3')
+
   const config = getS3Config()
 
   const normalizedBase64 = normalizeBase64Payload(params.fileBase64)
@@ -110,21 +126,13 @@ export async function uploadBase64FileToS3(
     throw new Error('Не удалось проверить размер файла')
   }
 
-  const objectKey = buildObjectKey(
+  const objectKey = await buildObjectKey(
     params.pathPrefix ?? DEFAULT_UPLOADS_PREFIX,
     params.fileName,
     params.fileNamePrefix,
   )
 
-  const s3Client = new S3Client({
-    region: config.region,
-    endpoint: config.endpoint,
-    forcePathStyle: config.forcePathStyle,
-    credentials: {
-      accessKeyId: config.accessKeyId,
-      secretAccessKey: config.secretAccessKey,
-    },
-  })
+  const s3Client = await createS3Client(config)
 
   await s3Client.send(
     new PutObjectCommand({
@@ -148,19 +156,13 @@ export async function uploadBase64FileToS3(
 }
 
 export async function deleteS3Object(objectKey: string): Promise<void> {
+  const { DeleteObjectCommand } = await import('@aws-sdk/client-s3')
+
   const config = getS3Config()
   const key = trimSlashes(objectKey)
   if (!key) return
 
-  const s3Client = new S3Client({
-    region: config.region,
-    endpoint: config.endpoint,
-    forcePathStyle: config.forcePathStyle,
-    credentials: {
-      accessKeyId: config.accessKeyId,
-      secretAccessKey: config.secretAccessKey,
-    },
-  })
+  const s3Client = await createS3Client(config)
 
   await s3Client.send(
     new DeleteObjectCommand({
@@ -178,21 +180,16 @@ export type GetS3SignedObjectUrlInput = {
 export async function getS3SignedObjectUrl(
   params: GetS3SignedObjectUrlInput,
 ): Promise<string> {
+  const { GetObjectCommand } = await import('@aws-sdk/client-s3')
+  const { getSignedUrl } = await import('@aws-sdk/s3-request-presigner')
+
   const config = getS3Config()
   const objectKey = trimSlashes(params.objectKey)
   if (!objectKey) {
     throw new Error('Некорректный ключ файла')
   }
 
-  const s3Client = new S3Client({
-    region: config.region,
-    endpoint: config.endpoint,
-    forcePathStyle: config.forcePathStyle,
-    credentials: {
-      accessKeyId: config.accessKeyId,
-      secretAccessKey: config.secretAccessKey,
-    },
-  })
+  const s3Client = await createS3Client(config)
 
   const url = await getSignedUrl(
     s3Client,

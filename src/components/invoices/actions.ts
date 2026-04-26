@@ -1,18 +1,16 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getRequest } from '@tanstack/react-start/server'
+
 import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { db } from '@/db'
 import { currentAccountUser, invoice } from '@/db/schema'
-import { auth } from 'utils/auth'
+import { requireSession } from 'utils/session'
 
 export const fetchPaymentAccounts = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ linkedUserId: z.string() }))
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    await requireSession()
 
     const memberships = await db.query.currentAccountUser.findMany({
       where: eq(currentAccountUser.userId, data.linkedUserId),
@@ -43,21 +41,15 @@ export const invoiceInputSchema = z.object({
   contractId: z.string().optional(),
 })
 
-function requireSessionUser(headers: Headers) {
-  return auth.api.getSession({ headers }).then((session) => {
-    if (!session?.user?.id) {
-      throw new Error('Не авторизован')
-    }
-
-    return session.user.id
-  })
+async function requireSessionUser() {
+  const session = await requireSession()
+  return session.user.id
 }
 
 export const addInvoice = createServerFn({ method: 'POST' })
   .inputValidator(invoiceInputSchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const userId = await requireSessionUser(request.headers)
+    const userId = await requireSessionUser()
 
     const dueDate = data.dueDate ? new Date(data.dueDate) : undefined
     const createdAt = data.createdAt ? new Date(data.createdAt) : new Date()
@@ -111,8 +103,7 @@ export const updateInvoiceSchema = invoiceInputSchema.extend({
 export const updateInvoice = createServerFn({ method: 'POST' })
   .inputValidator(updateInvoiceSchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const userId = await requireSessionUser(request.headers)
+    const userId = await requireSessionUser()
 
     const dueDate = data.dueDate ? new Date(data.dueDate) : undefined
     const createdAt = data.createdAt ? new Date(data.createdAt) : undefined
@@ -157,8 +148,7 @@ const deleteInvoiceSchema = z.object({ id: z.string() })
 export const deleteInvoice = createServerFn({ method: 'POST' })
   .inputValidator(deleteInvoiceSchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    await requireSessionUser(request.headers)
+    await requireSessionUser()
 
     await db.transaction(async (tx) => {
       await tx.delete(invoice).where(eq(invoice.linkedInvoiceId, data.id))
@@ -171,8 +161,7 @@ const archiveInvoiceSchema = z.object({ id: z.string(), archive: z.boolean() })
 export const archiveInvoice = createServerFn({ method: 'POST' })
   .inputValidator(archiveInvoiceSchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    await requireSessionUser(request.headers)
+    await requireSessionUser()
 
     await db
       .update(invoice)

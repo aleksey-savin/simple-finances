@@ -222,7 +222,9 @@ function CurrentAccountsPage() {
                           {decodeHtmlEntities(account.bankNameInitials) ?? '—'}
                         </TableCell>
                         <TableCell>{formatMoney(account.balance)} ₽</TableCell>
-                        <TableCell>{roleLabel[account.role] ?? account.role}</TableCell>
+                        <TableCell>
+                          {roleLabel[account.role] ?? account.role}
+                        </TableCell>
                         <TableCell>
                           {account.acceptPayments ? 'Принимает' : 'Нет'}
                         </TableCell>

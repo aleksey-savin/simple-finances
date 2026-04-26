@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input'
 import * as z from 'zod'
 import { useForm } from '@tanstack/react-form'
 import { toast } from 'sonner'
+import { Link } from '@tanstack/react-router'
 import { authClient } from 'utils/auth-client'
 
 const formSchema = z.object({
@@ -110,7 +111,7 @@ export function LoginForm({
                         onChange={(e) => field.handleChange(e.target.value)}
                         aria-invalid={isInvalid}
                         placeholder="m@example.com"
-                        autoComplete="off"
+                        autoComplete="email"
                         type="email"
                         required
                       />
@@ -130,12 +131,12 @@ export function LoginForm({
                     <Field data-invalid={isInvalid}>
                       <div className="flex items-center">
                         <FieldLabel htmlFor="password">Пароль</FieldLabel>
-                        <a
-                          href="#"
+                        <Link
+                          to="/forgot-password"
                           className="ml-auto text-sm underline-offset-4 hover:underline"
                         >
                           Забыли пароль?
-                        </a>
+                        </Link>
                       </div>
 
                       <Input
@@ -146,7 +147,7 @@ export function LoginForm({
                         onChange={(e) => field.handleChange(e.target.value)}
                         aria-invalid={isInvalid}
                         placeholder="********"
-                        autoComplete="off"
+                        autoComplete="current-password"
                         type="password"
                       />
                       {isInvalid && (
@@ -159,7 +160,10 @@ export function LoginForm({
               <Field>
                 <Button type="submit">Войти</Button>
                 <FieldDescription className="text-center">
-                  Нет аккаунта? <a href="/signup">Зарегистрироваться</a>
+                  Нет аккаунта?{' '}
+                  <Link to="/signup" className="underline underline-offset-4">
+                    Зарегистрироваться
+                  </Link>
                 </FieldDescription>
               </Field>
             </FieldGroup>

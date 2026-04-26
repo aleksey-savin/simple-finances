@@ -23,6 +23,7 @@ import { authClient } from 'utils/auth-client'
 import { ThemeProvider } from '#/components/theme-provider'
 import { AppHeader } from '#/components/layout/app-header'
 import { Toaster } from '#/components/ui/sonner'
+import { Skeleton } from '#/components/ui/skeleton'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -42,7 +43,10 @@ function RootError({ error }: { error: unknown }) {
   if (isForbidden) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
-        <ShieldOff className="size-12 text-muted-foreground" strokeWidth={1.5} />
+        <ShieldOff
+          className="size-12 text-muted-foreground"
+          strokeWidth={1.5}
+        />
         <p className="text-6xl font-bold text-muted-foreground">403</p>
         <h1 className="text-2xl font-semibold">Доступ запрещён</h1>
         <p className="text-sm text-muted-foreground">
@@ -125,7 +129,16 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <TanStackQueryProvider>
           <ThemeProvider>
             <TooltipProvider>
-              {isPending ? null : session?.user ? (
+              {isPending ? (
+                <div className="flex min-h-svh w-full">
+                  <Skeleton className="h-svh w-64 shrink-0 rounded-none" />
+                  <div className="flex flex-1 flex-col gap-4 p-6">
+                    <Skeleton className="h-10 w-full rounded" />
+                    <Skeleton className="h-40 w-full rounded" />
+                    <Skeleton className="h-64 w-full rounded" />
+                  </div>
+                </div>
+              ) : session?.user ? (
                 <SidebarProvider>
                   <AppSidebar />
                   <SidebarInset>
@@ -134,10 +147,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                       {children}
                     </div>
                   </SidebarInset>
-
-                  {/* <main className="container flex flex-col gap-4 px-4 pb-8 pt-14">
-                  {children}
-                </main> */}
                 </SidebarProvider>
               ) : (
                 <>{children}</>

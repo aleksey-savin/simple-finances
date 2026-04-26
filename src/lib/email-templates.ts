@@ -277,3 +277,40 @@ export function buildSmtpTestEmail(): EmailTemplate {
     text: 'SMTP настроен и работает корректно.',
   }
 }
+
+export function buildPasswordResetEmail(params: {
+  resetUrl: string
+}): EmailTemplate {
+  const safeUrl = escapeHtml(params.resetUrl)
+
+  return {
+    subject: 'Сброс пароля — F1Lab',
+    html: renderEmailLayout({
+      title: 'Сброс пароля',
+      tone: 'warning',
+      statusText: 'Запрос на смену пароля',
+      sectionsHtml: [
+        'Мы получили запрос на сброс пароля для вашей учётной записи.',
+        `<a href="${safeUrl}" style="display:inline-block;padding:12px 24px;background:#9a6700;color:#ffffff;font-weight:700;text-decoration:none;font-size:14px;">Сбросить пароль</a>`,
+        'Ссылка действительна в течение 1 часа. Если вы не запрашивали сброс — просто проигнорируйте это письмо.',
+      ],
+    }),
+    text: `Мы получили запрос на сброс пароля.\n\nПерейдите по ссылке для смены пароля:\n${params.resetUrl}\n\nСсылка действительна в течение 1 часа. Если вы не запрашивали сброс — просто проигнорируйте это письмо.`,
+  }
+}
+
+export function buildTwoFactorOtpEmail(params: { otp: string }): EmailTemplate {
+  return {
+    subject: `Код подтверждения: ${params.otp}`,
+    html: renderEmailLayout({
+      title: 'Двухфакторная аутентификация',
+      tone: 'info',
+      statusText: `Код подтверждения: ${escapeHtml(params.otp)}`,
+      sectionsHtml: [
+        'Введите этот код для входа в систему.',
+        'Код действителен в течение 5 минут. Не передавайте его третьим лицам.',
+      ],
+    }),
+    text: `Ваш код подтверждения: ${params.otp}\n\nВведите его для входа в систему. Код действителен в течение 5 минут.`,
+  }
+}

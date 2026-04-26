@@ -23,9 +23,13 @@ export function PriceRevisionDetailPage({
 }) {
   const queryClient = useQueryClient()
   const [isPending, setIsPending] = useState(false)
-  const [filterStatus, setFilterStatus] = useState<PriceRevisionItemStatus | 'all'>('all')
+  const [filterStatus, setFilterStatus] = useState<
+    PriceRevisionItemStatus | 'all'
+  >('all')
   const [filterManagerId, setFilterManagerId] = useState<string>('all')
-  const [filterIncluded, setFilterIncluded] = useState<'all' | 'included' | 'excluded'>('all')
+  const [filterIncluded, setFilterIncluded] = useState<
+    'all' | 'included' | 'excluded'
+  >('all')
 
   const isCompleted = !!revision.completedAt
   const includedItems = revision.items.filter((i) => i.included)
@@ -43,7 +47,11 @@ export function PriceRevisionDetailPage({
 
   const filteredItems = revision.items.filter((item) => {
     if (filterStatus !== 'all' && item.status !== filterStatus) return false
-    if (filterManagerId !== 'all' && !item.managers.some((m) => m.userId === filterManagerId)) return false
+    if (
+      filterManagerId !== 'all' &&
+      !item.managers.some((m) => m.userId === filterManagerId)
+    )
+      return false
     if (filterIncluded === 'included' && !item.included) return false
     if (filterIncluded === 'excluded' && item.included) return false
     return true
@@ -56,7 +64,9 @@ export function PriceRevisionDetailPage({
     await applyBulkAdjustment({
       data: { revisionId: revision.id, mode, value },
     })
-    queryClient.invalidateQueries({ queryKey: priceRevisionQueryKey(revision.id) })
+    queryClient.invalidateQueries({
+      queryKey: priceRevisionQueryKey(revision.id),
+    })
   }
 
   async function handleToggleComplete() {
@@ -67,7 +77,9 @@ export function PriceRevisionDetailPage({
       } else {
         await completeRevision({ data: { id: revision.id } })
       }
-      queryClient.invalidateQueries({ queryKey: priceRevisionQueryKey(revision.id) })
+      queryClient.invalidateQueries({
+        queryKey: priceRevisionQueryKey(revision.id),
+      })
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Ошибка')
     } finally {

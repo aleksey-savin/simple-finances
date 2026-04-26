@@ -1,9 +1,8 @@
 import { db } from '@/db'
 import { currentAccount, currentAccountUser, user } from '@/db/schema'
 import { createServerFn } from '@tanstack/react-start'
-import { getRequest } from '@tanstack/react-start/server'
 import { and, eq, inArray } from 'drizzle-orm'
-import { auth } from 'utils/auth'
+import { requireSession } from 'utils/session'
 import z from 'zod'
 
 import { decodeHtmlEntities } from '#/lib/html-entities'
@@ -15,9 +14,7 @@ export const accountsQueryKey = ['accounts'] as const
 // ─── Fetch ────────────────────────────────────────────────────────────────────
 
 export const fetchAccounts = createServerFn().handler(async () => {
-  const request = getRequest()
-  const session = await auth.api.getSession({ headers: request.headers })
-  if (!session?.user?.id) throw new Error('Не авторизован')
+  const session = await requireSession()
 
   const userId = session.user.id
 
@@ -57,9 +54,7 @@ export const fetchAccounts = createServerFn().handler(async () => {
 // ── Shared helpers ────────────────────────────────────────────────────────────
 
 async function requireOwner(accountId: string) {
-  const request = getRequest()
-  const session = await auth.api.getSession({ headers: request.headers })
-  if (!session?.user?.id) throw new Error('Не авторизован')
+  const session = await requireSession()
 
   const ownership = await db.query.currentAccountUser.findFirst({
     where: and(
@@ -93,12 +88,7 @@ export const addAccountFormSchema = z.object({
 export const addAccount = createServerFn({ method: 'POST' })
   .inputValidator(addAccountFormSchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-
-    if (!session?.user?.id) {
-      throw new Error('Не авторизован')
-    }
+    const session = await requireSession()
 
     const bankDetails = await fetchBankDetailsByBik(data.bankBik)
 
@@ -137,12 +127,7 @@ export const updateAccountSchema = z.object({
 export const updateAccount = createServerFn({ method: 'POST' })
   .inputValidator(updateAccountSchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-
-    if (!session?.user?.id) {
-      throw new Error('Не авторизован')
-    }
+    const session = await requireSession()
 
     const bankDetails = await fetchBankDetailsByBik(data.bankBik)
 
@@ -169,12 +154,7 @@ export const correctAccountBalanceSchema = z.object({
 export const correctAccountBalance = createServerFn({ method: 'POST' })
   .inputValidator(correctAccountBalanceSchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-
-    if (!session?.user?.id) {
-      throw new Error('Не авторизован')
-    }
+    const session = await requireSession()
 
     await db
       .update(currentAccount)

@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getRequest } from '@tanstack/react-start/server'
+
 import { Cron } from 'croner'
 import { and, eq, gte, inArray, isNull, lt, lte } from 'drizzle-orm'
 
@@ -9,21 +9,23 @@ import type {
   TagsMap,
 } from '#/components/payables/types'
 import { db } from '#/db'
-import { counterparty, currentAccount, invoice, invoiceTag, recurringRule } from '#/db/schema'
+import {
+  counterparty,
+  currentAccount,
+  invoice,
+  invoiceTag,
+  recurringRule,
+} from '#/db/schema'
 import {
   getScopedCounterpartyIds,
   resolveScopedAccountIds,
 } from '#/lib/company-scope'
 import { getPaymentState } from '#/lib/invoice-payment'
-import { auth } from 'utils/auth'
+import { getRequest, requireSession } from 'utils/session'
 
 export const fetchPayables = createServerFn().handler(async () => {
-  const request = getRequest()
-  const session = await auth.api.getSession({ headers: request.headers })
-
-  if (!session || !session.user.id) {
-    throw new Error('Не авторизован')
-  }
+  const session = await requireSession()
+  const request = await getRequest()
 
   const { accountIds, selectedScope } = await resolveScopedAccountIds(
     session.user.id,

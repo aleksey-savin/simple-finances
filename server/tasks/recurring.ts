@@ -25,11 +25,17 @@ export default defineTask({
 
     if (dueRules.length === 0) {
       return {
-        result: { processedRules: 0, processedOccurrences: 0, totalDueRules: 0 },
+        result: {
+          processedRules: 0,
+          processedOccurrences: 0,
+          totalDueRules: 0,
+        },
       }
     }
 
-    const accountIds = [...new Set(dueRules.map((rule) => rule.currentAccountId))]
+    const accountIds = [
+      ...new Set(dueRules.map((rule) => rule.currentAccountId)),
+    ]
     const summary = await syncRecurringRulesForAccounts(accountIds, now)
 
     console.log(

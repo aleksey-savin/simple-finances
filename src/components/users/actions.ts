@@ -1,10 +1,10 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getRequest } from '@tanstack/react-start/server'
+import { getRequest } from 'utils/session'
 
 import { auth } from 'utils/auth'
 
 export const fetchUsers = createServerFn().handler(async () => {
-  const request = getRequest()
+  const request = await getRequest()
 
   return auth.api.listUsers({
     query: {
@@ -19,7 +19,7 @@ export const fetchUsers = createServerFn().handler(async () => {
 export const fetchUser = createServerFn()
   .inputValidator((userId: string) => userId)
   .handler(async ({ data: userId }) => {
-    const request = getRequest()
+    const request = await getRequest()
 
     return auth.api.getUser({
       query: { id: userId },

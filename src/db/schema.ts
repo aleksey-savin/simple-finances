@@ -122,6 +122,7 @@ export const user = pgTable('user', {
   banned: boolean('banned').default(false).notNull(),
   banReason: text('ban_reason'),
   banExpires: timestamp('ban_expires'),
+  twoFactorEnabled: boolean('two_factor_enabled').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
     .defaultNow()
@@ -188,6 +189,15 @@ export const verification = pgTable(
   },
   (table) => [index('verification_identifier_idx').on(table.identifier)],
 )
+
+export const twoFactor = pgTable('two_factor', {
+  id: text('id').primaryKey(),
+  secret: text('secret').notNull(),
+  backupCodes: text('backup_codes').notNull(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+})
 
 export const currentAccount = pgTable('current_account', {
   id: text('id')
@@ -424,12 +434,8 @@ export const businessLine = pgTable('business_line', {
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
   name: text('name').notNull(),
-  allowServerBindings: boolean('allow_server_bindings')
-    .notNull()
-    .default(true),
-  allowNotifications: boolean('allow_notifications')
-    .notNull()
-    .default(true),
+  allowServerBindings: boolean('allow_server_bindings').notNull().default(true),
+  allowNotifications: boolean('allow_notifications').notNull().default(true),
   createdBy: text('created_by')
     .notNull()
     .references(() => user.id),
@@ -452,8 +458,7 @@ export const contract = pgTable(
     contractType: contractTypeEnum('contract_type')
       .notNull()
       .default('customer'),
-    businessLineId: text('business_line_id')
-      .references(() => businessLine.id),
+    businessLineId: text('business_line_id').references(() => businessLine.id),
     counterpartyId: text('counterparty_id')
       .notNull()
       .references(() => counterparty.id),
@@ -1315,23 +1320,20 @@ export const recurringRuleRelations = relations(recurringRule, ({ one }) => ({
   }),
 }))
 
-export const smtpSettings = pgTable(
-  'smtp_settings',
-  {
-    id: text('id')
-      .primaryKey()
-      .$defaultFn(() => crypto.randomUUID()),
-    host: text('host').notNull(),
-    port: integer('port').notNull().default(587),
-    secure: boolean('secure').notNull().default(false),
-    username: text('username').notNull(),
-    password: text('password').notNull(),
-    fromName: text('from_name').notNull(),
-    fromEmail: text('from_email').notNull(),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().notNull(),
-  }
-)
+export const smtpSettings = pgTable('smtp_settings', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  host: text('host').notNull(),
+  port: integer('port').notNull().default(587),
+  secure: boolean('secure').notNull().default(false),
+  username: text('username').notNull(),
+  password: text('password').notNull(),
+  fromName: text('from_name').notNull(),
+  fromEmail: text('from_email').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
 
 export const proxmoxNode = pgTable(
   'proxmox_node',

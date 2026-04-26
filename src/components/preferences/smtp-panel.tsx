@@ -6,7 +6,13 @@ import { toast } from 'sonner'
 import z from 'zod'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -38,7 +44,10 @@ const smtpFormSchema = z.object({
 
 type EncryptionMode = 'none' | 'starttls' | 'ssl'
 
-function encryptionToSettings(mode: EncryptionMode): { secure: boolean; port: number } {
+function encryptionToSettings(mode: EncryptionMode): {
+  secure: boolean
+  port: number
+} {
   if (mode === 'ssl') return { secure: true, port: 465 }
   if (mode === 'starttls') return { secure: false, port: 587 }
   return { secure: false, port: 25 }
@@ -125,10 +134,13 @@ function SmtpForm({ settings }: SmtpFormProps) {
           <form.Field
             name="host"
             children={(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
               return (
                 <Field data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Сервер (SMTP host)</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>
+                    Сервер (SMTP host)
+                  </FieldLabel>
                   <Input
                     id={field.name}
                     value={field.state.value}
@@ -162,8 +174,12 @@ function SmtpForm({ settings }: SmtpFormProps) {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Без шифрования (порт 25)</SelectItem>
-                    <SelectItem value="starttls">STARTTLS (порт 587)</SelectItem>
+                    <SelectItem value="none">
+                      Без шифрования (порт 25)
+                    </SelectItem>
+                    <SelectItem value="starttls">
+                      STARTTLS (порт 587)
+                    </SelectItem>
                     <SelectItem value="ssl">SSL/TLS (порт 465)</SelectItem>
                   </SelectContent>
                 </Select>
@@ -174,7 +190,8 @@ function SmtpForm({ settings }: SmtpFormProps) {
           <form.Field
             name="port"
             children={(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
               return (
                 <Field data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Порт</FieldLabel>
@@ -196,7 +213,8 @@ function SmtpForm({ settings }: SmtpFormProps) {
           <form.Field
             name="username"
             children={(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
               return (
                 <Field data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Пользователь</FieldLabel>
@@ -217,7 +235,8 @@ function SmtpForm({ settings }: SmtpFormProps) {
           <form.Field
             name="password"
             children={(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
               return (
                 <Field data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Пароль</FieldLabel>
@@ -237,7 +256,11 @@ function SmtpForm({ settings }: SmtpFormProps) {
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       tabIndex={-1}
                     >
-                      {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                      {showPassword ? (
+                        <EyeOff className="size-4" />
+                      ) : (
+                        <Eye className="size-4" />
+                      )}
                     </button>
                   </div>
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
@@ -249,7 +272,8 @@ function SmtpForm({ settings }: SmtpFormProps) {
           <form.Field
             name="fromName"
             children={(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
               return (
                 <Field data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Имя отправителя</FieldLabel>
@@ -269,10 +293,13 @@ function SmtpForm({ settings }: SmtpFormProps) {
           <form.Field
             name="fromEmail"
             children={(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
               return (
                 <Field data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Email отправителя</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>
+                    Email отправителя
+                  </FieldLabel>
                   <Input
                     id={field.name}
                     type="email"
@@ -341,7 +368,10 @@ function SmtpForm({ settings }: SmtpFormProps) {
             <Button variant="outline" onClick={() => setTestDialogOpen(false)}>
               Отмена
             </Button>
-            <Button onClick={handleSendTest} disabled={isSendingTest || !testEmail}>
+            <Button
+              onClick={handleSendTest}
+              disabled={isSendingTest || !testEmail}
+            >
               {isSendingTest ? 'Отправка…' : 'Отправить'}
             </Button>
           </DialogFooter>

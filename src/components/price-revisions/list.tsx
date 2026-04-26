@@ -37,7 +37,9 @@ export function PriceRevisionList({
             <TableHead className="font-bold">Направление</TableHead>
             <TableHead className="font-bold">Договоров</TableHead>
             <TableHead className="font-bold">Создана</TableHead>
-            <TableHead className="w-28 text-right font-bold">Действия</TableHead>
+            <TableHead className="w-28 text-right font-bold">
+              Действия
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -51,8 +53,17 @@ export function PriceRevisionList({
               <TableCell>{formatDate(revision.createdAt)}</TableCell>
               <TableCell>
                 <div className="flex justify-end gap-1">
-                  <Button asChild variant="ghost" size="icon" className="size-8" title="Открыть ревизию">
-                    <Link to="/price-revisions/$id" params={{ id: revision.id }}>
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="icon"
+                    className="size-8"
+                    title="Открыть ревизию"
+                  >
+                    <Link
+                      to="/price-revisions/$id"
+                      params={{ id: revision.id }}
+                    >
                       <Eye className="size-4" />
                     </Link>
                   </Button>

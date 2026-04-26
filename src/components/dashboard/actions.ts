@@ -1,7 +1,18 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getRequest } from '@tanstack/react-start/server'
+
 import { Cron } from 'croner'
-import { and, desc, eq, gte, inArray, isNotNull, isNull, lt, lte, sql } from 'drizzle-orm'
+import {
+  and,
+  desc,
+  eq,
+  gte,
+  inArray,
+  isNotNull,
+  isNull,
+  lt,
+  lte,
+  sql,
+} from 'drizzle-orm'
 
 import { db } from '#/db'
 import {
@@ -17,13 +28,11 @@ import { getDueMeta } from '#/components/payables/utils'
 import type { AppScope } from '#/lib/company-scope'
 import { resolveScopedAccountIds } from '#/lib/company-scope'
 import type { DashboardLoaderData, DashboardTask } from '#/types'
-import { auth } from 'utils/auth'
+import { getRequest, requireSession } from 'utils/session'
 
 export const fetchDashboardData = createServerFn().handler(async () => {
-  const request = getRequest()
-  const session = await auth.api.getSession({ headers: request.headers })
-
-  if (!session.user.id) throw new Error('Не авторизован')
+  const session = await requireSession()
+  const request = await getRequest()
 
   const { accountIds, selectedScope } = await resolveScopedAccountIds(
     session.user.id,
@@ -216,9 +225,10 @@ export const fetchDashboardData = createServerFn().handler(async () => {
     0,
   )
   const receivablesCount = unpaidReceivables.length
-  const overdueReceivableRows = unpaidReceivables.filter((row) =>
-    getDueMeta(row.dueDate ? new Date(row.dueDate).toISOString() : null)
-      .isOverdue,
+  const overdueReceivableRows = unpaidReceivables.filter(
+    (row) =>
+      getDueMeta(row.dueDate ? new Date(row.dueDate).toISOString() : null)
+        .isOverdue,
   )
   const currentReceivableRows = unpaidReceivables.filter(
     (row) =>
@@ -273,9 +283,10 @@ export const fetchDashboardData = createServerFn().handler(async () => {
     (sum, row) => sum + row.paymentState.outstandingAmount,
     0,
   )
-  const overduePreviousPeriodDebtRows = previousUnpaidPayables.filter((row) =>
-    getDueMeta(row.dueDate ? new Date(row.dueDate).toISOString() : null)
-      .isOverdue,
+  const overduePreviousPeriodDebtRows = previousUnpaidPayables.filter(
+    (row) =>
+      getDueMeta(row.dueDate ? new Date(row.dueDate).toISOString() : null)
+        .isOverdue,
   )
   const plannedPreviousPeriodRepaymentRows = previousUnpaidPayables.filter(
     (row) =>

@@ -6,7 +6,9 @@ import { Card } from '@/components/ui/card'
 function formatAmount(value: string) {
   const parsed = Number(value)
   if (!Number.isFinite(parsed)) return value
-  return new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(parsed)
+  return new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(
+    parsed,
+  )
 }
 
 function formatDate(date: Date) {
@@ -44,7 +46,10 @@ export function ClientAmountHistory({
               <div className="mt-2 flex flex-wrap items-center gap-2 text-xs tabular-nums">
                 <div className="flex flex-col gap-0.5">
                   {h.previousAmounts.map((amt, i) => (
-                    <span key={i} className="font-mono text-muted-foreground line-through">
+                    <span
+                      key={i}
+                      className="font-mono text-muted-foreground line-through"
+                    >
                       {formatAmount(amt)} ₽
                     </span>
                   ))}
@@ -52,7 +57,8 @@ export function ClientAmountHistory({
                 <ArrowRight className="size-3 shrink-0 text-muted-foreground" />
                 <div className="flex flex-col gap-0.5">
                   {h.newAmounts.map((amt, i) => {
-                    const diff = Number(amt) - Number(h.previousAmounts[i] ?? '0')
+                    const diff =
+                      Number(amt) - Number(h.previousAmounts[i] ?? '0')
                     const colorClass =
                       diff > 0
                         ? 'text-success'
@@ -60,7 +66,10 @@ export function ClientAmountHistory({
                           ? 'text-destructive'
                           : ''
                     return (
-                      <span key={i} className={`font-mono font-medium ${colorClass}`}>
+                      <span
+                        key={i}
+                        className={`font-mono font-medium ${colorClass}`}
+                      >
                         {formatAmount(amt)} ₽
                       </span>
                     )

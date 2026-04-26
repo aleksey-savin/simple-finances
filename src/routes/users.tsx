@@ -1,7 +1,13 @@
 import { createFileRoute, Outlet, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 
-import { MoreHorizontalIcon, Search, ShieldCheck, UserRound, X } from 'lucide-react'
+import {
+  MoreHorizontalIcon,
+  Search,
+  ShieldCheck,
+  UserRound,
+  X,
+} from 'lucide-react'
 
 import { fetchUsers } from '@/components/users/actions'
 import { roleLabels } from '@/utils/roleLabels'
@@ -187,7 +193,11 @@ function UsersPage() {
 
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="size-8">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-8"
+                          >
                             <MoreHorizontalIcon className="size-4" />
                             <span className="sr-only">Открыть меню</span>
                           </Button>
@@ -197,7 +207,9 @@ function UsersPage() {
                             Изменить
                           </DropdownMenuItem>
                           {user.banned ? (
-                            <DropdownMenuItem onClick={() => openUnban(user.id)}>
+                            <DropdownMenuItem
+                              onClick={() => openUnban(user.id)}
+                            >
                               Разблокировать
                             </DropdownMenuItem>
                           ) : (
@@ -263,21 +275,31 @@ function UsersPage() {
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="size-8">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="size-8"
+                              >
                                 <MoreHorizontalIcon className="size-4" />
                                 <span className="sr-only">Открыть меню</span>
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => openUpdate(user.id)}>
+                              <DropdownMenuItem
+                                onClick={() => openUpdate(user.id)}
+                              >
                                 Изменить
                               </DropdownMenuItem>
                               {user.banned ? (
-                                <DropdownMenuItem onClick={() => openUnban(user.id)}>
+                                <DropdownMenuItem
+                                  onClick={() => openUnban(user.id)}
+                                >
                                   Разблокировать
                                 </DropdownMenuItem>
                               ) : (
-                                <DropdownMenuItem onClick={() => openBan(user.id)}>
+                                <DropdownMenuItem
+                                  onClick={() => openBan(user.id)}
+                                >
                                   Заблокировать
                                 </DropdownMenuItem>
                               )}

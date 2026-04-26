@@ -79,7 +79,12 @@ export function ClientContracts({
       <Card className="p-4">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="text-sm font-semibold">Договоры</h3>
-          <Button variant="ghost" size="icon" className="size-7" onClick={() => setAddOpen(true)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7"
+            onClick={() => setAddOpen(true)}
+          >
             <Plus className="size-4" />
           </Button>
         </div>
@@ -111,10 +116,7 @@ export function ClientContracts({
                 >
                   <Pencil className="size-3.5" />
                 </Button>
-                <DeleteContract
-                  entityId={contract.id}
-                  onDeleted={refresh}
-                />
+                <DeleteContract entityId={contract.id} onDeleted={refresh} />
               </>
             )}
           />

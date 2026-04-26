@@ -147,7 +147,9 @@ function BusinessLinesPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col text-sm text-muted-foreground">
-                          <span>Договоров: {businessLine.contracts.length}</span>
+                          <span>
+                            Договоров: {businessLine.contracts.length}
+                          </span>
                           <span>
                             Серверы:{' '}
                             {businessLine.allowServerBindings

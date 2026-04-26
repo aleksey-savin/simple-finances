@@ -105,10 +105,19 @@ export type Counterparty = Pick<
   linkedUser: Pick<User, 'id' | 'name' | 'email'> | null
 }
 
-export type Client = Pick<DBClient, 'id' | 'name' | 'createdBy' | 'companyId'> & {
+export type Client = Pick<
+  DBClient,
+  'id' | 'name' | 'createdBy' | 'companyId'
+> & {
   counterparties: Pick<DBCounterparty, 'id' | 'name'>[]
   managers: { userId: string; name: string }[]
-  contacts: { id: string; name: string; position: string | null; phone: string | null; email: string | null }[]
+  contacts: {
+    id: string
+    name: string
+    position: string | null
+    phone: string | null
+    email: string | null
+  }[]
   blockedServicesCount: number
 }
 
@@ -268,7 +277,13 @@ export type PriceRevisionItemRow = Pick<
       id: string
       name: string
       client: { id: string; name: string } | null
-      contacts: { id: string; name: string; position: string | null; phone: string | null; email: string | null }[]
+      contacts: {
+        id: string
+        name: string
+        position: string | null
+        phone: string | null
+        email: string | null
+      }[]
     }
     documents: { id: string; name: string; url: string }[]
   }

@@ -24,7 +24,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { addContact, updateContact, deleteContact, clientDetailQueryKey } from './actions'
+import {
+  addContact,
+  updateContact,
+  deleteContact,
+  clientDetailQueryKey,
+} from './actions'
 
 type Contact = ClientDetail['contacts'][number]
 
@@ -40,12 +45,27 @@ function ContactForm({
   onSubmit,
   onCancel,
 }: {
-  defaultValues?: { name: string; position: string; phone: string; email: string }
-  onSubmit: (values: { name: string; position: string; phone: string; email: string }) => Promise<void>
+  defaultValues?: {
+    name: string
+    position: string
+    phone: string
+    email: string
+  }
+  onSubmit: (values: {
+    name: string
+    position: string
+    phone: string
+    email: string
+  }) => Promise<void>
   onCancel: () => void
 }) {
   const form = useForm({
-    defaultValues: defaultValues ?? { name: '', position: '', phone: '', email: '' },
+    defaultValues: defaultValues ?? {
+      name: '',
+      position: '',
+      phone: '',
+      email: '',
+    },
     validators: { onSubmit: contactSchema },
     onSubmit: async ({ value }) => {
       await onSubmit(value)
@@ -62,7 +82,8 @@ function ContactForm({
     >
       <form.Field name="name">
         {(field) => {
-          const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+          const isInvalid =
+            field.state.meta.isTouched && !field.state.meta.isValid
           return (
             <Field data-invalid={isInvalid}>
               <FieldLabel htmlFor={field.name}>Имя *</FieldLabel>
@@ -111,7 +132,8 @@ function ContactForm({
 
       <form.Field name="email">
         {(field) => {
-          const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+          const isInvalid =
+            field.state.meta.isTouched && !field.state.meta.isValid
           return (
             <Field data-invalid={isInvalid}>
               <FieldLabel htmlFor={field.name}>Email</FieldLabel>
@@ -160,7 +182,12 @@ export function ClientContacts({
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: clientDetailQueryKey(clientId) })
 
-  const handleAdd = async (values: { name: string; position: string; phone: string; email: string }) => {
+  const handleAdd = async (values: {
+    name: string
+    position: string
+    phone: string
+    email: string
+  }) => {
     try {
       await addContact({ data: { clientId, ...values } })
       await invalidate()
@@ -170,10 +197,17 @@ export function ClientContacts({
     }
   }
 
-  const handleEdit = async (values: { name: string; position: string; phone: string; email: string }) => {
+  const handleEdit = async (values: {
+    name: string
+    position: string
+    phone: string
+    email: string
+  }) => {
     if (!editingContact) return
     try {
-      await updateContact({ data: { id: editingContact.id, clientId, ...values } })
+      await updateContact({
+        data: { id: editingContact.id, clientId, ...values },
+      })
       await invalidate()
       setEditingContact(null)
     } catch (e) {
@@ -226,7 +260,9 @@ export function ClientContacts({
                 <TableRow key={c.id}>
                   <TableCell className="font-medium">{c.name}</TableCell>
                   <TableCell className="text-muted-foreground text-sm">
-                    {c.position ?? <span className="text-muted-foreground">—</span>}
+                    {c.position ?? (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     {c.phone ? (
@@ -287,7 +323,10 @@ export function ClientContacts({
           <DialogHeader>
             <DialogTitle>Новый контакт</DialogTitle>
           </DialogHeader>
-          <ContactForm onSubmit={handleAdd} onCancel={() => setAddOpen(false)} />
+          <ContactForm
+            onSubmit={handleAdd}
+            onCancel={() => setAddOpen(false)}
+          />
         </DialogContent>
       </Dialog>
 

@@ -23,11 +23,7 @@ import { Button } from '@/components/ui/button'
 import { Combobox } from '@/components/ui/combobox'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import {
-  addContract,
-  contractsQueryKey,
-  updateContract,
-} from './actions'
+import { addContract, contractsQueryKey, updateContract } from './actions'
 
 export type ContractEditData = {
   id: string
@@ -35,7 +31,11 @@ export type ContractEditData = {
   number: string | null
   signedAt: string | null
   contractType: ContractType
-  businessLine: { id: string; name: string; allowServerBindings: boolean } | null
+  businessLine: {
+    id: string
+    name: string
+    allowServerBindings: boolean
+  } | null
   counterparty: { id: string; name: string }
   company?: { id: string; name: string } | null
   companyId?: string | null
@@ -489,9 +489,7 @@ export const ContractForm = ({
           }}
         </form.Field>
 
-        <Button type="submit">
-          {isEdit ? 'Сохранить' : 'Создать'}
-        </Button>
+        <Button type="submit">{isEdit ? 'Сохранить' : 'Создать'}</Button>
       </div>
     </form>
   )

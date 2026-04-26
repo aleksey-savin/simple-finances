@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getRequest } from '@tanstack/react-start/server'
+
 import { and, eq, isNull } from 'drizzle-orm'
 import { z } from 'zod'
 
@@ -12,8 +12,12 @@ import {
 } from '@/db/schema'
 import { normalizeBase64Payload } from '#/lib/file-upload'
 import { resolveSelectedScope } from '#/lib/company-scope'
-import { deleteS3Object, getS3SignedObjectUrl, uploadBase64FileToS3 } from '#/lib/s3'
-import { auth } from 'utils/auth'
+import {
+  deleteS3Object,
+  getS3SignedObjectUrl,
+  uploadBase64FileToS3,
+} from '#/lib/s3'
+import { getRequest, requireSession } from 'utils/session'
 
 export const contractsQueryKey = ['contracts'] as const
 
@@ -46,9 +50,8 @@ export const DOCUMENT_FILE_ACCEPT = DOCUMENT_FILE_ALLOWED_EXTENSIONS.map(
 ).join(',')
 
 export const fetchContracts = createServerFn().handler(async () => {
-  const request = getRequest()
-  const session = await auth.api.getSession({ headers: request.headers })
-  if (!session.user.id) throw new Error('Не авторизован')
+  const session = await requireSession()
+  const request = await getRequest()
 
   const { selectedScope } = await resolveSelectedScope(
     session.user.id,
@@ -174,9 +177,7 @@ const uploadDocumentSchema = z.object({
 export const uploadDocument = createServerFn({ method: 'POST' })
   .inputValidator(uploadDocumentSchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session.user.id) throw new Error('Не авторизован')
+    const session = await requireSession()
 
     if (data.fileSize > DOCUMENT_FILE_MAX_SIZE_BYTES) {
       throw new Error(`Размер файла превышает ${DOCUMENT_FILE_MAX_SIZE_MB} МБ`)
@@ -221,9 +222,7 @@ const resolveDocumentUrlSchema = z.object({
 export const resolveDocumentUrl = createServerFn({ method: 'POST' })
   .inputValidator(resolveDocumentUrlSchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session.user.id) throw new Error('Не авторизован')
+    const session = await requireSession()
 
     const doc = await db.query.document.findFirst({
       where: eq(document.id, data.documentId),
@@ -256,9 +255,7 @@ const contractDocumentSchema = z.object({
 export const addContractDocument = createServerFn({ method: 'POST' })
   .inputValidator(contractDocumentSchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session.user.id) throw new Error('Не авторизован')
+    const session = await requireSession()
 
     await db.insert(contractDocument).values({
       contractId: data.contractId,
@@ -269,9 +266,7 @@ export const addContractDocument = createServerFn({ method: 'POST' })
 export const removeContractDocument = createServerFn({ method: 'POST' })
   .inputValidator(contractDocumentSchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session.user.id) throw new Error('Не авторизован')
+    const session = await requireSession()
 
     const cd = await db.query.contractDocument.findFirst({
       where: and(
@@ -296,9 +291,7 @@ export const removeContractDocument = createServerFn({ method: 'POST' })
 export const addContract = createServerFn({ method: 'POST' })
   .inputValidator(addContractSchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session.user.id) throw new Error('Не авторизован')
+    const session = await requireSession()
 
     const businessLineId =
       data.contractType === 'supplier' ? null : (data.businessLineId ?? null)
@@ -328,9 +321,7 @@ export const updateContractSchema = contractSchema.extend({
 export const updateContract = createServerFn({ method: 'POST' })
   .inputValidator(updateContractSchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session.user.id) throw new Error('Не авторизован')
+    const session = await requireSession()
 
     const businessLineId =
       data.contractType === 'supplier' ? null : (data.businessLineId ?? null)

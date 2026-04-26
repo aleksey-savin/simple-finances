@@ -1,9 +1,10 @@
 import { createMiddleware } from '@tanstack/react-start'
-import { getRequest } from '@tanstack/react-start/server'
 import z from 'zod'
 
-import { normalizeBase64Payload, sanitizeUploadFileName } from '#/lib/file-upload'
-import { auth } from './auth'
+import {
+  normalizeBase64Payload,
+  sanitizeUploadFileName,
+} from '#/lib/file-upload'
 
 const base64FileUploadInputSchema = z.object({
   fileName: z.string().trim().min(1, 'Выберите файл'),
@@ -15,7 +16,11 @@ const base64FileUploadInputSchema = z.object({
 export const requireSessionUserServerFnMiddleware = createMiddleware({
   type: 'function',
 }).server(async ({ next }) => {
-  const request = getRequest()
+  const [{ auth }, { getRequest }] = await Promise.all([
+    import('./auth'),
+    import('@tanstack/react-start/server'),
+  ])
+  const request = await getRequest()
   const session = await auth.api.getSession({ headers: request.headers })
   if (!session?.user?.id) throw new Error('Не авторизован')
 

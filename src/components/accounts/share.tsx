@@ -17,10 +17,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import {
-  Combobox,
-  type ComboboxOption,
-} from '@/components/ui/combobox'
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox'
 import { Separator } from '@/components/ui/separator'
 import type { Member } from '#/types'
 

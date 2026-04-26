@@ -1,5 +1,5 @@
 import { createAuthClient } from 'better-auth/react'
-import { adminClient } from 'better-auth/client/plugins'
+import { adminClient, twoFactorClient } from 'better-auth/client/plugins'
 import { ac, admin, user } from 'utils/permissions'
 
 export const authClient = createAuthClient({
@@ -11,6 +11,11 @@ export const authClient = createAuthClient({
       roles: {
         admin,
         user,
+      },
+    }),
+    twoFactorClient({
+      onTwoFactorRedirect: () => {
+        window.location.href = '/two-factor'
       },
     }),
   ],

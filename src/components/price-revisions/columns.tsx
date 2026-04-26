@@ -30,7 +30,9 @@ function ContractDocumentLinks({ documents }: { documents: DocumentLink[] }) {
       popup.location.replace(url)
     } catch (error) {
       popup.close()
-      toast.error(error instanceof Error ? error.message : 'Не удалось открыть документ')
+      toast.error(
+        error instanceof Error ? error.message : 'Не удалось открыть документ',
+      )
     } finally {
       setOpeningId((prev) => (prev === documentId ? null : prev))
     }
@@ -123,7 +125,9 @@ export function buildRevisionColumns(
             {client ? (
               <>
                 <div className="font-medium">{client.name}</div>
-                <div className="text-xs text-muted-foreground">({counterpartyName})</div>
+                <div className="text-xs text-muted-foreground">
+                  ({counterpartyName})
+                </div>
               </>
             ) : (
               <span>{counterpartyName}</span>
@@ -133,7 +137,9 @@ export function buildRevisionColumns(
                 {contacts.map((c) => (
                   <div key={c.id} className="text-xs text-muted-foreground">
                     <span>{c.name}</span>
-                    {c.position && <span className="ml-1 opacity-70">{c.position}</span>}
+                    {c.position && (
+                      <span className="ml-1 opacity-70">{c.position}</span>
+                    )}
                     <div className="flex flex-wrap gap-x-2">
                       {c.phone && (
                         <a
@@ -141,7 +147,8 @@ export function buildRevisionColumns(
                           className="flex items-center gap-0.5 hover:text-foreground"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <Phone className="size-2.5" />{c.phone}
+                          <Phone className="size-2.5" />
+                          {c.phone}
                         </a>
                       )}
                       {c.email && (
@@ -150,7 +157,8 @@ export function buildRevisionColumns(
                           className="flex items-center gap-0.5 hover:text-foreground"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <Mail className="size-2.5" />{c.email}
+                          <Mail className="size-2.5" />
+                          {c.email}
                         </a>
                       )}
                     </div>

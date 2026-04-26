@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getRequest } from '@tanstack/react-start/server'
+
 import { z } from 'zod'
 import { and, count, eq, ilike, inArray, or } from 'drizzle-orm'
 import { db } from '@/db'
@@ -10,7 +10,7 @@ import {
   user,
   userCounterparty,
 } from '@/db/schema'
-import { auth } from 'utils/auth'
+import { getRequest, requireSession } from 'utils/session'
 import {
   getScopedCounterpartyIds,
   resolveSelectedScope,
@@ -23,9 +23,8 @@ export const counterpartiesQueryKey = ['counterparties'] as const
 // ─── Fetch scoped list ────────────────────────────────────────────────────────
 
 export const fetchCounterparties = createServerFn().handler(async () => {
-  const request = getRequest()
-  const session = await auth.api.getSession({ headers: request.headers })
-  if (!session?.user?.id) throw new Error('Не авторизован')
+  const session = await requireSession()
+  const request = await getRequest()
 
   const { selectedScope } = await resolveSelectedScope(
     session.user.id,
@@ -57,9 +56,8 @@ export const fetchCounterparties = createServerFn().handler(async () => {
 export const searchCounterparties = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ query: z.string() }))
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    const session = await requireSession()
+    const request = await getRequest()
 
     const { selectedScope } = await resolveSelectedScope(
       session.user.id,
@@ -92,9 +90,8 @@ export const searchCounterparties = createServerFn({ method: 'POST' })
 export const addCounterpartyToScope = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ counterpartyId: z.string() }))
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    const session = await requireSession()
+    const request = await getRequest()
 
     const { selectedScope } = await resolveSelectedScope(
       session.user.id,
@@ -133,9 +130,8 @@ export const addCounterpartySchema = z.object({
 export const addCounterparty = createServerFn({ method: 'POST' })
   .inputValidator(addCounterpartySchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    const session = await requireSession()
+    const request = await getRequest()
 
     const { selectedScope } = await resolveSelectedScope(
       session.user.id,
@@ -172,9 +168,8 @@ export const addCounterparty = createServerFn({ method: 'POST' })
 export const removeCounterpartyFromScope = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ counterpartyId: z.string() }))
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    const session = await requireSession()
+    const request = await getRequest()
 
     const { selectedScope } = await resolveSelectedScope(
       session.user.id,
@@ -211,9 +206,8 @@ export const updateCounterpartySchema = addCounterpartySchema.extend({
 export const updateCounterparty = createServerFn({ method: 'POST' })
   .inputValidator(updateCounterpartySchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    const session = await requireSession()
+    const request = await getRequest()
 
     const { selectedScope } = await resolveSelectedScope(
       session.user.id,
@@ -222,8 +216,14 @@ export const updateCounterparty = createServerFn({ method: 'POST' })
 
     // Count how many scopes reference this counterparty
     const [[companyRefs], [userRefs]] = await Promise.all([
-      db.select({ n: count() }).from(companyCounterparty).where(eq(companyCounterparty.counterpartyId, data.id)),
-      db.select({ n: count() }).from(userCounterparty).where(eq(userCounterparty.counterpartyId, data.id)),
+      db
+        .select({ n: count() })
+        .from(companyCounterparty)
+        .where(eq(companyCounterparty.counterpartyId, data.id)),
+      db
+        .select({ n: count() })
+        .from(userCounterparty)
+        .where(eq(userCounterparty.counterpartyId, data.id)),
     ])
     const totalRefs = (companyRefs?.n ?? 0) + (userRefs?.n ?? 0)
 
@@ -283,9 +283,7 @@ export const updateCounterparty = createServerFn({ method: 'POST' })
 export const searchUserByEmail = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ email: z.string() }))
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    await requireSession()
 
     if (!data.email) return null
 

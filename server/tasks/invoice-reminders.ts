@@ -22,7 +22,6 @@ import {
   clientCounterparty,
   contact,
 } from '#/db/schema'
-import { sendEmail } from '#/lib/email'
 import { buildInvoiceReminderEmail } from '#/lib/email-templates'
 
 export default defineTask({
@@ -175,9 +174,7 @@ export default defineTask({
           const toEmail = contacts[0].email
           const dueDate = inv.dueDate ? formatDateRu(inv.dueDate) : 'неизвестно'
 
-          const contractInfo = inv.contract
-            ? inv.contract.name
-            : 'договор'
+          const contractInfo = inv.contract ? inv.contract.name : 'договор'
 
           let renewalHtml = ''
           let renewalText = ''
@@ -195,8 +192,13 @@ export default defineTask({
               )
               .orderBy(desc(contractVm.pausedUntil))
               .limit(1)
-            if (manualExtensionRows.length > 0 && manualExtensionRows[0].pausedUntil) {
-              const extendedUntil = formatDateRu(manualExtensionRows[0].pausedUntil)
+            if (
+              manualExtensionRows.length > 0 &&
+              manualExtensionRows[0].pausedUntil
+            ) {
+              const extendedUntil = formatDateRu(
+                manualExtensionRows[0].pausedUntil,
+              )
               renewalHtml = `<p>Срок действия сервера продлён вручную до <strong>${extendedUntil}</strong>.</p>`
               renewalText = `Срок действия сервера продлён вручную до ${extendedUntil}.`
             } else if (inv.dueDate) {
@@ -229,6 +231,7 @@ export default defineTask({
           }
 
           try {
+            const { sendEmail } = await import('#/lib/email')
             const emailTemplate = buildInvoiceReminderEmail({
               contactName: contacts[0].name,
               contractLabel: contractInfo,

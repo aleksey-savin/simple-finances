@@ -1,5 +1,4 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getRequest } from '@tanstack/react-start/server'
 import { and, desc, eq, isNotNull } from 'drizzle-orm'
 import { z } from 'zod'
 
@@ -10,11 +9,9 @@ import {
   getContractNotificationContext,
 } from '#/lib/contract-notifications'
 import { getContractPaymentTermDueDate } from '#/lib/contract-payment-term'
-import { sendEmail } from '#/lib/email'
 import { buildGracePeriodExtendedEmail } from '#/lib/email-templates'
-import { runProxmoxVmManager } from '#/lib/proxmox-vm-manager'
 import { createProxmoxClient } from '#/lib/proxmox'
-import { auth } from 'utils/auth'
+import { requireSession } from 'utils/session'
 
 // ─── Query keys ───────────────────────────────────────────────────────────────
 
@@ -26,13 +23,6 @@ export const contractVmBindingAccessQueryKey = (contractId: string) =>
   ['contract-vm-binding-access', contractId] as const
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-async function requireSession() {
-  const request = getRequest()
-  const session = await auth.api.getSession({ headers: request.headers })
-  if (!session.user.id) throw new Error('Не авторизован')
-  return session.user.id
-}
 
 async function getContractVmBindingAccess(contractId: string) {
   const contractRow = await db.query.contract.findFirst({
@@ -180,6 +170,9 @@ export const setPausedUntil = createServerFn({ method: 'POST' })
   )
   .handler(async ({ data }) => {
     await requireSession()
+    const { sendEmail } = await import('#/lib/email')
+    const { runProxmoxVmManager } = await import('#/lib/proxmox-vm-manager')
+
     const binding = await db.query.contractVm.findFirst({
       where: eq(contractVm.id, data.contractVmId),
       columns: { contractId: true },

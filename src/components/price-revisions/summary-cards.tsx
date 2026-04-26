@@ -42,7 +42,8 @@ export function PriceRevisionSummaryCards({
             {formatCurrencyRange(summary.minCurrent, summary.maxCurrent)}
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {summary.includedCount} из {summary.includedCount + summary.excludedCount} договоров
+            {summary.includedCount} из{' '}
+            {summary.includedCount + summary.excludedCount} договоров
           </p>
         </CardContent>
       </Card>
@@ -70,7 +71,9 @@ export function PriceRevisionSummaryCards({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className={`text-xl font-semibold tabular-nums ${deltaColorClass(summary.minDelta, summary.maxDelta)}`}>
+          <p
+            className={`text-xl font-semibold tabular-nums ${deltaColorClass(summary.minDelta, summary.maxDelta)}`}
+          >
             {formatCurrencyRange(summary.minDelta, summary.maxDelta, true)}
           </p>
         </CardContent>
@@ -93,7 +96,11 @@ export function PriceRevisionSummaryCards({
             }`}
           >
             {summary.minDeltaPercent != null && summary.maxDeltaPercent != null
-              ? formatPercentRange(summary.minDeltaPercent, summary.maxDeltaPercent, true)
+              ? formatPercentRange(
+                  summary.minDeltaPercent,
+                  summary.maxDeltaPercent,
+                  true,
+                )
               : '—'}
           </p>
         </CardContent>

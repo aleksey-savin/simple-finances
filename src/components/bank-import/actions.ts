@@ -10,7 +10,7 @@ import {
   sql,
 } from 'drizzle-orm'
 import { createServerFn } from '@tanstack/react-start'
-import { getRequest } from '@tanstack/react-start/server'
+
 import { z } from 'zod'
 
 import { db } from '#/db'
@@ -35,7 +35,7 @@ import {
   getSettledAmount,
   toMoneyCents,
 } from '#/lib/invoice-payment'
-import { auth } from 'utils/auth'
+import { getRequest, requireSession } from 'utils/session'
 import {
   getScopedCounterpartyIds,
   resolveSelectedScope,
@@ -101,7 +101,7 @@ export type ImportedBankTransactionView = Awaited<
 >[number]
 
 export const fetchBankImportContext = createServerFn().handler(async () => {
-  const request = getRequest()
+  const request = await getRequest()
   const { userId } = await requireSessionUser()
   const { selectedScope, accountIds } = await resolveSelectedScope(
     userId,
@@ -954,13 +954,7 @@ async function loadTransactionPayload(bankTransactionId: string) {
 }
 
 async function requireSessionUser() {
-  const request = getRequest()
-  const session = await auth.api.getSession({ headers: request.headers })
-
-  if (!session?.user?.id) {
-    throw new Error('Не авторизован')
-  }
-
+  const session = await requireSession()
   return { userId: session.user.id }
 }
 

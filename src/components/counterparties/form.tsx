@@ -209,7 +209,9 @@ function CreateCounterpartyFields({
             linkedUserId: value.linkedUserId || undefined,
           },
         })
-        await queryClient.invalidateQueries({ queryKey: counterpartiesQueryKey })
+        await queryClient.invalidateQueries({
+          queryKey: counterpartiesQueryKey,
+        })
         router.invalidate()
         toast.success('Контрагент создан и добавлен в список')
         onDone?.()
@@ -280,7 +282,8 @@ function CreateCounterpartyFields({
 
       <form.Field name="name">
         {(field) => {
-          const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+          const isInvalid =
+            field.state.meta.isTouched && !field.state.meta.isValid
           return (
             <Field data-invalid={isInvalid}>
               <FieldLabel htmlFor={field.name}>Имя *</FieldLabel>
@@ -325,7 +328,9 @@ function CreateCounterpartyFields({
                 label: val,
               }))}
               value={field.state.value}
-              onValueChange={(val) => field.handleChange(val as CounterpartyType | '')}
+              onValueChange={(val) =>
+                field.handleChange(val as CounterpartyType | '')
+              }
               onBlur={field.handleBlur}
               placeholder="Выберите тип"
               allowClear
@@ -352,7 +357,9 @@ function CreateCounterpartyFields({
       </form.Field>
 
       <Field>
-        <FieldLabel htmlFor="linked-user-email">Привязать пользователя</FieldLabel>
+        <FieldLabel htmlFor="linked-user-email">
+          Привязать пользователя
+        </FieldLabel>
         <div className="relative">
           <Input
             id="linked-user-email"
@@ -435,7 +442,9 @@ export function EditCounterpartyForm({
   const queryClient = useQueryClient()
 
   const [emailInput, setEmailInput] = useState(cp.linkedUser?.email ?? '')
-  const [foundUser, setFoundUser] = useState<FoundUser | null>(cp.linkedUser ?? null)
+  const [foundUser, setFoundUser] = useState<FoundUser | null>(
+    cp.linkedUser ?? null,
+  )
   const [notFound, setNotFound] = useState(false)
   const [isSearching, setIsSearching] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -462,7 +471,9 @@ export function EditCounterpartyForm({
           },
         })
         await router.invalidate()
-        await queryClient.invalidateQueries({ queryKey: counterpartiesQueryKey })
+        await queryClient.invalidateQueries({
+          queryKey: counterpartiesQueryKey,
+        })
         toast.success('Контрагент обновлён')
         onDone()
       } catch (error) {
@@ -523,7 +534,8 @@ export function EditCounterpartyForm({
     >
       <form.Field name="name">
         {(field) => {
-          const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+          const isInvalid =
+            field.state.meta.isTouched && !field.state.meta.isValid
           return (
             <Field data-invalid={isInvalid}>
               <FieldLabel htmlFor={field.name}>Имя</FieldLabel>
@@ -568,7 +580,9 @@ export function EditCounterpartyForm({
                 label: val,
               }))}
               value={field.state.value}
-              onValueChange={(val) => field.handleChange(val as CounterpartyType | '')}
+              onValueChange={(val) =>
+                field.handleChange(val as CounterpartyType | '')
+              }
               onBlur={field.handleBlur}
               placeholder="Выберите тип"
               allowClear
@@ -595,7 +609,9 @@ export function EditCounterpartyForm({
       </form.Field>
 
       <Field>
-        <FieldLabel htmlFor="edit-linked-user-email">Привязать пользователя</FieldLabel>
+        <FieldLabel htmlFor="edit-linked-user-email">
+          Привязать пользователя
+        </FieldLabel>
         <div className="relative">
           <Input
             id="edit-linked-user-email"
@@ -651,8 +667,12 @@ export function EditCounterpartyForm({
       </Field>
 
       <div className="flex gap-2">
-        <Button type="submit" size="sm">Сохранить</Button>
-        <Button type="button" variant="ghost" size="sm" onClick={onDone}>Отмена</Button>
+        <Button type="submit" size="sm">
+          Сохранить
+        </Button>
+        <Button type="button" variant="ghost" size="sm" onClick={onDone}>
+          Отмена
+        </Button>
       </div>
     </form>
   )

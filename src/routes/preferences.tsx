@@ -4,7 +4,10 @@ import { Bell, Mail, Server } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { fetchSmtpSettings } from '@/components/preferences/actions'
 import { SmtpPreferencesPanel } from '@/components/preferences/smtp-panel'
-import { ProxmoxPreferencesPanel, NotificationsPreferencesPanel } from '@/components/preferences/proxmox-panel'
+import {
+  ProxmoxPreferencesPanel,
+  NotificationsPreferencesPanel,
+} from '@/components/preferences/proxmox-panel'
 
 export const Route = createFileRoute('/preferences')({
   loader: () => fetchSmtpSettings(),
@@ -26,7 +29,10 @@ function PreferencesPage() {
             <Server className="size-4" />
             Proxmox
           </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center gap-2">
+          <TabsTrigger
+            value="notifications"
+            className="flex items-center gap-2"
+          >
             <Bell className="size-4" />
             Уведомления
           </TabsTrigger>

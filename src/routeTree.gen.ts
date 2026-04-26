@@ -10,14 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UsersRouteImport } from './routes/users'
+import { Route as TwoFactorRouteImport } from './routes/two-factor'
 import { Route as TransactionsRouteImport } from './routes/transactions'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RecurringRouteImport } from './routes/recurring'
 import { Route as ReceivablesRouteImport } from './routes/receivables'
 import { Route as PriceRevisionsRouteImport } from './routes/price-revisions'
 import { Route as PreferencesRouteImport } from './routes/preferences'
 import { Route as PayablesRouteImport } from './routes/payables'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CurrentAccountsRouteImport } from './routes/current-accounts'
 import { Route as CounterpartiesRouteImport } from './routes/counterparties'
@@ -27,6 +30,7 @@ import { Route as ClientsRouteImport } from './routes/clients'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as BusinessLinesRouteImport } from './routes/business-lines'
 import { Route as BankImportRouteImport } from './routes/bank-import'
+import { Route as AccountRouteImport } from './routes/account'
 import { Route as R403RouteImport } from './routes/403'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PriceRevisionsIndexRouteImport } from './routes/price-revisions.index'
@@ -56,6 +60,11 @@ const UsersRoute = UsersRouteImport.update({
   path: '/users',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TwoFactorRoute = TwoFactorRouteImport.update({
+  id: '/two-factor',
+  path: '/two-factor',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TransactionsRoute = TransactionsRouteImport.update({
   id: '/transactions',
   path: '/transactions',
@@ -64,6 +73,11 @@ const TransactionsRoute = TransactionsRouteImport.update({
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RecurringRoute = RecurringRouteImport.update({
@@ -94,6 +108,11 @@ const PayablesRoute = PayablesRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -139,6 +158,11 @@ const BusinessLinesRoute = BusinessLinesRouteImport.update({
 const BankImportRoute = BankImportRouteImport.update({
   id: '/bank-import',
   path: '/bank-import',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
   getParentRoute: () => rootRouteImport,
 } as any)
 const R403Route = R403RouteImport.update({
@@ -260,6 +284,7 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/403': typeof R403Route
+  '/account': typeof AccountRoute
   '/bank-import': typeof BankImportRoute
   '/business-lines': typeof BusinessLinesRouteWithChildren
   '/categories': typeof CategoriesRouteWithChildren
@@ -269,14 +294,17 @@ export interface FileRoutesByFullPath {
   '/counterparties': typeof CounterpartiesRouteWithChildren
   '/current-accounts': typeof CurrentAccountsRouteWithChildren
   '/dashboard': typeof DashboardRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/payables': typeof PayablesRoute
   '/preferences': typeof PreferencesRoute
   '/price-revisions': typeof PriceRevisionsRouteWithChildren
   '/receivables': typeof ReceivablesRoute
   '/recurring': typeof RecurringRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/transactions': typeof TransactionsRouteWithChildren
+  '/two-factor': typeof TwoFactorRoute
   '/users': typeof UsersRouteWithChildren
   '/business-lines/new': typeof BusinessLinesNewRoute
   '/categories/new': typeof CategoriesNewRoute
@@ -303,6 +331,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/403': typeof R403Route
+  '/account': typeof AccountRoute
   '/bank-import': typeof BankImportRoute
   '/business-lines': typeof BusinessLinesRouteWithChildren
   '/categories': typeof CategoriesRouteWithChildren
@@ -311,13 +340,16 @@ export interface FileRoutesByTo {
   '/counterparties': typeof CounterpartiesRouteWithChildren
   '/current-accounts': typeof CurrentAccountsRouteWithChildren
   '/dashboard': typeof DashboardRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/payables': typeof PayablesRoute
   '/preferences': typeof PreferencesRoute
   '/receivables': typeof ReceivablesRoute
   '/recurring': typeof RecurringRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/transactions': typeof TransactionsRouteWithChildren
+  '/two-factor': typeof TwoFactorRoute
   '/users': typeof UsersRouteWithChildren
   '/business-lines/new': typeof BusinessLinesNewRoute
   '/categories/new': typeof CategoriesNewRoute
@@ -345,6 +377,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/403': typeof R403Route
+  '/account': typeof AccountRoute
   '/bank-import': typeof BankImportRoute
   '/business-lines': typeof BusinessLinesRouteWithChildren
   '/categories': typeof CategoriesRouteWithChildren
@@ -354,14 +387,17 @@ export interface FileRoutesById {
   '/counterparties': typeof CounterpartiesRouteWithChildren
   '/current-accounts': typeof CurrentAccountsRouteWithChildren
   '/dashboard': typeof DashboardRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/payables': typeof PayablesRoute
   '/preferences': typeof PreferencesRoute
   '/price-revisions': typeof PriceRevisionsRouteWithChildren
   '/receivables': typeof ReceivablesRoute
   '/recurring': typeof RecurringRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/transactions': typeof TransactionsRouteWithChildren
+  '/two-factor': typeof TwoFactorRoute
   '/users': typeof UsersRouteWithChildren
   '/business-lines/new': typeof BusinessLinesNewRoute
   '/categories/new': typeof CategoriesNewRoute
@@ -390,6 +426,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/403'
+    | '/account'
     | '/bank-import'
     | '/business-lines'
     | '/categories'
@@ -399,14 +436,17 @@ export interface FileRouteTypes {
     | '/counterparties'
     | '/current-accounts'
     | '/dashboard'
+    | '/forgot-password'
     | '/login'
     | '/payables'
     | '/preferences'
     | '/price-revisions'
     | '/receivables'
     | '/recurring'
+    | '/reset-password'
     | '/signup'
     | '/transactions'
+    | '/two-factor'
     | '/users'
     | '/business-lines/new'
     | '/categories/new'
@@ -433,6 +473,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/403'
+    | '/account'
     | '/bank-import'
     | '/business-lines'
     | '/categories'
@@ -441,13 +482,16 @@ export interface FileRouteTypes {
     | '/counterparties'
     | '/current-accounts'
     | '/dashboard'
+    | '/forgot-password'
     | '/login'
     | '/payables'
     | '/preferences'
     | '/receivables'
     | '/recurring'
+    | '/reset-password'
     | '/signup'
     | '/transactions'
+    | '/two-factor'
     | '/users'
     | '/business-lines/new'
     | '/categories/new'
@@ -474,6 +518,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/403'
+    | '/account'
     | '/bank-import'
     | '/business-lines'
     | '/categories'
@@ -483,14 +528,17 @@ export interface FileRouteTypes {
     | '/counterparties'
     | '/current-accounts'
     | '/dashboard'
+    | '/forgot-password'
     | '/login'
     | '/payables'
     | '/preferences'
     | '/price-revisions'
     | '/receivables'
     | '/recurring'
+    | '/reset-password'
     | '/signup'
     | '/transactions'
+    | '/two-factor'
     | '/users'
     | '/business-lines/new'
     | '/categories/new'
@@ -518,6 +566,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   R403Route: typeof R403Route
+  AccountRoute: typeof AccountRoute
   BankImportRoute: typeof BankImportRoute
   BusinessLinesRoute: typeof BusinessLinesRouteWithChildren
   CategoriesRoute: typeof CategoriesRouteWithChildren
@@ -527,14 +576,17 @@ export interface RootRouteChildren {
   CounterpartiesRoute: typeof CounterpartiesRouteWithChildren
   CurrentAccountsRoute: typeof CurrentAccountsRouteWithChildren
   DashboardRoute: typeof DashboardRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   PayablesRoute: typeof PayablesRoute
   PreferencesRoute: typeof PreferencesRoute
   PriceRevisionsRoute: typeof PriceRevisionsRouteWithChildren
   ReceivablesRoute: typeof ReceivablesRoute
   RecurringRoute: typeof RecurringRouteWithChildren
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
   TransactionsRoute: typeof TransactionsRouteWithChildren
+  TwoFactorRoute: typeof TwoFactorRoute
   UsersRoute: typeof UsersRouteWithChildren
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
@@ -546,6 +598,13 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/users'
       preLoaderRoute: typeof UsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/two-factor': {
+      id: '/two-factor'
+      path: '/two-factor'
+      fullPath: '/two-factor'
+      preLoaderRoute: typeof TwoFactorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/transactions': {
@@ -560,6 +619,13 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/recurring': {
@@ -602,6 +668,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -665,6 +738,13 @@ declare module '@tanstack/react-router' {
       path: '/bank-import'
       fullPath: '/bank-import'
       preLoaderRoute: typeof BankImportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/403': {
@@ -981,6 +1061,7 @@ const UsersRouteWithChildren = UsersRoute._addFileChildren(UsersRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   R403Route: R403Route,
+  AccountRoute: AccountRoute,
   BankImportRoute: BankImportRoute,
   BusinessLinesRoute: BusinessLinesRouteWithChildren,
   CategoriesRoute: CategoriesRouteWithChildren,
@@ -990,14 +1071,17 @@ const rootRouteChildren: RootRouteChildren = {
   CounterpartiesRoute: CounterpartiesRouteWithChildren,
   CurrentAccountsRoute: CurrentAccountsRouteWithChildren,
   DashboardRoute: DashboardRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   PayablesRoute: PayablesRoute,
   PreferencesRoute: PreferencesRoute,
   PriceRevisionsRoute: PriceRevisionsRouteWithChildren,
   ReceivablesRoute: ReceivablesRoute,
   RecurringRoute: RecurringRouteWithChildren,
+  ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
   TransactionsRoute: TransactionsRouteWithChildren,
+  TwoFactorRoute: TwoFactorRoute,
   UsersRoute: UsersRouteWithChildren,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }

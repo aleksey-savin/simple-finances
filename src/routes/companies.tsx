@@ -168,13 +168,19 @@ function CompaniesPage() {
                         {company.members.length > 0 ? (
                           <div className="flex flex-wrap gap-1">
                             {company.members.map((member) => (
-                              <Badge key={member.userId} variant="outline" className="text-xs">
+                              <Badge
+                                key={member.userId}
+                                variant="outline"
+                                className="text-xs"
+                              >
                                 {member.name}
                               </Badge>
                             ))}
                           </div>
                         ) : (
-                          <span className="text-sm text-muted-foreground">—</span>
+                          <span className="text-sm text-muted-foreground">
+                            —
+                          </span>
                         )}
                       </TableCell>
                       <TableCell>

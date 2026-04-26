@@ -1,5 +1,4 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getRequest } from '@tanstack/react-start/server'
 import { and, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 
@@ -10,14 +9,12 @@ import {
   currentAccount,
   currentAccountUser,
 } from '@/db/schema'
-import { auth } from 'utils/auth'
+import { requireSession } from 'utils/session'
 
 export const companiesQueryKey = ['companies'] as const
 
 export const fetchCompanies = createServerFn().handler(async () => {
-  const request = getRequest()
-  const session = await auth.api.getSession({ headers: request.headers })
-  if (!session?.user?.id) throw new Error('Не авторизован')
+  const session = await requireSession()
 
   const accountIds = await getAccessibleAccountIds(session.user.id)
   if (accountIds.length === 0) return []
@@ -90,9 +87,7 @@ export const addCompanySchema = companySchema
 export const addCompany = createServerFn({ method: 'POST' })
   .inputValidator(addCompanySchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    const session = await requireSession()
 
     await ensureAccountSelectionIsAvailable(session.user.id, data.accountIds)
 
@@ -121,9 +116,7 @@ export const updateCompanySchema = companySchema.extend({
 export const updateCompany = createServerFn({ method: 'POST' })
   .inputValidator(updateCompanySchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    const session = await requireSession()
 
     await ensureAccountSelectionIsAvailable(
       session.user.id,
@@ -218,9 +211,7 @@ const addCompanyMemberSchema = z.object({
 export const addCompanyMember = createServerFn({ method: 'POST' })
   .inputValidator(addCompanyMemberSchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    const session = await requireSession()
 
     const accountIds = await getCompanyAccountIds(data.companyId)
     if (accountIds.length === 0)
@@ -253,9 +244,7 @@ const removeCompanyMemberSchema = z.object({
 export const removeCompanyMember = createServerFn({ method: 'POST' })
   .inputValidator(removeCompanyMemberSchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    const session = await requireSession()
 
     const accountIds = await getCompanyAccountIds(data.companyId)
     if (accountIds.length === 0) return

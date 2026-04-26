@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getRequest } from '@tanstack/react-start/server'
+
 import { z } from 'zod'
 import { db } from '@/db'
 import {
@@ -11,7 +11,7 @@ import {
 } from '@/db/schema'
 import { eq, inArray, or } from 'drizzle-orm'
 import { Cron } from 'croner'
-import { auth } from 'utils/auth'
+import { getRequest, requireSession } from 'utils/session'
 import { createRecurringEntry } from '#/lib/recurring'
 import {
   getScopedCounterpartyIds,
@@ -22,9 +22,8 @@ import type { RecurringLoaderData, RecurringMonthTotals } from '@/types'
 // ─── Fetch list (route loader) ────────────────────────────────────────────────
 
 export const fetchRecurringData = createServerFn().handler(async () => {
-  const request = getRequest()
-  const session = await auth.api.getSession({ headers: request.headers })
-  if (!session?.user?.id) throw new Error('Не авторизован')
+  const session = await requireSession()
+  const request = await getRequest()
 
   const { accountIds, selectedScope } = await resolveScopedAccountIds(
     session.user.id,
@@ -104,9 +103,7 @@ export const fetchRecurringData = createServerFn().handler(async () => {
 export const fetchRuleById = createServerFn()
   .inputValidator((id: string) => id)
   .handler(async ({ data: id }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    const session = await requireSession()
 
     const rule = await db.query.recurringRule.findFirst({
       where: eq(recurringRule.id, id),
@@ -128,9 +125,7 @@ const toggleRuleSchema = z.object({ id: z.string(), isActive: z.boolean() })
 export const toggleRecurringRule = createServerFn({ method: 'POST' })
   .inputValidator(toggleRuleSchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    const session = await requireSession()
 
     let nextRunAt: Date | null = null
     if (data.isActive) {
@@ -172,9 +167,7 @@ const createRuleSchema = z.object({
 export const createRecurringRule = createServerFn({ method: 'POST' })
   .inputValidator(createRuleSchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    const session = await requireSession()
 
     const job = new Cron(data.cronExpression, { paused: true })
     const nextRunAt = job.nextRun()
@@ -217,9 +210,7 @@ const updateRuleSchema = z.object({
 export const updateRecurringRule = createServerFn({ method: 'POST' })
   .inputValidator(updateRuleSchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    const session = await requireSession()
 
     const job = new Cron(data.cronExpression, { paused: true })
     const nextRunAt = job.nextRun()
@@ -251,9 +242,7 @@ const createNowSchema = z.object({ id: z.string() })
 export const createRecurringNow = createServerFn({ method: 'POST' })
   .inputValidator(createNowSchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    const session = await requireSession()
 
     const memberships = await db
       .select({ currentAccountId: currentAccountUser.currentAccountId })
@@ -294,9 +283,7 @@ const deleteRuleSchema = z.object({ id: z.string() })
 export const deleteRecurringRule = createServerFn({ method: 'POST' })
   .inputValidator(deleteRuleSchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    const session = await requireSession()
 
     await db.delete(recurringRule).where(eq(recurringRule.id, data.id))
   })

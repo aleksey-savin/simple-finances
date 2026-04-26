@@ -1,12 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  Loader2,
-  PauseCircle,
-  Plus,
-  Server,
-  Trash2,
-} from 'lucide-react'
+import { Loader2, PauseCircle, Plus, Server, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'

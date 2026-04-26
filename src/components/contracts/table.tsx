@@ -46,7 +46,9 @@ type ContractsTableProps = {
 function formatAmount(value: string) {
   const parsed = Number(value)
   if (!Number.isFinite(parsed)) return value
-  return new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(parsed)
+  return new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(
+    parsed,
+  )
 }
 
 function formatSignedAt(value: string | null | undefined) {
@@ -79,7 +81,9 @@ export function ContractsTable({
           <TableHead className="font-bold">Суммы</TableHead>
           <TableHead className="font-bold">Документы</TableHead>
           {renderActions && (
-            <TableHead className="w-24 text-right font-bold">Действия</TableHead>
+            <TableHead className="w-24 text-right font-bold">
+              Действия
+            </TableHead>
           )}
         </TableRow>
       </TableHeader>
@@ -97,82 +101,91 @@ export function ContractsTable({
                   : undefined
               }
             >
-            <TableCell className="text-sm">
-              {useCashflowDirection ? (
-                contract.contractType === 'supplier' ? (
-                  <Badge variant="warning">Расход</Badge>
+              <TableCell className="text-sm">
+                {useCashflowDirection ? (
+                  contract.contractType === 'supplier' ? (
+                    <Badge variant="warning">Расход</Badge>
+                  ) : (
+                    <Badge variant="success">Доход</Badge>
+                  )
                 ) : (
-                  <Badge variant="success">Доход</Badge>
-                )
-              ) : (
-                contract.businessLine?.name ?? '—'
-              )}
-            </TableCell>
-            <TableCell>
-              <div className="flex items-center gap-2 font-medium">
-                <FileText className="size-4 shrink-0 text-muted-foreground" />
-                {contract.number
-                  ? `№${contract.number} от ${formatSignedAt(contract.signedAt)}`
-                  : contract.name}
-                {highlightBlocked && isBlocked && (
-                  <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">
-                    Блок
-                  </Badge>
+                  (contract.businessLine?.name ?? '—')
                 )}
-              </div>
-              {contract.number && (
-                <p className="mt-0.5 text-xs text-muted-foreground">{contract.name}</p>
-              )}
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {contract.counterparty.name}
-              </p>
-              {highlightBlocked && isBlocked && (
-                <p className="mt-0.5 text-xs text-destructive">
-                  Заблокировано ВМ: {blockedVmCount}
-                </p>
-              )}
-            </TableCell>
-            {showType && (
-              <TableCell>{contractTypeLabel[contract.contractType]}</TableCell>
-            )}
-            <TableCell>
-              <div className="flex flex-col gap-0.5">
-                {contract.amount.map((amt, i) => (
-                  <span key={i} className="font-mono text-sm tabular-nums">
-                    {formatAmount(amt)} ₽
-                  </span>
-                ))}
-              </div>
-            </TableCell>
-            <TableCell>
-              {contract.documents.length === 0 ? (
-                <span className="text-xs text-muted-foreground">—</span>
-              ) : (
-                <div className="flex flex-col gap-1">
-                  {contract.documents.map((doc) => (
-                    <button
-                      key={doc.id}
-                      type="button"
-                      className="flex items-center gap-1 text-xs text-primary hover:underline disabled:opacity-50"
-                      disabled={openingDocId === doc.id}
-                      onClick={() => onOpenDocument(doc.id)}
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2 font-medium">
+                  <FileText className="size-4 shrink-0 text-muted-foreground" />
+                  {contract.number
+                    ? `№${contract.number} от ${formatSignedAt(contract.signedAt)}`
+                    : contract.name}
+                  {highlightBlocked && isBlocked && (
+                    <Badge
+                      variant="destructive"
+                      className="h-5 px-1.5 text-[10px]"
                     >
-                      {openingDocId === doc.id ? (
-                        <Loader2 className="size-3 animate-spin" />
-                      ) : (
-                        <ExternalLink className="size-3" />
-                      )}
-                      {doc.name}
-                    </button>
+                      Блок
+                    </Badge>
+                  )}
+                </div>
+                {contract.number && (
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {contract.name}
+                  </p>
+                )}
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {contract.counterparty.name}
+                </p>
+                {highlightBlocked && isBlocked && (
+                  <p className="mt-0.5 text-xs text-destructive">
+                    Заблокировано ВМ: {blockedVmCount}
+                  </p>
+                )}
+              </TableCell>
+              {showType && (
+                <TableCell>
+                  {contractTypeLabel[contract.contractType]}
+                </TableCell>
+              )}
+              <TableCell>
+                <div className="flex flex-col gap-0.5">
+                  {contract.amount.map((amt, i) => (
+                    <span key={i} className="font-mono text-sm tabular-nums">
+                      {formatAmount(amt)} ₽
+                    </span>
                   ))}
                 </div>
-              )}
-            </TableCell>
-            {renderActions && (
-              <TableCell>
-                <div className="flex justify-end gap-1">{renderActions(contract)}</div>
               </TableCell>
-            )}
+              <TableCell>
+                {contract.documents.length === 0 ? (
+                  <span className="text-xs text-muted-foreground">—</span>
+                ) : (
+                  <div className="flex flex-col gap-1">
+                    {contract.documents.map((doc) => (
+                      <button
+                        key={doc.id}
+                        type="button"
+                        className="flex items-center gap-1 text-xs text-primary hover:underline disabled:opacity-50"
+                        disabled={openingDocId === doc.id}
+                        onClick={() => onOpenDocument(doc.id)}
+                      >
+                        {openingDocId === doc.id ? (
+                          <Loader2 className="size-3 animate-spin" />
+                        ) : (
+                          <ExternalLink className="size-3" />
+                        )}
+                        {doc.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </TableCell>
+              {renderActions && (
+                <TableCell>
+                  <div className="flex justify-end gap-1">
+                    {renderActions(contract)}
+                  </div>
+                </TableCell>
+              )}
             </TableRow>
           )
         })}

@@ -74,10 +74,12 @@ export function DataTable<TData>({
     [],
   )
   const [globalFilter, setGlobalFilter] = React.useState<string>('')
-  const [paginationState, setPaginationState] = React.useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: defaultPageSize,
-  })
+  const [paginationState, setPaginationState] = React.useState<PaginationState>(
+    {
+      pageIndex: 0,
+      pageSize: defaultPageSize,
+    },
+  )
 
   const table = useReactTable({
     data,
@@ -121,7 +123,9 @@ export function DataTable<TData>({
                       minWidth: header.column.columnDef.minSize,
                       maxWidth: header.column.columnDef.maxSize,
                     }}
-                    className={cn(header.column.columnDef.meta?.headerClassName)}
+                    className={cn(
+                      header.column.columnDef.meta?.headerClassName,
+                    )}
                   >
                     {header.isPlaceholder
                       ? null
@@ -171,7 +175,9 @@ export function DataTable<TData>({
         </Table>
       </Card>
 
-      {pagination && <DataTablePagination table={table} pageSizes={pageSizes} />}
+      {pagination && (
+        <DataTablePagination table={table} pageSizes={pageSizes} />
+      )}
     </div>
   )
 }

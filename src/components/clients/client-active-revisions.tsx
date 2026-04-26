@@ -20,7 +20,10 @@ const statusLabel: Record<string, string> = {
   success: 'Завершён',
 }
 
-const statusVariant: Record<string, 'secondary' | 'outline' | 'success' | 'destructive'> = {
+const statusVariant: Record<
+  string,
+  'secondary' | 'outline' | 'success' | 'destructive'
+> = {
   draft: 'secondary',
   notified: 'outline',
   agreed: 'outline',
@@ -31,7 +34,9 @@ const statusVariant: Record<string, 'secondary' | 'outline' | 'success' | 'destr
 function formatAmount(value: string) {
   const parsed = Number(value)
   if (!Number.isFinite(parsed)) return value
-  return new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(parsed)
+  return new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(
+    parsed,
+  )
 }
 
 export function ClientActiveRevisions({
@@ -57,7 +62,10 @@ export function ClientActiveRevisions({
           </TableHeader>
           <TableBody>
             {activeRevisions.map((r) => (
-              <TableRow key={r.itemId} className={r.included ? '' : 'opacity-50'}>
+              <TableRow
+                key={r.itemId}
+                className={r.included ? '' : 'opacity-50'}
+              >
                 <TableCell>
                   <Link
                     to="/price-revisions/$id"
@@ -85,7 +93,8 @@ export function ClientActiveRevisions({
                 <TableCell>
                   <div className="flex flex-col gap-0.5">
                     {r.proposedAmounts.map((amt, i) => {
-                      const diff = Number(amt) - Number(r.currentAmounts[i] ?? '0')
+                      const diff =
+                        Number(amt) - Number(r.currentAmounts[i] ?? '0')
                       const colorClass =
                         diff > 0
                           ? 'text-success'

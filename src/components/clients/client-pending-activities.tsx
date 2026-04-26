@@ -61,7 +61,9 @@ export function ClientPendingActivities({
                     <span className="text-sm font-medium">{a.title}</span>
                   )}
                   {a.subtitle && (
-                    <p className="mt-0.5 text-xs text-muted-foreground">{a.subtitle}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {a.subtitle}
+                    </p>
                   )}
                 </TableCell>
                 <TableCell>

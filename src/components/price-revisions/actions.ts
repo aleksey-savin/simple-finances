@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getRequest } from '@tanstack/react-start/server'
+
 import { and, eq, isNull } from 'drizzle-orm'
 import { z } from 'zod'
 
@@ -17,7 +17,7 @@ import {
 } from '@/db/schema'
 import { inArray } from 'drizzle-orm'
 import type { PriceRevisionDetail, PriceRevision } from '@/types'
-import { auth } from 'utils/auth'
+import { getRequest, requireSession } from 'utils/session'
 import { resolveSelectedScope } from '#/lib/company-scope'
 
 // Throws if the revision has been marked completed
@@ -39,9 +39,8 @@ export const priceRevisionQueryKey = (id: string) =>
 
 export const fetchPriceRevisions = createServerFn().handler(
   async (): Promise<PriceRevision[]> => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    const session = await requireSession()
+    const request = await getRequest()
 
     const { selectedScope } = await resolveSelectedScope(
       session.user.id,
@@ -91,9 +90,7 @@ export const fetchPriceRevisions = createServerFn().handler(
 export const fetchPriceRevision = createServerFn()
   .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }): Promise<PriceRevisionDetail> => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    const session = await requireSession()
 
     const revision = await db.query.contractPriceRevision.findFirst({
       where: eq(contractPriceRevision.id, data.id),
@@ -147,7 +144,16 @@ export const fetchPriceRevision = createServerFn()
 
     const managersMap = new Map<string, { userId: string; name: string }[]>()
     const clientMap = new Map<string, { id: string; name: string }>()
-    const contactsMap = new Map<string, { id: string; name: string; position: string | null; phone: string | null; email: string | null }[]>()
+    const contactsMap = new Map<
+      string,
+      {
+        id: string
+        name: string
+        position: string | null
+        phone: string | null
+        email: string | null
+      }[]
+    >()
 
     if (counterpartyIds.length > 0) {
       const [managerRows, clientRows, contactRows] = await Promise.all([
@@ -158,7 +164,10 @@ export const fetchPriceRevision = createServerFn()
             userName: user.name,
           })
           .from(clientCounterparty)
-          .innerJoin(clientManager, eq(clientManager.clientId, clientCounterparty.clientId))
+          .innerJoin(
+            clientManager,
+            eq(clientManager.clientId, clientCounterparty.clientId),
+          )
           .innerJoin(user, eq(user.id, clientManager.userId))
           .where(inArray(clientCounterparty.counterpartyId, counterpartyIds)),
         db
@@ -180,7 +189,10 @@ export const fetchPriceRevision = createServerFn()
             email: contact.email,
           })
           .from(contact)
-          .innerJoin(clientCounterparty, eq(clientCounterparty.clientId, contact.clientId))
+          .innerJoin(
+            clientCounterparty,
+            eq(clientCounterparty.clientId, contact.clientId),
+          )
           .where(inArray(clientCounterparty.counterpartyId, counterpartyIds)),
       ])
 
@@ -194,7 +206,10 @@ export const fetchPriceRevision = createServerFn()
 
       for (const row of clientRows) {
         if (!clientMap.has(row.counterpartyId)) {
-          clientMap.set(row.counterpartyId, { id: row.clientId, name: row.clientName })
+          clientMap.set(row.counterpartyId, {
+            id: row.clientId,
+            name: row.clientName,
+          })
         }
       }
 
@@ -232,13 +247,19 @@ export const fetchPriceRevision = createServerFn()
               client: clientMap.get(item.contract!.counterparty!.id) ?? null,
               contacts: contactsMap.get(item.contract!.counterparty!.id) ?? [],
             },
-            documents: item.contract!.contractDocuments.map((cd) => cd.document),
+            documents: item.contract!.contractDocuments.map(
+              (cd) => cd.document,
+            ),
           },
           managers: managersMap.get(item.contract!.counterparty!.id) ?? [],
         }))
         .sort((a, b) => {
-          const nameA = (a.contract.counterparty.client?.name ?? a.contract.counterparty.name).toLowerCase()
-          const nameB = (b.contract.counterparty.client?.name ?? b.contract.counterparty.name).toLowerCase()
+          const nameA = (
+            a.contract.counterparty.client?.name ?? a.contract.counterparty.name
+          ).toLowerCase()
+          const nameB = (
+            b.contract.counterparty.client?.name ?? b.contract.counterparty.name
+          ).toLowerCase()
           return nameA.localeCompare(nameB, 'ru')
         }),
     }
@@ -249,9 +270,7 @@ export const fetchPriceRevision = createServerFn()
 export const completeRevision = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    const session = await requireSession()
 
     await db
       .update(contractPriceRevision)
@@ -262,9 +281,7 @@ export const completeRevision = createServerFn({ method: 'POST' })
 export const reopenRevision = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    const session = await requireSession()
 
     await db
       .update(contractPriceRevision)
@@ -283,9 +300,8 @@ const createPriceRevisionSchema = z.object({
 export const createPriceRevision = createServerFn({ method: 'POST' })
   .inputValidator(createPriceRevisionSchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    const session = await requireSession()
+    const request = await getRequest()
 
     const { selectedScope } = await resolveSelectedScope(
       session.user.id,
@@ -343,9 +359,7 @@ export const createPriceRevision = createServerFn({ method: 'POST' })
 export const deletePriceRevision = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    const session = await requireSession()
 
     await db
       .delete(contractPriceRevision)
@@ -363,9 +377,7 @@ const updateRevisionItemSchema = z.object({
 export const updateRevisionItem = createServerFn({ method: 'POST' })
   .inputValidator(updateRevisionItemSchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    const session = await requireSession()
 
     const item = await db.query.contractPriceRevisionItem.findFirst({
       where: eq(contractPriceRevisionItem.id, data.id),
@@ -396,9 +408,7 @@ const applyBulkAdjustmentSchema = z.object({
 export const applyBulkAdjustment = createServerFn({ method: 'POST' })
   .inputValidator(applyBulkAdjustmentSchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    const session = await requireSession()
 
     await assertRevisionOpen(data.revisionId)
 
@@ -458,9 +468,7 @@ const advanceRevisionItemStatusSchema = z.object({
 export const advanceRevisionItemStatus = createServerFn({ method: 'POST' })
   .inputValidator(advanceRevisionItemStatusSchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    const session = await requireSession()
 
     const item = await db.query.contractPriceRevisionItem.findFirst({
       where: eq(contractPriceRevisionItem.id, data.id),
@@ -535,9 +543,7 @@ const CLEAR_TIMESTAMP_ON_REVERT: Record<string, string[]> = {
 export const revertRevisionItemStatus = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session?.user?.id) throw new Error('Не авторизован')
+    const session = await requireSession()
 
     const item = await db.query.contractPriceRevisionItem.findFirst({
       where: eq(contractPriceRevisionItem.id, data.id),

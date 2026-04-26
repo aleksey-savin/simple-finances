@@ -21,10 +21,14 @@ export function computeRevisionSummary(
 
   if (included.length === 0) {
     return {
-      minCurrent: 0, maxCurrent: 0,
-      minProposed: 0, maxProposed: 0,
-      minDelta: 0, maxDelta: 0,
-      minDeltaPercent: null, maxDeltaPercent: null,
+      minCurrent: 0,
+      maxCurrent: 0,
+      minProposed: 0,
+      maxProposed: 0,
+      minDelta: 0,
+      maxDelta: 0,
+      minDeltaPercent: null,
+      maxDeltaPercent: null,
       includedCount: 0,
       excludedCount: excluded.length,
     }

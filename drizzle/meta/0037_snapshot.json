@@ -110,12 +110,8 @@
           "name": "account_user_id_user_id_fk",
           "tableFrom": "account",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -235,12 +231,8 @@
           "name": "bank_transaction_current_account_id_current_account_id_fk",
           "tableFrom": "bank_transaction",
           "tableTo": "current_account",
-          "columnsFrom": [
-            "current_account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["current_account_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -250,10 +242,7 @@
         "bank_transaction_account_external_unique": {
           "name": "bank_transaction_account_external_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "current_account_id",
-            "external_id"
-          ]
+          "columns": ["current_account_id", "external_id"]
         }
       },
       "policies": {},
@@ -303,12 +292,8 @@
           "name": "business_line_created_by_user_id_fk",
           "tableFrom": "business_line",
           "tableTo": "user",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -381,12 +366,8 @@
           "name": "category_company_id_company_id_fk",
           "tableFrom": "category",
           "tableTo": "company",
-          "columnsFrom": [
-            "company_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["company_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -394,12 +375,8 @@
           "name": "category_created_by_user_id_fk",
           "tableFrom": "category",
           "tableTo": "user",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -407,12 +384,8 @@
           "name": "category_updated_by_user_id_fk",
           "tableFrom": "category",
           "tableTo": "user",
-          "columnsFrom": [
-            "updated_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["updated_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -466,12 +439,8 @@
           "name": "client_created_by_user_id_fk",
           "tableFrom": "client",
           "tableTo": "user",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -549,12 +518,8 @@
           "name": "client_counterparty_client_id_client_id_fk",
           "tableFrom": "client_counterparty",
           "tableTo": "client",
-          "columnsFrom": [
-            "client_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["client_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -562,12 +527,8 @@
           "name": "client_counterparty_counterparty_id_counterparty_id_fk",
           "tableFrom": "client_counterparty",
           "tableTo": "counterparty",
-          "columnsFrom": [
-            "counterparty_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["counterparty_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -577,10 +538,7 @@
         "client_counterparty_unique": {
           "name": "client_counterparty_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "client_id",
-            "counterparty_id"
-          ]
+          "columns": ["client_id", "counterparty_id"]
         }
       },
       "policies": {},
@@ -630,12 +588,8 @@
           "name": "company_created_by_user_id_fk",
           "tableFrom": "company",
           "tableTo": "user",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -713,12 +667,8 @@
           "name": "company_current_account_company_id_company_id_fk",
           "tableFrom": "company_current_account",
           "tableTo": "company",
-          "columnsFrom": [
-            "company_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["company_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -726,12 +676,8 @@
           "name": "company_current_account_current_account_id_current_account_id_fk",
           "tableFrom": "company_current_account",
           "tableTo": "current_account",
-          "columnsFrom": [
-            "current_account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["current_account_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -741,17 +687,12 @@
         "company_current_account_unique": {
           "name": "company_current_account_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "company_id",
-            "current_account_id"
-          ]
+          "columns": ["company_id", "current_account_id"]
         },
         "company_current_account_account_unique": {
           "name": "company_current_account_account_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "current_account_id"
-          ]
+          "columns": ["current_account_id"]
         }
       },
       "policies": {},
@@ -876,12 +817,8 @@
           "name": "contract_business_line_id_business_line_id_fk",
           "tableFrom": "contract",
           "tableTo": "business_line",
-          "columnsFrom": [
-            "business_line_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["business_line_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -889,12 +826,8 @@
           "name": "contract_counterparty_id_counterparty_id_fk",
           "tableFrom": "contract",
           "tableTo": "counterparty",
-          "columnsFrom": [
-            "counterparty_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["counterparty_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -902,12 +835,8 @@
           "name": "contract_created_by_user_id_fk",
           "tableFrom": "contract",
           "tableTo": "user",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -992,12 +921,8 @@
           "name": "counterparty_company_id_company_id_fk",
           "tableFrom": "counterparty",
           "tableTo": "company",
-          "columnsFrom": [
-            "company_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["company_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -1005,12 +930,8 @@
           "name": "counterparty_linked_user_id_user_id_fk",
           "tableFrom": "counterparty",
           "tableTo": "user",
-          "columnsFrom": [
-            "linked_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["linked_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -1018,12 +939,8 @@
           "name": "counterparty_created_by_user_id_fk",
           "tableFrom": "counterparty",
           "tableTo": "user",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1033,23 +950,17 @@
         "counterparty_name_unique": {
           "name": "counterparty_name_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "name"
-          ]
+          "columns": ["name"]
         },
         "counterparty_fullName_unique": {
           "name": "counterparty_fullName_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "fullName"
-          ]
+          "columns": ["fullName"]
         },
         "counterparty_tin_unique": {
           "name": "counterparty_tin_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "tin"
-          ]
+          "columns": ["tin"]
         }
       },
       "policies": {},
@@ -1135,12 +1046,8 @@
           "name": "current_account_created_by_user_id_fk",
           "tableFrom": "current_account",
           "tableTo": "user",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1148,12 +1055,8 @@
           "name": "current_account_updated_by_user_id_fk",
           "tableFrom": "current_account",
           "tableTo": "user",
-          "columnsFrom": [
-            "updated_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["updated_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1251,12 +1154,8 @@
           "name": "current_account_user_current_account_id_current_account_id_fk",
           "tableFrom": "current_account_user",
           "tableTo": "current_account",
-          "columnsFrom": [
-            "current_account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["current_account_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1264,12 +1163,8 @@
           "name": "current_account_user_user_id_user_id_fk",
           "tableFrom": "current_account_user",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1277,12 +1172,8 @@
           "name": "current_account_user_invited_by_user_id_fk",
           "tableFrom": "current_account_user",
           "tableTo": "user",
-          "columnsFrom": [
-            "invited_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["invited_by"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1292,10 +1183,7 @@
         "current_account_user_unique": {
           "name": "current_account_user_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "current_account_id",
-            "user_id"
-          ]
+          "columns": ["current_account_id", "user_id"]
         }
       },
       "policies": {},
@@ -1398,12 +1286,8 @@
           "name": "expense_category_id_category_id_fk",
           "tableFrom": "expense",
           "tableTo": "category",
-          "columnsFrom": [
-            "category_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["category_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1411,12 +1295,8 @@
           "name": "expense_counterparty_id_counterparty_id_fk",
           "tableFrom": "expense",
           "tableTo": "counterparty",
-          "columnsFrom": [
-            "counterparty_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["counterparty_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1424,12 +1304,8 @@
           "name": "expense_current_account_id_current_account_id_fk",
           "tableFrom": "expense",
           "tableTo": "current_account",
-          "columnsFrom": [
-            "current_account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["current_account_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1437,12 +1313,8 @@
           "name": "expense_recurring_rule_id_recurring_rule_id_fk",
           "tableFrom": "expense",
           "tableTo": "recurring_rule",
-          "columnsFrom": [
-            "recurring_rule_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["recurring_rule_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -1450,12 +1322,8 @@
           "name": "expense_created_by_user_id_fk",
           "tableFrom": "expense",
           "tableTo": "user",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1463,12 +1331,8 @@
           "name": "expense_updated_by_user_id_fk",
           "tableFrom": "expense",
           "tableTo": "user",
-          "columnsFrom": [
-            "updated_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["updated_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1478,10 +1342,7 @@
         "expense_recurring_occurrence_unique": {
           "name": "expense_recurring_occurrence_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "recurring_rule_id",
-            "recurring_occurrence_at"
-          ]
+          "columns": ["recurring_rule_id", "recurring_occurrence_at"]
         }
       },
       "policies": {},
@@ -1548,12 +1409,8 @@
           "name": "expense_tag_expense_id_expense_id_fk",
           "tableFrom": "expense_tag",
           "tableTo": "expense",
-          "columnsFrom": [
-            "expense_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["expense_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1561,12 +1418,8 @@
           "name": "expense_tag_tag_id_tag_id_fk",
           "tableFrom": "expense_tag",
           "tableTo": "tag",
-          "columnsFrom": [
-            "tag_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["tag_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1576,10 +1429,7 @@
         "expense_tag_unique": {
           "name": "expense_tag_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "expense_id",
-            "tag_id"
-          ]
+          "columns": ["expense_id", "tag_id"]
         }
       },
       "policies": {},
@@ -1688,12 +1538,8 @@
           "name": "income_category_id_category_id_fk",
           "tableFrom": "income",
           "tableTo": "category",
-          "columnsFrom": [
-            "category_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["category_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1701,12 +1547,8 @@
           "name": "income_counterparty_id_counterparty_id_fk",
           "tableFrom": "income",
           "tableTo": "counterparty",
-          "columnsFrom": [
-            "counterparty_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["counterparty_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1714,12 +1556,8 @@
           "name": "income_current_account_id_current_account_id_fk",
           "tableFrom": "income",
           "tableTo": "current_account",
-          "columnsFrom": [
-            "current_account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["current_account_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1727,12 +1565,8 @@
           "name": "income_recurring_rule_id_recurring_rule_id_fk",
           "tableFrom": "income",
           "tableTo": "recurring_rule",
-          "columnsFrom": [
-            "recurring_rule_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["recurring_rule_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -1740,12 +1574,8 @@
           "name": "income_linked_expense_id_expense_id_fk",
           "tableFrom": "income",
           "tableTo": "expense",
-          "columnsFrom": [
-            "linked_expense_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["linked_expense_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -1753,12 +1583,8 @@
           "name": "income_created_by_user_id_fk",
           "tableFrom": "income",
           "tableTo": "user",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1766,12 +1592,8 @@
           "name": "income_updated_by_user_id_fk",
           "tableFrom": "income",
           "tableTo": "user",
-          "columnsFrom": [
-            "updated_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["updated_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1781,10 +1603,7 @@
         "income_recurring_occurrence_unique": {
           "name": "income_recurring_occurrence_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "recurring_rule_id",
-            "recurring_occurrence_at"
-          ]
+          "columns": ["recurring_rule_id", "recurring_occurrence_at"]
         }
       },
       "policies": {},
@@ -1851,12 +1670,8 @@
           "name": "income_tag_income_id_income_id_fk",
           "tableFrom": "income_tag",
           "tableTo": "income",
-          "columnsFrom": [
-            "income_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["income_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1864,12 +1679,8 @@
           "name": "income_tag_tag_id_tag_id_fk",
           "tableFrom": "income_tag",
           "tableTo": "tag",
-          "columnsFrom": [
-            "tag_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["tag_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1879,10 +1690,7 @@
         "income_tag_unique": {
           "name": "income_tag_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "income_id",
-            "tag_id"
-          ]
+          "columns": ["income_id", "tag_id"]
         }
       },
       "policies": {},
@@ -1998,12 +1806,8 @@
           "name": "invoice_category_id_category_id_fk",
           "tableFrom": "invoice",
           "tableTo": "category",
-          "columnsFrom": [
-            "category_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["category_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2011,12 +1815,8 @@
           "name": "invoice_counterparty_id_counterparty_id_fk",
           "tableFrom": "invoice",
           "tableTo": "counterparty",
-          "columnsFrom": [
-            "counterparty_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["counterparty_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2024,12 +1824,8 @@
           "name": "invoice_current_account_id_current_account_id_fk",
           "tableFrom": "invoice",
           "tableTo": "current_account",
-          "columnsFrom": [
-            "current_account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["current_account_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2037,12 +1833,8 @@
           "name": "invoice_recurring_rule_id_recurring_rule_id_fk",
           "tableFrom": "invoice",
           "tableTo": "recurring_rule",
-          "columnsFrom": [
-            "recurring_rule_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["recurring_rule_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -2050,12 +1842,8 @@
           "name": "invoice_created_by_user_id_fk",
           "tableFrom": "invoice",
           "tableTo": "user",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2063,12 +1851,8 @@
           "name": "invoice_updated_by_user_id_fk",
           "tableFrom": "invoice",
           "tableTo": "user",
-          "columnsFrom": [
-            "updated_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["updated_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2076,12 +1860,8 @@
           "name": "invoice_linked_invoice_fk",
           "tableFrom": "invoice",
           "tableTo": "invoice",
-          "columnsFrom": [
-            "linked_invoice_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["linked_invoice_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -2091,11 +1871,7 @@
         "invoice_recurring_occurrence_unique": {
           "name": "invoice_recurring_occurrence_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "recurring_rule_id",
-            "recurring_occurrence_at",
-            "kind"
-          ]
+          "columns": ["recurring_rule_id", "recurring_occurrence_at", "kind"]
         }
       },
       "policies": {},
@@ -2162,12 +1938,8 @@
           "name": "invoice_tag_invoice_id_invoice_id_fk",
           "tableFrom": "invoice_tag",
           "tableTo": "invoice",
-          "columnsFrom": [
-            "invoice_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["invoice_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2175,12 +1947,8 @@
           "name": "invoice_tag_tag_id_tag_id_fk",
           "tableFrom": "invoice_tag",
           "tableTo": "tag",
-          "columnsFrom": [
-            "tag_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["tag_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2190,10 +1958,7 @@
         "invoice_tag_unique": {
           "name": "invoice_tag_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "invoice_id",
-            "tag_id"
-          ]
+          "columns": ["invoice_id", "tag_id"]
         }
       },
       "policies": {},
@@ -2322,12 +2087,8 @@
           "name": "recurring_rule_category_id_category_id_fk",
           "tableFrom": "recurring_rule",
           "tableTo": "category",
-          "columnsFrom": [
-            "category_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["category_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2335,12 +2096,8 @@
           "name": "recurring_rule_counterparty_id_counterparty_id_fk",
           "tableFrom": "recurring_rule",
           "tableTo": "counterparty",
-          "columnsFrom": [
-            "counterparty_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["counterparty_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2348,12 +2105,8 @@
           "name": "recurring_rule_payment_account_id_current_account_id_fk",
           "tableFrom": "recurring_rule",
           "tableTo": "current_account",
-          "columnsFrom": [
-            "payment_account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["payment_account_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -2361,12 +2114,8 @@
           "name": "recurring_rule_payment_category_id_category_id_fk",
           "tableFrom": "recurring_rule",
           "tableTo": "category",
-          "columnsFrom": [
-            "payment_category_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["payment_category_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -2374,12 +2123,8 @@
           "name": "recurring_rule_current_account_id_current_account_id_fk",
           "tableFrom": "recurring_rule",
           "tableTo": "current_account",
-          "columnsFrom": [
-            "current_account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["current_account_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2387,12 +2132,8 @@
           "name": "recurring_rule_created_by_user_id_fk",
           "tableFrom": "recurring_rule",
           "tableTo": "user",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2400,12 +2141,8 @@
           "name": "recurring_rule_updated_by_user_id_fk",
           "tableFrom": "recurring_rule",
           "tableTo": "user",
-          "columnsFrom": [
-            "updated_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["updated_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2498,12 +2235,8 @@
           "name": "session_user_id_user_id_fk",
           "tableFrom": "session",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2513,9 +2246,7 @@
         "session_token_unique": {
           "name": "session_token_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "token"
-          ]
+          "columns": ["token"]
         }
       },
       "policies": {},
@@ -2608,12 +2339,8 @@
           "name": "settlement_invoice_id_invoice_id_fk",
           "tableFrom": "settlement",
           "tableTo": "invoice",
-          "columnsFrom": [
-            "invoice_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["invoice_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2621,12 +2348,8 @@
           "name": "settlement_bank_transaction_id_bank_transaction_id_fk",
           "tableFrom": "settlement",
           "tableTo": "bank_transaction",
-          "columnsFrom": [
-            "bank_transaction_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["bank_transaction_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2636,10 +2359,7 @@
         "settlement_invoice_bank_transaction_unique": {
           "name": "settlement_invoice_bank_transaction_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "invoice_id",
-            "bank_transaction_id"
-          ]
+          "columns": ["invoice_id", "bank_transaction_id"]
         }
       },
       "policies": {},
@@ -2689,12 +2409,8 @@
           "name": "tag_created_by_user_id_fk",
           "tableFrom": "tag",
           "tableTo": "user",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2704,9 +2420,7 @@
         "tag_name_unique": {
           "name": "tag_name_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "name"
-          ]
+          "columns": ["name"]
         }
       },
       "policies": {},
@@ -2796,9 +2510,7 @@
         "user_email_unique": {
           "name": "user_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -2877,18 +2589,12 @@
     "public.bank_transaction_direction": {
       "name": "bank_transaction_direction",
       "schema": "public",
-      "values": [
-        "debit",
-        "credit"
-      ]
+      "values": ["debit", "credit"]
     },
     "public.contract_type": {
       "name": "contract_type",
       "schema": "public",
-      "values": [
-        "customer",
-        "supplier"
-      ]
+      "values": ["customer", "supplier"]
     },
     "public.counterparty_type": {
       "name": "counterparty_type",
@@ -2904,10 +2610,7 @@
     "public.invoice_kind": {
       "name": "invoice_kind",
       "schema": "public",
-      "values": [
-        "payable",
-        "receivable"
-      ]
+      "values": ["payable", "receivable"]
     }
   },
   "schemas": {},

@@ -31,7 +31,10 @@ class ProxmoxClient {
     this.verifySsl = config.verifySsl
   }
 
-  async request<T>(path: string, options: ProxmoxRequestOptions = {}): Promise<T> {
+  async request<T>(
+    path: string,
+    options: ProxmoxRequestOptions = {},
+  ): Promise<T> {
     const url = `${this.baseUrl}${path}`
     const { form, headers, body: explicitBody, ...rest } = options
 
@@ -85,23 +88,35 @@ class ProxmoxClient {
 
   async listVms(node: string): Promise<ProxmoxVm[]> {
     const [qemuList, lxcList] = await Promise.all([
-      this.request<Array<{ vmid: number; name: string; status: string }>>(`/nodes/${node}/qemu`)
-        .then((vms) => (vms ?? []).map((vm) => ({ ...vm, type: 'qemu' as const, node }))),
-      this.request<Array<{ vmid: number; name: string; status: string }>>(`/nodes/${node}/lxc`)
-        .then((vms) => (vms ?? []).map((vm) => ({ ...vm, type: 'lxc' as const, node }))),
+      this.request<Array<{ vmid: number; name: string; status: string }>>(
+        `/nodes/${node}/qemu`,
+      ).then((vms) =>
+        (vms ?? []).map((vm) => ({ ...vm, type: 'qemu' as const, node })),
+      ),
+      this.request<Array<{ vmid: number; name: string; status: string }>>(
+        `/nodes/${node}/lxc`,
+      ).then((vms) =>
+        (vms ?? []).map((vm) => ({ ...vm, type: 'lxc' as const, node })),
+      ),
     ])
     return [...qemuList, ...lxcList]
   }
 
   async suspendVm(node: string, vmid: number, type: VmType): Promise<void> {
-    await this.request(`/nodes/${node}/${type}/${vmid}/status/suspend`, { method: 'POST' })
+    await this.request(`/nodes/${node}/${type}/${vmid}/status/suspend`, {
+      method: 'POST',
+    })
   }
 
   async resumeVm(node: string, vmid: number, type: VmType): Promise<void> {
-    await this.request(`/nodes/${node}/${type}/${vmid}/status/resume`, { method: 'POST' })
+    await this.request(`/nodes/${node}/${type}/${vmid}/status/resume`, {
+      method: 'POST',
+    })
   }
 }
 
-export function createProxmoxClient(config: ProxmoxClientConfig): ProxmoxClient {
+export function createProxmoxClient(
+  config: ProxmoxClientConfig,
+): ProxmoxClient {
   return new ProxmoxClient(config)
 }

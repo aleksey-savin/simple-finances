@@ -73,7 +73,10 @@ function ContractRow({
 
   return (
     <div className="flex flex-col">
-      <Item variant={isEditing || isIntegrationsOpen ? 'muted' : 'outline'} className="p-2">
+      <Item
+        variant={isEditing || isIntegrationsOpen ? 'muted' : 'outline'}
+        className="p-2"
+      >
         <ItemMedia variant="icon">
           <FileText className="size-4 text-muted-foreground" />
         </ItemMedia>
@@ -194,9 +197,7 @@ export const ContractsList = () => {
     } catch (error) {
       popup.close()
       toast.error(
-        error instanceof Error
-          ? error.message
-          : 'Не удалось открыть документ',
+        error instanceof Error ? error.message : 'Не удалось открыть документ',
       )
     } finally {
       setOpeningDocId((prev) => (prev === documentId ? null : prev))

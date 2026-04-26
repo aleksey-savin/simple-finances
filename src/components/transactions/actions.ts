@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getRequest } from '@tanstack/react-start/server'
+
 import { and, eq, inArray, or } from 'drizzle-orm'
 import z from 'zod'
 
@@ -18,20 +18,15 @@ import {
   getScopedCounterpartyIds,
   resolveScopedAccountIds,
 } from '#/lib/company-scope'
-import { auth } from 'utils/auth'
+import { getRequest, requireSession } from 'utils/session'
 
 export const fetchTransactionsData = createServerFn().handler(async () => {
-  const request = getRequest()
-  const session = await auth.api.getSession({ headers: request.headers })
-
-  if (!session || !session.user.id) {
-    throw new Error('Не авторизован')
-  }
-
+  const session = await requireSession()
   const userId = session.user.id
+  const request = await getRequest()
 
   const { accountIds, selectedScope } = await resolveScopedAccountIds(
-    userId,
+    session.user.id,
     request.headers,
   )
 
@@ -139,7 +134,11 @@ export const fetchTransactionsData = createServerFn().handler(async () => {
         where: or(eq(category.createdBy, userId), eq(category.isShared, true)),
       }),
       getScopedCounterpartyIds(userId, selectedScope).then((ids) =>
-        ids.length > 0 ? db.query.counterparty.findMany({ where: inArray(counterparty.id, ids) }) : [],
+        ids.length > 0
+          ? db.query.counterparty.findMany({
+              where: inArray(counterparty.id, ids),
+            })
+          : [],
       ),
       db.query.currentAccount.findMany({
         where: inArray(currentAccount.id, accountIds),

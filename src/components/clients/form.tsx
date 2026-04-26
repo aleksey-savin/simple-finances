@@ -58,7 +58,8 @@ export const AddClientForm = ({ onDone }: { onDone?: () => void } = {}) => {
 
   const { data: companyMembers = [] } = useQuery({
     queryKey: companyMembersQueryKey(scopeCompanyId ?? ''),
-    queryFn: () => fetchCompanyMembers({ data: { companyId: scopeCompanyId! } }),
+    queryFn: () =>
+      fetchCompanyMembers({ data: { companyId: scopeCompanyId! } }),
     enabled: !!scopeCompanyId,
   })
 
@@ -107,7 +108,8 @@ export const AddClientForm = ({ onDone }: { onDone?: () => void } = {}) => {
       <div className="grid flex-1 auto-rows-min gap-4 px-4">
         <form.Field name="name">
           {(field) => {
-            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
             return (
               <Field data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Имя</FieldLabel>
@@ -130,7 +132,8 @@ export const AddClientForm = ({ onDone }: { onDone?: () => void } = {}) => {
 
         <form.Field name="counterpartiesIds">
           {(field) => {
-            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
             return (
               <Field data-invalid={isInvalid}>
                 <FieldLabel>Контрагенты</FieldLabel>
@@ -173,7 +176,9 @@ export const AddClientForm = ({ onDone }: { onDone?: () => void } = {}) => {
 
         <form.Subscribe selector={(s) => s.isSubmitting}>
           {(isSubmitting) => (
-            <Button type="submit" disabled={isSubmitting}>Создать</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              Создать
+            </Button>
           )}
         </form.Subscribe>
       </div>
@@ -256,7 +261,8 @@ export const EditClientForm = ({
       <div className="flex flex-col gap-3">
         <form.Field name="name">
           {(field) => {
-            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
             return (
               <Field data-invalid={isInvalid}>
                 <FieldLabel htmlFor={field.name}>Имя</FieldLabel>
@@ -297,7 +303,8 @@ export const EditClientForm = ({
 
         <form.Field name="counterpartiesIds">
           {(field) => {
-            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
             return (
               <Field data-invalid={isInvalid}>
                 <FieldLabel>Контрагенты</FieldLabel>
@@ -340,7 +347,9 @@ export const EditClientForm = ({
 
         <form.Subscribe selector={(s) => s.isSubmitting}>
           {(isSubmitting) => (
-            <Button type="submit" disabled={isSubmitting}>Сохранить</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              Сохранить
+            </Button>
           )}
         </form.Subscribe>
       </div>

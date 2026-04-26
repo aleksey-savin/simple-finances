@@ -19,7 +19,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 import { authClient } from 'utils/auth-client'
-import { useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 
 export function NavUser() {
   const { isMobile } = useSidebar()
@@ -86,9 +86,11 @@ export function NavUser() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <BadgeCheck />
-                Аккаунт
+              <DropdownMenuItem asChild>
+                <Link to="/account">
+                  <BadgeCheck />
+                  Аккаунт
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <Bell />

@@ -1,10 +1,10 @@
 import { db } from '#/db'
 import { category } from '#/db/schema'
 import { createServerFn } from '@tanstack/react-start'
-import { getRequest } from '@tanstack/react-start/server'
+
 import { and, eq, isNull, or } from 'drizzle-orm'
 import { resolveSelectedScope } from '#/lib/company-scope'
-import { auth } from 'utils/auth'
+import { getRequest, requireSession } from 'utils/session'
 import z from 'zod'
 
 // ─── Query key ────────────────────────────────────────────────────────────────
@@ -14,9 +14,8 @@ export const categoriesQueryKey = ['categories'] as const
 // ─── Fetch ────────────────────────────────────────────────────────────────────
 
 export const fetchCategories = createServerFn().handler(async () => {
-  const request = getRequest()
-  const session = await auth.api.getSession({ headers: request.headers })
-  if (!session?.user?.id) throw new Error('Не авторизован')
+  const session = await requireSession()
+  const request = await getRequest()
 
   const { selectedScope } = await resolveSelectedScope(
     session.user.id,
@@ -76,12 +75,7 @@ export const categoryFormSchema = z.object({
 export const addCategory = createServerFn({ method: 'POST' })
   .inputValidator(categoryFormSchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-
-    if (!session?.user?.id) {
-      throw new Error('Не авторизован')
-    }
+    const session = await requireSession()
 
     const [inserted] = await db
       .insert(category)

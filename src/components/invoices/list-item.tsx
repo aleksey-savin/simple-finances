@@ -542,11 +542,16 @@ export function InvoiceListItem({
                     value={`№${item.contract.number}`}
                   />
                 )}
-                <LinkedDocumentField label="Название" value={item.contract.name} />
+                <LinkedDocumentField
+                  label="Название"
+                  value={item.contract.name}
+                />
                 {item.contract.signedAt && (
                   <LinkedDocumentField
                     label="Дата договора"
-                    value={new Intl.DateTimeFormat('ru-RU').format(new Date(item.contract.signedAt))}
+                    value={new Intl.DateTimeFormat('ru-RU').format(
+                      new Date(item.contract.signedAt),
+                    )}
                   />
                 )}
                 {item.counterparty && (
@@ -559,7 +564,9 @@ export function InvoiceListItem({
 
               {item.contract.contractDocuments.length > 0 && (
                 <div className="flex flex-col gap-1">
-                  <p className="text-xs font-medium text-muted-foreground">Документы</p>
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Документы
+                  </p>
                   {item.contract.contractDocuments.map(({ document: doc }) => (
                     <button
                       key={doc.id}
@@ -574,7 +581,9 @@ export function InvoiceListItem({
                         }
                         try {
                           setOpeningDocId(doc.id)
-                          const { url } = await resolveDocumentUrl({ data: { documentId: doc.id } })
+                          const { url } = await resolveDocumentUrl({
+                            data: { documentId: doc.id },
+                          })
                           popup.location.replace(url)
                         } catch {
                           popup.close()
@@ -584,9 +593,11 @@ export function InvoiceListItem({
                         }
                       }}
                     >
-                      {openingDocId === doc.id
-                        ? <Loader2 className="size-3.5 shrink-0 animate-spin" />
-                        : <ExternalLink className="size-3.5 shrink-0" />}
+                      {openingDocId === doc.id ? (
+                        <Loader2 className="size-3.5 shrink-0 animate-spin" />
+                      ) : (
+                        <ExternalLink className="size-3.5 shrink-0" />
+                      )}
                       {doc.name}
                     </button>
                   ))}

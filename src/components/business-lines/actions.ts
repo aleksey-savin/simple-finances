@@ -1,18 +1,15 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getRequest } from '@tanstack/react-start/server'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { db } from '@/db'
 import { businessLine, contract } from '@/db/schema'
-import { auth } from 'utils/auth'
+import { requireSession } from 'utils/session'
 
 export const businessLinesQueryKey = ['business-lines'] as const
 
 export const fetchBusinessLines = createServerFn().handler(async () => {
-  const request = getRequest()
-  const session = await auth.api.getSession({ headers: request.headers })
-  if (!session.user.id) throw new Error('Не авторизован')
+  const session = await requireSession()
 
   return db.query.businessLine
     .findMany({
@@ -56,9 +53,7 @@ export const addBusinessLineSchema = businessLineSchema
 export const addBusinessLine = createServerFn({ method: 'POST' })
   .inputValidator(addBusinessLineSchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session.user.id) throw new Error('Не авторизован')
+    const session = await requireSession()
 
     await db.insert(businessLine).values({
       name: data.name,
@@ -75,9 +70,7 @@ export const updateBusinessLineSchema = businessLineSchema.extend({
 export const updateBusinessLine = createServerFn({ method: 'POST' })
   .inputValidator(updateBusinessLineSchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session.user.id) throw new Error('Не авторизован')
+    const session = await requireSession()
 
     await db
       .update(businessLine)

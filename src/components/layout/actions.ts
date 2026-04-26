@@ -1,16 +1,11 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getRequest } from '@tanstack/react-start/server'
 
 import { resolveSelectedScope } from '#/lib/company-scope'
-import { auth } from 'utils/auth'
+import { getRequest, requireSession } from 'utils/session'
 
 export const fetchAppScopes = createServerFn().handler(async () => {
-  const request = getRequest()
-  const session = await auth.api.getSession({ headers: request.headers })
-
-  if (!session?.user?.id) {
-    throw new Error('Не авторизован')
-  }
+  const session = await requireSession()
+  const request = await getRequest()
 
   const { scopes, selectedScope } = await resolveSelectedScope(
     session.user.id,

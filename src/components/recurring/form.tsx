@@ -6,7 +6,10 @@ import { useEffect, useState } from 'react'
 import { ArrowRight, Loader2 } from 'lucide-react'
 import { CRON_PRESETS } from '@/components/recurring/constants'
 import { fetchPaymentAccounts } from '@/components/invoices'
-import { contractsQueryKey, fetchContracts } from '@/components/contracts/actions'
+import {
+  contractsQueryKey,
+  fetchContracts,
+} from '@/components/contracts/actions'
 import { Button } from '@/components/ui/button'
 import { Combobox } from '@/components/ui/combobox'
 import { DialogFooter } from '@/components/ui/dialog'
@@ -61,7 +64,12 @@ export const RecurringForm = ({
   const { data: contracts = [] } = useQuery({
     queryKey: contractsQueryKey,
     queryFn: () => fetchContracts(),
-    select: (data) => data.map((c) => ({ id: c.id, name: c.name, counterpartyId: c.counterpartyId })),
+    select: (data) =>
+      data.map((c) => ({
+        id: c.id,
+        name: c.name,
+        counterpartyId: c.counterpartyId,
+      })),
   })
 
   const paymentIncomeCategories = categories.filter(
@@ -499,7 +507,9 @@ export const RecurringForm = ({
                       ...filtered.map((c) => ({ value: c.id, label: c.name })),
                     ]}
                     value={field.state.value || '__none__'}
-                    onValueChange={(v) => field.handleChange(v === '__none__' ? '' : v)}
+                    onValueChange={(v) =>
+                      field.handleChange(v === '__none__' ? '' : v)
+                    }
                     placeholder="Выберите договор (необязательно)"
                     onBlur={field.handleBlur}
                   />

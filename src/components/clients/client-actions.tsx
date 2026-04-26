@@ -28,7 +28,10 @@ export function ClientActions({ client }: { client: ClientDetail }) {
     name: client.name,
     companyId: client.companyId,
     createdBy: client.createdBy,
-    counterparties: client.counterparties.map((c) => ({ id: c.id, name: c.name })),
+    counterparties: client.counterparties.map((c) => ({
+      id: c.id,
+      name: c.name,
+    })),
     managers: client.managers,
     contacts: client.contacts,
     blockedServicesCount: client.blockedServices.length,

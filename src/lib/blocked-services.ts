@@ -75,7 +75,8 @@ export async function getBlockedServicesByContractIds(
         contractId,
         contractName: items[0]?.contract.name ?? 'Без названия',
         clientName:
-          items[0]?.contract.counterparty.clientLinks.at(0)?.client.name ?? null,
+          items[0]?.contract.counterparty.clientLinks.at(0)?.client.name ??
+          null,
         contractVmId: blockedItems[0]?.id ?? '',
         blockedVmNames: blockedItems.map((item) => item.name),
         totalVmCount: items.length,

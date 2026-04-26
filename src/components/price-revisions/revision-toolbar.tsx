@@ -37,7 +37,10 @@ export function RevisionToolbar({
 }: {
   table: ReactTable<PriceRevisionItemRow>
   isCompleted: boolean
-  onApplyAdjustment: (mode: 'percent' | 'fixed' | 'reset', value?: string) => Promise<void>
+  onApplyAdjustment: (
+    mode: 'percent' | 'fixed' | 'reset',
+    value?: string,
+  ) => Promise<void>
   allManagers: { userId: string; name: string }[]
   filterStatus: PriceRevisionItemStatus | 'all'
   onFilterStatus: (v: PriceRevisionItemStatus | 'all') => void
@@ -89,14 +92,26 @@ export function RevisionToolbar({
           className="max-w-xs"
         />
 
-        <Select value={filterStatus} onValueChange={(v) => onFilterStatus(v as PriceRevisionItemStatus | 'all')}>
+        <Select
+          value={filterStatus}
+          onValueChange={(v) =>
+            onFilterStatus(v as PriceRevisionItemStatus | 'all')
+          }
+        >
           <SelectTrigger className="w-36">
             <SelectValue placeholder="Статус" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Все статусы</SelectItem>
-            {(Object.entries(STATUS_LABELS) as [PriceRevisionItemStatus, string][]).map(([value, label]) => (
-              <SelectItem key={value} value={value}>{label}</SelectItem>
+            {(
+              Object.entries(STATUS_LABELS) as [
+                PriceRevisionItemStatus,
+                string,
+              ][]
+            ).map(([value, label]) => (
+              <SelectItem key={value} value={value}>
+                {label}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -109,13 +124,20 @@ export function RevisionToolbar({
             <SelectContent>
               <SelectItem value="all">Все менеджеры</SelectItem>
               {allManagers.map((m) => (
-                <SelectItem key={m.userId} value={m.userId}>{m.name}</SelectItem>
+                <SelectItem key={m.userId} value={m.userId}>
+                  {m.name}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
         )}
 
-        <Select value={filterIncluded} onValueChange={(v) => onFilterIncluded(v as 'all' | 'included' | 'excluded')}>
+        <Select
+          value={filterIncluded}
+          onValueChange={(v) =>
+            onFilterIncluded(v as 'all' | 'included' | 'excluded')
+          }
+        >
           <SelectTrigger className="w-36">
             <SelectValue />
           </SelectTrigger>
@@ -129,7 +151,10 @@ export function RevisionToolbar({
 
       {!isCompleted && (
         <div className="flex flex-wrap items-center gap-2">
-          <Select value={mode} onValueChange={(v) => setMode(v as AdjustmentMode)}>
+          <Select
+            value={mode}
+            onValueChange={(v) => setMode(v as AdjustmentMode)}
+          >
             <SelectTrigger className="w-28">
               <SelectValue />
             </SelectTrigger>

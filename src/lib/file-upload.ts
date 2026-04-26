@@ -43,7 +43,7 @@ export function extractFileExtension(fileName: string): string | null {
 
 export function normalizeBase64Payload(payload: string): string {
   const normalized = payload.includes(',')
-    ? payload.split(',').at(-1)?.trim() ?? ''
+    ? (payload.split(',').at(-1)?.trim() ?? '')
     : payload.trim()
   return normalized
 }

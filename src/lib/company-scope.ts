@@ -47,7 +47,9 @@ export async function getUserScopes(userId: string) {
     .from(currentAccountUser)
     .where(eq(currentAccountUser.userId, userId))
 
-  const accountIds = memberships.map((membership) => membership.currentAccountId)
+  const accountIds = memberships.map(
+    (membership) => membership.currentAccountId,
+  )
   const accessibleAccountSet = new Set(accountIds)
 
   const companyRows =
@@ -101,7 +103,8 @@ export async function getUserScopes(userId: string) {
 export async function resolveSelectedScope(userId: string, headers: Headers) {
   const scopes = await getUserScopes(userId)
   const scopeId = readScopeIdFromHeaders(headers)
-  const selectedScope = scopes.find((scope) => scope.id === scopeId) ?? scopes[0]
+  const selectedScope =
+    scopes.find((scope) => scope.id === scopeId) ?? scopes[0]
   const fallbackScope: AppScope = {
     id: PERSONAL_SCOPE_ID,
     name: 'Личное',
@@ -115,7 +118,10 @@ export async function resolveSelectedScope(userId: string, headers: Headers) {
   }
 }
 
-export async function resolveScopedAccountIds(userId: string, headers: Headers) {
+export async function resolveScopedAccountIds(
+  userId: string,
+  headers: Headers,
+) {
   const { scopes, selectedScope } = await resolveSelectedScope(userId, headers)
 
   return {

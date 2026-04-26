@@ -1,13 +1,11 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getRequest } from '@tanstack/react-start/server'
 import { asc, eq } from 'drizzle-orm'
 import z from 'zod'
 
 import { db } from '#/db'
 import { smtpSettings } from '#/db/schema'
-import { sendEmail } from '#/lib/email'
 import { buildSmtpTestEmail } from '#/lib/email-templates'
-import { auth } from 'utils/auth'
+import { requireSession } from 'utils/session'
 
 // ─── Query key ────────────────────────────────────────────────────────────────
 
@@ -16,9 +14,7 @@ export const smtpSettingsQueryKey = ['smtp-settings'] as const
 // ─── Fetch ────────────────────────────────────────────────────────────────────
 
 export const fetchSmtpSettings = createServerFn().handler(async () => {
-  const request = getRequest()
-  const session = await auth.api.getSession({ headers: request.headers })
-  if (!session.user.id) throw new Error('Не авторизован')
+  const session = await requireSession()
 
   const settingsRows = await db
     .select()
@@ -46,9 +42,7 @@ export const smtpSettingsSchema = z.object({
 export const saveSmtpSettings = createServerFn({ method: 'POST' })
   .inputValidator(smtpSettingsSchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session.user.id) throw new Error('Не авторизован')
+    await requireSession()
 
     const existing = await db
       .select({ id: smtpSettings.id })
@@ -93,9 +87,8 @@ const testSmtpSchema = z.object({
 export const testSmtpConnection = createServerFn({ method: 'POST' })
   .inputValidator(testSmtpSchema)
   .handler(async ({ data }) => {
-    const request = getRequest()
-    const session = await auth.api.getSession({ headers: request.headers })
-    if (!session.user.id) throw new Error('Не авторизован')
+    await requireSession()
+    const { sendEmail } = await import('#/lib/email')
 
     const emailTemplate = buildSmtpTestEmail()
 

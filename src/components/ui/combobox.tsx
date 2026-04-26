@@ -59,7 +59,11 @@ export function Combobox({
     if (!normalizedQuery) return options
 
     return options.filter((option) => {
-      const haystack = [option.label, option.description, ...(option.keywords ?? [])]
+      const haystack = [
+        option.label,
+        option.description,
+        ...(option.keywords ?? []),
+      ]
         .filter(Boolean)
         .join(' ')
         .toLowerCase()
@@ -99,7 +103,9 @@ export function Combobox({
           disabled={disabled}
         >
           <span className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
-            <span className="truncate">{selectedOption?.label ?? placeholder}</span>
+            <span className="truncate">
+              {selectedOption?.label ?? placeholder}
+            </span>
             {selectedOption?.badge && (
               <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
                 {selectedOption.badge}
@@ -163,7 +169,10 @@ export function Combobox({
                           <span className="block truncate">{option.label}</span>
                           {option.description
                             ? option.description.split('\n').map((line, i) => (
-                                <span key={i} className="block overflow-hidden break-words text-xs text-muted-foreground">
+                                <span
+                                  key={i}
+                                  className="block overflow-hidden break-words text-xs text-muted-foreground"
+                                >
                                   {line}
                                 </span>
                               ))

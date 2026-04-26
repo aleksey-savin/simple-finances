@@ -3,7 +3,6 @@ import { and, eq, isNull, lt } from 'drizzle-orm'
 import { db } from '#/db'
 import { contractVm, invoice } from '#/db/schema'
 import { getContractNotificationContext } from '#/lib/contract-notifications'
-import { sendEmail } from '#/lib/email'
 import {
   buildServiceResumedEmail,
   buildServiceSuspendedEmail,
@@ -17,9 +16,7 @@ type RunProxmoxVmManagerOptions = {
 }
 
 function formatVmList(bindings: Array<{ name: string; vmid: number }>) {
-  return bindings
-    .map((vm) => `${vm.name} (VMID ${vm.vmid})`)
-    .join(', ')
+  return bindings.map((vm) => `${vm.name} (VMID ${vm.vmid})`).join(', ')
 }
 
 export async function runProxmoxVmManager({
@@ -79,9 +76,7 @@ export async function runProxmoxVmManager({
       const allVms = (
         await Promise.all(
           clusterNodes.map((n) =>
-            client
-              .listVms(n.node)
-              .catch(() => [] as ProxmoxVm[]),
+            client.listVms(n.node).catch(() => [] as ProxmoxVm[]),
           ),
         )
       ).flat()
@@ -103,13 +98,13 @@ export async function runProxmoxVmManager({
     })
 
     const hasOverdue = overdueInvoices.length > 0
-    const latestPausedUntil =
-      bindings
-        .map((binding) => binding.pausedUntil)
-        .filter((value): value is Date => value !== null)
-        .sort((a, b) => b.getTime() - a.getTime())
-        .at(0)
-    const graceActive = latestPausedUntil !== undefined && latestPausedUntil > now
+    const latestPausedUntil = bindings
+      .map((binding) => binding.pausedUntil)
+      .filter((value): value is Date => value !== null)
+      .sort((a, b) => b.getTime() - a.getTime())
+      .at(0)
+    const graceActive =
+      latestPausedUntil !== undefined && latestPausedUntil > now
     const shouldSuspend = hasOverdue && !graceActive
     const shouldResume = !hasOverdue || graceActive
     const resumeReason = graceActive
@@ -137,11 +132,7 @@ export async function runProxmoxVmManager({
             continue
           }
           const client = getClient(binding)
-          await client.suspendVm(
-            vmNode,
-            binding.vmid,
-            binding.vmType as VmType,
-          )
+          await client.suspendVm(vmNode, binding.vmid, binding.vmType as VmType)
           await db
             .update(contractVm)
             .set({ isPausedBySystem: true })
@@ -161,11 +152,7 @@ export async function runProxmoxVmManager({
             continue
           }
           const client = getClient(binding)
-          await client.resumeVm(
-            vmNode,
-            binding.vmid,
-            binding.vmType as VmType,
-          )
+          await client.resumeVm(vmNode, binding.vmid, binding.vmType as VmType)
           await db
             .update(contractVm)
             .set({ isPausedBySystem: false })
@@ -178,22 +165,19 @@ export async function runProxmoxVmManager({
           )
         }
       } catch (err) {
-        console.error(
-          `[proxmox-vm-manager] Error for VM ${binding.vmid}:`,
-          err,
-        )
+        console.error(`[proxmox-vm-manager] Error for VM ${binding.vmid}:`, err)
       }
     }
 
     if (contractSuspended > 0) {
-      const notificationContext = await getContractNotificationContext(
-        currentContractId,
-      )
+      const notificationContext =
+        await getContractNotificationContext(currentContractId)
       if (!notificationContext) {
         console.log(
           `[proxmox-vm-manager] Suspend notification skipped: no contact email for contract ${currentContractId}`,
         )
       } else {
+        const { sendEmail } = await import('#/lib/email')
         const emailTemplate = buildServiceSuspendedEmail({
           contactName: notificationContext.contactName,
           contractLabel: notificationContext.contractLabel,
@@ -215,14 +199,14 @@ export async function runProxmoxVmManager({
     }
 
     if (contractResumed > 0 && !hasOverdue) {
-      const notificationContext = await getContractNotificationContext(
-        currentContractId,
-      )
+      const notificationContext =
+        await getContractNotificationContext(currentContractId)
       if (!notificationContext) {
         console.log(
           `[proxmox-vm-manager] Resume notification skipped: no contact email for contract ${currentContractId}`,
         )
       } else {
+        const { sendEmail } = await import('#/lib/email')
         const emailTemplate = buildServiceResumedEmail({
           contactName: notificationContext.contactName,
           contractLabel: notificationContext.contractLabel,

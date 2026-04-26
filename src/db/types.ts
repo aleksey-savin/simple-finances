@@ -225,7 +225,8 @@ export type ProxmoxNode = typeof proxmoxNode.$inferSelect
 export type ProxmoxNodeInsert = typeof proxmoxNode.$inferInsert
 
 export type ProxmoxAccountSettings = typeof proxmoxAccountSettings.$inferSelect
-export type ProxmoxAccountSettingsInsert = typeof proxmoxAccountSettings.$inferInsert
+export type ProxmoxAccountSettingsInsert =
+  typeof proxmoxAccountSettings.$inferInsert
 
 export type ContractVm = typeof contractVm.$inferSelect
 export type ContractVmInsert = typeof contractVm.$inferInsert

@@ -131,7 +131,9 @@ function CounterpartiesPage() {
                           <Badge variant="secondary">{counterparty.type}</Badge>
                         )}
                         {counterparty.tin && (
-                          <Badge variant="outline">ИНН: {counterparty.tin}</Badge>
+                          <Badge variant="outline">
+                            ИНН: {counterparty.tin}
+                          </Badge>
                         )}
                       </div>
                       {counterparty.linkedUser && (
@@ -182,7 +184,9 @@ function CounterpartiesPage() {
                         {counterparty.type ? (
                           <Badge variant="secondary">{counterparty.type}</Badge>
                         ) : (
-                          <span className="text-sm text-muted-foreground">—</span>
+                          <span className="text-sm text-muted-foreground">
+                            —
+                          </span>
                         )}
                       </TableCell>
                       <TableCell>{counterparty.tin ?? '—'}</TableCell>
@@ -193,7 +197,9 @@ function CounterpartiesPage() {
                             <span>{counterparty.linkedUser.email}</span>
                           </div>
                         ) : (
-                          <span className="text-sm text-muted-foreground">—</span>
+                          <span className="text-sm text-muted-foreground">
+                            —
+                          </span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -206,7 +212,9 @@ function CounterpartiesPage() {
                           >
                             <Pencil className="size-4" />
                           </Button>
-                          <DeleteCounterparty counterpartyId={counterparty.id} />
+                          <DeleteCounterparty
+                            counterpartyId={counterparty.id}
+                          />
                         </div>
                       </TableCell>
                     </TableRow>

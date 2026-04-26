@@ -37,7 +37,9 @@ export function ClientCounterparties({
                   {c.fullName ?? '—'}
                 </TableCell>
                 <TableCell className="text-sm">{c.type || '—'}</TableCell>
-                <TableCell className="font-mono text-sm">{c.tin ?? '—'}</TableCell>
+                <TableCell className="font-mono text-sm">
+                  {c.tin ?? '—'}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
