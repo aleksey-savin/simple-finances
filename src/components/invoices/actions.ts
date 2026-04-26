@@ -3,9 +3,9 @@ import { createServerFn } from '@tanstack/react-start'
 import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
 
-import { db } from '@/db'
+import { db } from '#/db/index.server'
 import { currentAccountUser, invoice } from '@/db/schema'
-import { requireSession } from 'utils/session'
+import { requireSession } from '#/utils/session.server'
 
 export const fetchPaymentAccounts = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ linkedUserId: z.string() }))

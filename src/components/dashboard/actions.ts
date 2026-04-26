@@ -14,7 +14,7 @@ import {
   sql,
 } from 'drizzle-orm'
 
-import { db } from '#/db'
+import { db } from '#/db/index.server'
 import {
   bankTransaction,
   contractPriceRevision,
@@ -28,7 +28,7 @@ import { getDueMeta } from '#/components/payables/utils'
 import type { AppScope } from '#/lib/company-scope'
 import { resolveScopedAccountIds } from '#/lib/company-scope'
 import type { DashboardLoaderData, DashboardTask } from '#/types'
-import { getRequest, requireSession } from 'utils/session'
+import { getRequest, requireSession } from '#/utils/session.server'
 
 export const fetchDashboardData = createServerFn().handler(async () => {
   const session = await requireSession()

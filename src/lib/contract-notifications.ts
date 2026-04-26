@@ -1,6 +1,8 @@
+import '@tanstack/react-start/server-only'
+
 import { and, asc, eq, inArray, isNotNull } from 'drizzle-orm'
 
-import { db } from '#/db'
+import { db } from '#/db/index.server'
 import { clientCounterparty, contact, contract } from '#/db/schema'
 
 export type ContractNotificationContext = {

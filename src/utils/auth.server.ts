@@ -1,13 +1,17 @@
+import '@tanstack/react-start/server-only'
+
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
-import { db } from '@/db'
 import { tanstackStartCookies } from 'better-auth/tanstack-start'
 import { admin as adminPlugin, twoFactor } from 'better-auth/plugins'
-import { ac, admin, user } from 'utils/permissions'
+
+import { db } from '#/db/index.server'
 import {
   buildPasswordResetEmail,
   buildTwoFactorOtpEmail,
-} from '@/lib/email-templates'
+} from '#/lib/email-templates'
+import { sendEmail } from '#/lib/email.server'
+import { ac, admin, user } from 'utils/permissions'
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -22,7 +26,6 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     async sendResetPassword({ user: u, url }) {
-      const { sendEmail } = await import('@/lib/email')
       const template = buildPasswordResetEmail({ resetUrl: url })
       await sendEmail({
         to: u.email,
@@ -51,7 +54,6 @@ export const auth = betterAuth({
       issuer: 'F1Lab',
       otpOptions: {
         async sendOTP({ user: u, otp }) {
-          const { sendEmail } = await import('@/lib/email')
           const template = buildTwoFactorOtpEmail({ otp })
           await sendEmail({
             to: u.email,

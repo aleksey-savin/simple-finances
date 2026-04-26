@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 
 import { z } from 'zod'
-import { db } from '@/db'
+import { db } from '#/db/index.server'
 import {
   category,
   counterparty,
@@ -11,7 +11,7 @@ import {
 } from '@/db/schema'
 import { eq, inArray, or } from 'drizzle-orm'
 import { Cron } from 'croner'
-import { getRequest, requireSession } from 'utils/session'
+import { getRequest, requireSession } from '#/utils/session.server'
 import { createRecurringEntry } from '#/lib/recurring'
 import {
   getScopedCounterpartyIds,

@@ -2,10 +2,11 @@ import { createServerFn } from '@tanstack/react-start'
 import { asc, eq } from 'drizzle-orm'
 import z from 'zod'
 
-import { db } from '#/db'
+import { db } from '#/db/index.server'
 import { smtpSettings } from '#/db/schema'
 import { buildSmtpTestEmail } from '#/lib/email-templates'
-import { requireSession } from 'utils/session'
+import { sendEmail } from '#/lib/email.server'
+import { requireSession } from '#/utils/session.server'
 
 // ─── Query key ────────────────────────────────────────────────────────────────
 
@@ -88,7 +89,6 @@ export const testSmtpConnection = createServerFn({ method: 'POST' })
   .inputValidator(testSmtpSchema)
   .handler(async ({ data }) => {
     await requireSession()
-    const { sendEmail } = await import('#/lib/email')
 
     const emailTemplate = buildSmtpTestEmail()
 

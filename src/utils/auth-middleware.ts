@@ -1,9 +1,10 @@
 import { createMiddleware } from '@tanstack/react-start'
 import { redirect } from '@tanstack/react-router'
 
+import { auth } from './auth.server'
+
 export const authMiddleware = createMiddleware().server(
   async ({ next, request }) => {
-    const { auth } = await import('./auth')
     const session = await auth.api.getSession({ headers: request.headers })
     const url = new URL(request.url)
     const pathname = url.pathname

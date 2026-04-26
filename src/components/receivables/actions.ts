@@ -12,7 +12,7 @@ import type {
   ReceivablesLoaderData,
   TagsMap,
 } from '#/components/receivables/types'
-import { db } from '#/db'
+import { db } from '#/db/index.server'
 import {
   clientCounterparty,
   counterparty,
@@ -20,7 +20,7 @@ import {
   invoiceTag,
 } from '#/db/schema'
 import { getPaymentState } from '#/lib/invoice-payment'
-import { getRequest, requireSession } from 'utils/session'
+import { getRequest, requireSession } from '#/utils/session.server'
 
 export const fetchReceivables = createServerFn().handler(async () => {
   const session = await requireSession()

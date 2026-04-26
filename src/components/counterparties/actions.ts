@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 
 import { z } from 'zod'
 import { and, count, eq, ilike, inArray, or } from 'drizzle-orm'
-import { db } from '@/db'
+import { db } from '#/db/index.server'
 import {
   companyCounterparty,
   counterparty,
@@ -10,7 +10,7 @@ import {
   user,
   userCounterparty,
 } from '@/db/schema'
-import { getRequest, requireSession } from 'utils/session'
+import { getRequest, requireSession } from '#/utils/session.server'
 import {
   getScopedCounterpartyIds,
   resolveSelectedScope,

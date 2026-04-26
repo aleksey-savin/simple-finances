@@ -3,12 +3,14 @@ import { createServerFn } from '@tanstack/react-start'
 import { and, eq, inArray } from 'drizzle-orm'
 import z from 'zod'
 
-import { db } from '#/db'
 import { currentAccountUser, invoice, invoiceTag, tag } from '#/db/schema'
 import { getPaymentState } from '#/lib/invoice-payment'
-import { getRequest, requireSession } from 'utils/session'
 
 export const fetchTags = createServerFn().handler(async () => {
+  const [{ db }, { requireSession }] = await Promise.all([
+    import('#/db/index.server'),
+    import('#/utils/session.server'),
+  ])
   const session = await requireSession()
 
   return db.query.tag.findMany({
@@ -19,6 +21,10 @@ export const fetchTags = createServerFn().handler(async () => {
 export const fetchExpenseTags = createServerFn()
   .inputValidator(z.object({ expenseIds: z.array(z.string()) }))
   .handler(async ({ data }) => {
+    const [{ db }, { requireSession }] = await Promise.all([
+      import('#/db/index.server'),
+      import('#/utils/session.server'),
+    ])
     const session = await requireSession()
 
     if (data.expenseIds.length === 0) return []
@@ -34,6 +40,10 @@ export const fetchExpenseTags = createServerFn()
 export const fetchIncomeTags = createServerFn()
   .inputValidator(z.object({ incomeIds: z.array(z.string()) }))
   .handler(async ({ data }) => {
+    const [{ db }, { requireSession }] = await Promise.all([
+      import('#/db/index.server'),
+      import('#/utils/session.server'),
+    ])
     const session = await requireSession()
 
     if (data.incomeIds.length === 0) return []
@@ -54,6 +64,10 @@ const createTagSchema = z.object({
 export const createTag = createServerFn({ method: 'POST' })
   .inputValidator(createTagSchema)
   .handler(async ({ data }) => {
+    const [{ db }, { requireSession }] = await Promise.all([
+      import('#/db/index.server'),
+      import('#/utils/session.server'),
+    ])
     const session = await requireSession()
 
     const [created] = await db
@@ -71,6 +85,10 @@ export const createTag = createServerFn({ method: 'POST' })
 export const deleteTag = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
+    const [{ db }, { requireSession }] = await Promise.all([
+      import('#/db/index.server'),
+      import('#/utils/session.server'),
+    ])
     const session = await requireSession()
 
     await db.delete(tag).where(eq(tag.id, data.id))
@@ -84,6 +102,10 @@ const addExpenseTagSchema = z.object({
 export const addExpenseTag = createServerFn({ method: 'POST' })
   .inputValidator(addExpenseTagSchema)
   .handler(async ({ data }) => {
+    const [{ db }, { requireSession }] = await Promise.all([
+      import('#/db/index.server'),
+      import('#/utils/session.server'),
+    ])
     const session = await requireSession()
 
     const expense = await db.query.invoice.findFirst({
@@ -114,6 +136,10 @@ const removeExpenseTagSchema = z.object({
 export const removeExpenseTag = createServerFn({ method: 'POST' })
   .inputValidator(removeExpenseTagSchema)
   .handler(async ({ data }) => {
+    const [{ db }, { requireSession }] = await Promise.all([
+      import('#/db/index.server'),
+      import('#/utils/session.server'),
+    ])
     const session = await requireSession()
 
     await db
@@ -134,6 +160,10 @@ const addIncomeTagSchema = z.object({
 export const addIncomeTag = createServerFn({ method: 'POST' })
   .inputValidator(addIncomeTagSchema)
   .handler(async ({ data }) => {
+    const [{ db }, { requireSession }] = await Promise.all([
+      import('#/db/index.server'),
+      import('#/utils/session.server'),
+    ])
     const session = await requireSession()
 
     const income = await db.query.invoice.findFirst({
@@ -164,6 +194,10 @@ const removeIncomeTagSchema = z.object({
 export const removeIncomeTag = createServerFn({ method: 'POST' })
   .inputValidator(removeIncomeTagSchema)
   .handler(async ({ data }) => {
+    const [{ db }, { requireSession }] = await Promise.all([
+      import('#/db/index.server'),
+      import('#/utils/session.server'),
+    ])
     const session = await requireSession()
 
     await db
@@ -177,6 +211,10 @@ export const removeIncomeTag = createServerFn({ method: 'POST' })
   })
 
 export const fetchTagTotals = createServerFn().handler(async () => {
+  const [{ db }, { requireSession }] = await Promise.all([
+    import('#/db/index.server'),
+    import('#/utils/session.server'),
+  ])
   const session = await requireSession()
 
   const memberships = await db

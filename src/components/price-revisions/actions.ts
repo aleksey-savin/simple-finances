@@ -3,7 +3,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { and, eq, isNull } from 'drizzle-orm'
 import { z } from 'zod'
 
-import { db } from '@/db'
+import { db } from '#/db/index.server'
 import {
   client,
   contact,
@@ -17,7 +17,7 @@ import {
 } from '@/db/schema'
 import { inArray } from 'drizzle-orm'
 import type { PriceRevisionDetail, PriceRevision } from '@/types'
-import { getRequest, requireSession } from 'utils/session'
+import { getRequest, requireSession } from '#/utils/session.server'
 import { resolveSelectedScope } from '#/lib/company-scope'
 
 // Throws if the revision has been marked completed

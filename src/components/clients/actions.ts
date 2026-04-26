@@ -3,7 +3,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
 import { z } from 'zod'
 
-import { db } from '@/db'
+import { db } from '#/db/index.server'
 import {
   client,
   clientCounterparty,
@@ -16,7 +16,7 @@ import {
   contractPriceRevisionItem,
   invoice,
 } from '@/db/schema'
-import { getRequest, requireSession } from 'utils/session'
+import { getRequest, requireSession } from '#/utils/session.server'
 import { getBlockedServicesByContractIds } from '#/lib/blocked-services'
 import { resolveSelectedScope } from '#/lib/company-scope'
 import { getPaymentState } from '#/lib/invoice-payment'

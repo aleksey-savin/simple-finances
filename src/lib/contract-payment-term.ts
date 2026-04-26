@@ -1,6 +1,8 @@
+import '@tanstack/react-start/server-only'
+
 import { and, asc, eq, gte, isNotNull, isNull } from 'drizzle-orm'
 
-import { db } from '#/db'
+import { db } from '#/db/index.server'
 import { invoice, recurringRule } from '#/db/schema'
 
 const DAY_MS = 24 * 60 * 60 * 1000

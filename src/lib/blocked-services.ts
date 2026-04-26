@@ -1,6 +1,8 @@
+import '@tanstack/react-start/server-only'
+
 import { inArray } from 'drizzle-orm'
 
-import { db } from '#/db'
+import { db } from '#/db/index.server'
 import { contractVm } from '#/db/schema'
 import { getContractPaymentTermDueDate } from '#/lib/contract-payment-term'
 import type { BlockedServiceSummary } from '@/types'

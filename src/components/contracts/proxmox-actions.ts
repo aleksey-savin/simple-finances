@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { and, desc, eq, isNotNull } from 'drizzle-orm'
 import { z } from 'zod'
 
-import { db } from '@/db'
+import { db } from '#/db/index.server'
 import { contract, contractVm, proxmoxNode } from '@/db/schema'
 import {
   formatDateRu,
@@ -10,8 +10,10 @@ import {
 } from '#/lib/contract-notifications'
 import { getContractPaymentTermDueDate } from '#/lib/contract-payment-term'
 import { buildGracePeriodExtendedEmail } from '#/lib/email-templates'
+import { sendEmail } from '#/lib/email.server'
 import { createProxmoxClient } from '#/lib/proxmox'
-import { requireSession } from 'utils/session'
+import { runProxmoxVmManager } from '#/lib/proxmox-vm-manager'
+import { requireSession } from '#/utils/session.server'
 
 // ─── Query keys ───────────────────────────────────────────────────────────────
 
@@ -170,8 +172,6 @@ export const setPausedUntil = createServerFn({ method: 'POST' })
   )
   .handler(async ({ data }) => {
     await requireSession()
-    const { sendEmail } = await import('#/lib/email')
-    const { runProxmoxVmManager } = await import('#/lib/proxmox-vm-manager')
 
     const binding = await db.query.contractVm.findFirst({
       where: eq(contractVm.id, data.contractVmId),

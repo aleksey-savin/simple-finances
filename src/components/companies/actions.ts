@@ -2,14 +2,14 @@ import { createServerFn } from '@tanstack/react-start'
 import { and, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 
-import { db } from '@/db'
+import { db } from '#/db/index.server'
 import {
   company,
   companyCurrentAccount,
   currentAccount,
   currentAccountUser,
 } from '@/db/schema'
-import { requireSession } from 'utils/session'
+import { requireSession } from '#/utils/session.server'
 
 export const companiesQueryKey = ['companies'] as const
 

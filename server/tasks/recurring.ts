@@ -1,5 +1,5 @@
 import { defineTask } from 'nitro/task'
-import { db } from '#/db'
+import { db } from '#/db/index.server'
 import { recurringRule } from '#/db/schema'
 import { and, eq, isNotNull, lte } from 'drizzle-orm'
 import { syncRecurringRulesForAccounts } from '#/lib/recurring'

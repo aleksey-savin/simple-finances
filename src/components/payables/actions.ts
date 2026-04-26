@@ -8,7 +8,7 @@ import type {
   PayablesLoaderData,
   TagsMap,
 } from '#/components/payables/types'
-import { db } from '#/db'
+import { db } from '#/db/index.server'
 import {
   counterparty,
   currentAccount,
@@ -21,7 +21,7 @@ import {
   resolveScopedAccountIds,
 } from '#/lib/company-scope'
 import { getPaymentState } from '#/lib/invoice-payment'
-import { getRequest, requireSession } from 'utils/session'
+import { getRequest, requireSession } from '#/utils/session.server'
 
 export const fetchPayables = createServerFn().handler(async () => {
   const session = await requireSession()

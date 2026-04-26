@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 
 import { resolveSelectedScope } from '#/lib/company-scope'
-import { getRequest, requireSession } from 'utils/session'
+import { getRequest, requireSession } from '#/utils/session.server'
 
 export const fetchAppScopes = createServerFn().handler(async () => {
   const session = await requireSession()

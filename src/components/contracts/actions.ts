@@ -3,7 +3,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { and, eq, isNull } from 'drizzle-orm'
 import { z } from 'zod'
 
-import { db } from '@/db'
+import { db } from '#/db/index.server'
 import {
   contract,
   contractDocument,
@@ -16,8 +16,8 @@ import {
   deleteS3Object,
   getS3SignedObjectUrl,
   uploadBase64FileToS3,
-} from '#/lib/s3'
-import { getRequest, requireSession } from 'utils/session'
+} from '#/lib/s3.server'
+import { getRequest, requireSession } from '#/utils/session.server'
 
 export const contractsQueryKey = ['contracts'] as const
 

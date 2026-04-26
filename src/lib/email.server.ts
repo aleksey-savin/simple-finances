@@ -1,10 +1,12 @@
-import { asc } from 'drizzle-orm'
+import '@tanstack/react-start/server-only'
 
-import { db } from '#/db'
+import { asc } from 'drizzle-orm'
+import nodemailer from 'nodemailer'
+
+import { db } from '#/db/index.server'
 import { smtpSettings } from '#/db/schema'
 
 const DEV_EMAIL_RECIPIENT = 'a.savin@f1lab.ru'
-const NODEMAILER_MODULE = 'nodemailer'
 
 export type SendEmailInput = {
   to: string | string[]
@@ -20,14 +22,6 @@ export type SendEmailResult = {
 export async function sendEmail(
   input: SendEmailInput,
 ): Promise<SendEmailResult> {
-  if (!import.meta.env.SSR) {
-    throw new Error('Email delivery is only available on the server')
-  }
-
-  const { default: nodemailer } = await import(
-    /* @vite-ignore */ NODEMAILER_MODULE
-  )
-
   const settingsRows = await db
     .select()
     .from(smtpSettings)

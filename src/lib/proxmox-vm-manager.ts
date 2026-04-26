@@ -1,12 +1,15 @@
+import '@tanstack/react-start/server-only'
+
 import { and, eq, isNull, lt } from 'drizzle-orm'
 
-import { db } from '#/db'
+import { db } from '#/db/index.server'
 import { contractVm, invoice } from '#/db/schema'
 import { getContractNotificationContext } from '#/lib/contract-notifications'
 import {
   buildServiceResumedEmail,
   buildServiceSuspendedEmail,
 } from '#/lib/email-templates'
+import { sendEmail } from '#/lib/email.server'
 import { createProxmoxClient } from '#/lib/proxmox'
 import type { ProxmoxVm, VmType } from '#/lib/proxmox'
 
@@ -177,7 +180,6 @@ export async function runProxmoxVmManager({
           `[proxmox-vm-manager] Suspend notification skipped: no contact email for contract ${currentContractId}`,
         )
       } else {
-        const { sendEmail } = await import('#/lib/email')
         const emailTemplate = buildServiceSuspendedEmail({
           contactName: notificationContext.contactName,
           contractLabel: notificationContext.contractLabel,
@@ -206,7 +208,6 @@ export async function runProxmoxVmManager({
           `[proxmox-vm-manager] Resume notification skipped: no contact email for contract ${currentContractId}`,
         )
       } else {
-        const { sendEmail } = await import('#/lib/email')
         const emailTemplate = buildServiceResumedEmail({
           contactName: notificationContext.contactName,
           contractLabel: notificationContext.contractLabel,

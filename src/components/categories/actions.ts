@@ -1,10 +1,10 @@
-import { db } from '#/db'
+import { db } from '#/db/index.server'
 import { category } from '#/db/schema'
 import { createServerFn } from '@tanstack/react-start'
 
 import { and, eq, isNull, or } from 'drizzle-orm'
 import { resolveSelectedScope } from '#/lib/company-scope'
-import { getRequest, requireSession } from 'utils/session'
+import { getRequest, requireSession } from '#/utils/session.server'
 import z from 'zod'
 
 // ─── Query key ────────────────────────────────────────────────────────────────

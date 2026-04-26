@@ -13,7 +13,7 @@ import { createServerFn } from '@tanstack/react-start'
 
 import { z } from 'zod'
 
-import { db } from '#/db'
+import { db } from '#/db/index.server'
 import {
   bankTransaction,
   counterparty,
@@ -35,7 +35,7 @@ import {
   getSettledAmount,
   toMoneyCents,
 } from '#/lib/invoice-payment'
-import { getRequest, requireSession } from 'utils/session'
+import { getRequest, requireSession } from '#/utils/session.server'
 import {
   getScopedCounterpartyIds,
   resolveSelectedScope,

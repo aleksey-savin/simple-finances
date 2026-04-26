@@ -1,8 +1,8 @@
-import { db } from '@/db'
+import { db } from '#/db/index.server'
 import { currentAccount, currentAccountUser, user } from '@/db/schema'
 import { createServerFn } from '@tanstack/react-start'
 import { and, eq, inArray } from 'drizzle-orm'
-import { requireSession } from 'utils/session'
+import { requireSession } from '#/utils/session.server'
 import z from 'zod'
 
 import { decodeHtmlEntities } from '#/lib/html-entities'

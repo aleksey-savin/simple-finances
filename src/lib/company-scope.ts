@@ -1,6 +1,8 @@
+import '@tanstack/react-start/server-only'
+
 import { and, eq, isNull } from 'drizzle-orm'
 
-import { db } from '#/db'
+import { db } from '#/db/index.server'
 import {
   client,
   clientCounterparty,
@@ -105,16 +107,9 @@ export async function resolveSelectedScope(userId: string, headers: Headers) {
   const scopeId = readScopeIdFromHeaders(headers)
   const selectedScope =
     scopes.find((scope) => scope.id === scopeId) ?? scopes[0]
-  const fallbackScope: AppScope = {
-    id: PERSONAL_SCOPE_ID,
-    name: 'Личное',
-    kind: 'personal',
-    accountIds: [],
-  }
-
   return {
     scopes,
-    selectedScope: selectedScope ?? fallbackScope,
+    selectedScope,
   }
 }
 

@@ -3,11 +3,11 @@ import { createServerFn } from '@tanstack/react-start'
 import { and, eq } from 'drizzle-orm'
 import z from 'zod'
 
-import { db } from '#/db'
+import { db } from '#/db/index.server'
 import { proxmoxAccountSettings, proxmoxNode } from '#/db/schema'
 import { createProxmoxClient } from '#/lib/proxmox'
 import { resolveSelectedScope } from '#/lib/company-scope'
-import { getRequest, requireSession } from 'utils/session'
+import { getRequest, requireSession } from '#/utils/session.server'
 
 // ─── Query keys ───────────────────────────────────────────────────────────────
 

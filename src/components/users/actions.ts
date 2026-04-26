@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getRequest } from 'utils/session'
+import { getRequest } from '#/utils/session.server'
 
-import { auth } from 'utils/auth'
+import { auth } from '#/utils/auth.server'
 
 export const fetchUsers = createServerFn().handler(async () => {
   const request = await getRequest()

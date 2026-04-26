@@ -4,7 +4,7 @@ import { and, eq, inArray, or } from 'drizzle-orm'
 import z from 'zod'
 
 import type { TagItem } from '#/components/ui/tag-picker'
-import { db } from '#/db'
+import { db } from '#/db/index.server'
 import {
   category,
   counterparty,
@@ -18,7 +18,7 @@ import {
   getScopedCounterpartyIds,
   resolveScopedAccountIds,
 } from '#/lib/company-scope'
-import { getRequest, requireSession } from 'utils/session'
+import { getRequest, requireSession } from '#/utils/session.server'
 
 export const fetchTransactionsData = createServerFn().handler(async () => {
   const session = await requireSession()

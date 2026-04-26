@@ -13,7 +13,7 @@ import {
 } from 'drizzle-orm'
 import { addDays, endOfDay, startOfDay } from 'date-fns'
 
-import { db } from '#/db'
+import { db } from '#/db/index.server'
 import {
   proxmoxAccountSettings,
   invoice,
@@ -23,6 +23,7 @@ import {
   contact,
 } from '#/db/schema'
 import { buildInvoiceReminderEmail } from '#/lib/email-templates'
+import { sendEmail } from '#/lib/email.server'
 
 export default defineTask({
   meta: {
@@ -231,7 +232,6 @@ export default defineTask({
           }
 
           try {
-            const { sendEmail } = await import('#/lib/email')
             const emailTemplate = buildInvoiceReminderEmail({
               contactName: contacts[0].name,
               contractLabel: contractInfo,
