@@ -941,7 +941,6 @@ async function findMatchingInvoices(
     })
     .filter((value): value is NonNullable<typeof value> => value !== null)
     .sort((left, right) => right.score - left.score)
-    .slice(0, 12)
 }
 
 async function loadTransactionPayload(bankTransactionId: string) {
