@@ -260,30 +260,39 @@ export function buildRevisionColumns(
     {
       accessorKey: 'timestamps',
       header: 'Хронология',
-      cell: ({ row }) => (
-        <div className="flex flex-col">
-          {row.original.agreedAt && (
-            <span className="text-xs text-muted-foreground tabular-nums">
-              Согласовано: {formatDate(row.original.agreedAt)}
-            </span>
-          )}
-          {row.original.notifiedAt && (
-            <span className="text-xs text-muted-foreground tabular-nums">
-              Документы отправлены: {formatDate(row.original.notifiedAt)}
-            </span>
-          )}
-          {row.original.signedAt && (
-            <span className="text-xs text-muted-foreground tabular-nums">
-              Документы подписаны: {formatDate(row.original.signedAt)}
-            </span>
-          )}
-          {row.original.completedAt && (
-            <span className="text-xs text-muted-foreground tabular-nums">
-              Завершён: {formatDate(row.original.completedAt)}
-            </span>
-          )}
-        </div>
-      ),
+      cell: ({ row }) => {
+        const status = row.original.status
+        const hasAgreed = ['agreed', 'notified', 'signed', 'success'].includes(
+          status,
+        )
+        const hasSent = ['notified', 'signed', 'success'].includes(status)
+        const hasSigned = ['signed', 'success'].includes(status)
+
+        return (
+          <div className="flex flex-col">
+            {hasAgreed && row.original.agreedAt && (
+              <span className="text-xs text-muted-foreground tabular-nums">
+                Согласовано: {formatDate(row.original.agreedAt)}
+              </span>
+            )}
+            {hasSent && row.original.notifiedAt && (
+              <span className="text-xs text-muted-foreground tabular-nums">
+                Документы отправлены: {formatDate(row.original.notifiedAt)}
+              </span>
+            )}
+            {hasSigned && row.original.signedAt && (
+              <span className="text-xs text-muted-foreground tabular-nums">
+                Документы подписаны: {formatDate(row.original.signedAt)}
+              </span>
+            )}
+            {status === 'success' && row.original.completedAt && (
+              <span className="text-xs text-muted-foreground tabular-nums">
+                Завершён: {formatDate(row.original.completedAt)}
+              </span>
+            )}
+          </div>
+        )
+      },
     },
     {
       id: 'managers',
