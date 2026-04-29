@@ -111,6 +111,7 @@ export const fetchPriceRevision = createServerFn()
             contractId: true,
             currentAmounts: true,
             proposedAmounts: true,
+            notes: true,
             included: true,
             status: true,
             notifiedAt: true,
@@ -371,6 +372,7 @@ export const deletePriceRevision = createServerFn({ method: 'POST' })
 const updateRevisionItemSchema = z.object({
   id: z.string(),
   proposedAmounts: z.array(z.string()).optional(),
+  notes: z.string().optional(),
   included: z.boolean().optional(),
 })
 
@@ -389,6 +391,8 @@ export const updateRevisionItem = createServerFn({ method: 'POST' })
     const updates: Record<string, unknown> = {}
     if (data.proposedAmounts !== undefined)
       updates.proposedAmounts = data.proposedAmounts
+    if (data.notes !== undefined)
+      updates.notes = data.notes.trim() === '' ? null : data.notes
     if (data.included !== undefined) updates.included = data.included
 
     await db

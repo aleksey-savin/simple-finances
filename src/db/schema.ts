@@ -578,6 +578,7 @@ export const contractPriceRevisionItem = pgTable(
       .references(() => contract.id, { onDelete: 'cascade' }),
     currentAmounts: numeric('current_amounts').array().notNull(),
     proposedAmounts: numeric('proposed_amounts').array().notNull(),
+    notes: text('notes'),
     included: boolean('included').notNull().default(true),
     status: priceRevisionItemStatusEnum('status').notNull().default('draft'),
     notifiedAt: timestamp('notified_at'),

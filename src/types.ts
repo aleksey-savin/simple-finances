@@ -261,6 +261,7 @@ export type PriceRevisionItemRow = Pick<
   | 'contractId'
   | 'currentAmounts'
   | 'proposedAmounts'
+  | 'notes'
   | 'included'
   | 'status'
   | 'notifiedAt'

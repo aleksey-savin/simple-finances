@@ -8,6 +8,7 @@ import { Switch } from '#/components/ui/switch'
 import { resolveDocumentUrl } from '@/components/contracts/actions'
 import { formatCurrency } from './utils'
 import { ProposedAmountsCell } from './proposed-amount-cell'
+import { RevisionItemNotesCell } from './notes-cell'
 import { RevisionItemStatusActionButton } from './status-action-button'
 import { updateRevisionItem, priceRevisionQueryKey } from './actions'
 
@@ -295,11 +296,23 @@ export function buildRevisionColumns(
       },
     },
     {
+      accessorKey: 'notes',
+      header: 'Заметки',
+      cell: ({ row }) => (
+        <RevisionItemNotesCell
+          itemId={row.original.id}
+          revisionId={revisionId}
+          notes={row.original.notes}
+          readOnly={isCompleted}
+        />
+      ),
+    },
+    {
       id: 'managers',
       header: 'Менеджер',
       cell: ({ row }) => {
         const managers = row.original.managers
-        if (!managers || managers.length === 0) {
+        if (managers.length === 0) {
           return <span className="text-muted-foreground text-xs">—</span>
         }
         return (
