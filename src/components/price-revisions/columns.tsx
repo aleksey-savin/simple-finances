@@ -262,19 +262,19 @@ export function buildRevisionColumns(
       header: 'Хронология',
       cell: ({ row }) => (
         <div className="flex flex-col">
+          {row.original.agreedAt && (
+            <span className="text-xs text-muted-foreground tabular-nums">
+              Согласовано: {formatDate(row.original.agreedAt)}
+            </span>
+          )}
           {row.original.notifiedAt && (
             <span className="text-xs text-muted-foreground tabular-nums">
-              Уведомлён: {formatDate(row.original.notifiedAt)}
+              Документы отправлены: {formatDate(row.original.notifiedAt)}
             </span>
           )}
           {row.original.signedAt && (
             <span className="text-xs text-muted-foreground tabular-nums">
-              Подписан: {formatDate(row.original.signedAt)}
-            </span>
-          )}
-          {row.original.agreedAt && (
-            <span className="text-xs text-muted-foreground tabular-nums">
-              Подписан: {formatDate(row.original.signedAt)}
+              Документы подписаны: {formatDate(row.original.signedAt)}
             </span>
           )}
           {row.original.completedAt && (

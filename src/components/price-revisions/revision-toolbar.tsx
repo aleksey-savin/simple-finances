@@ -17,9 +17,9 @@ type AdjustmentMode = 'percent' | 'fixed'
 
 const STATUS_LABELS: Record<PriceRevisionItemStatus, string> = {
   draft: 'Черновик',
-  notified: 'Уведомлён',
-  agreed: 'Согласован',
-  signed: 'Подписан',
+  agreed: 'Согласовано',
+  notified: 'Документы отправлены',
+  signed: 'Документы подписаны',
   success: 'Завершён',
 }
 

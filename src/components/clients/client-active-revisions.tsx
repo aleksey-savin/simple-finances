@@ -14,9 +14,9 @@ import {
 
 const statusLabel: Record<string, string> = {
   draft: 'Черновик',
-  notified: 'Уведомлён',
-  agreed: 'Согласован',
-  signed: 'Подписан',
+  agreed: 'Согласовано',
+  notified: 'Документы отправлены',
+  signed: 'Документы подписаны',
   success: 'Завершён',
 }
 

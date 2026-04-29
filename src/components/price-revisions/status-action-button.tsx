@@ -16,9 +16,9 @@ type TargetStatus = 'notified' | 'agreed' | 'signed' | 'success'
 const NEXT_ACTIONS: Partial<
   Record<PriceRevisionItemStatus, { label: string; status: TargetStatus }[]>
 > = {
-  draft: [{ label: 'Уведомлен', status: 'notified' }],
-  notified: [{ label: 'Согласовано', status: 'agreed' }],
-  agreed: [{ label: 'Документы подписаны', status: 'signed' }],
+  draft: [{ label: 'Согласовано', status: 'agreed' }],
+  agreed: [{ label: 'Документы отправлены', status: 'notified' }],
+  notified: [{ label: 'Документы подписаны', status: 'signed' }],
   signed: [{ label: 'Завершить', status: 'success' }],
 }
 

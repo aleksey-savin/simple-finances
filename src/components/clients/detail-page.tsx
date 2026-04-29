@@ -18,9 +18,9 @@ import type { PendingActivity } from './client-pending-activities'
 
 const revisionStatusLabel: Record<string, string> = {
   draft: 'Черновик',
-  notified: 'Уведомлён',
-  agreed: 'Согласован',
-  signed: 'Подписан',
+  agreed: 'Согласовано',
+  notified: 'Документы отправлены',
+  signed: 'Документы подписаны',
   success: 'Завершён',
 }
 

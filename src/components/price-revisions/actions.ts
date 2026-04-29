@@ -447,9 +447,9 @@ export const applyBulkAdjustment = createServerFn({ method: 'POST' })
 // ─── Advance item status ──────────────────────────────────────────────────────
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
-  draft: ['notified'],
-  notified: ['agreed'],
-  agreed: ['signed'],
+  draft: ['agreed'],
+  agreed: ['notified'],
+  notified: ['signed'],
   signed: ['success'],
 }
 
@@ -527,9 +527,9 @@ export const advanceRevisionItemStatus = createServerFn({ method: 'POST' })
 // ─── Revert item status ───────────────────────────────────────────────────────
 
 const PREV_STATUS: Record<string, string> = {
-  notified: 'draft',
-  agreed: 'notified',
-  signed: 'agreed',
+  agreed: 'draft',
+  notified: 'agreed',
+  signed: 'notified',
   success: 'signed',
 }
 
