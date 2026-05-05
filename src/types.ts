@@ -455,6 +455,8 @@ export type DashboardMonthlyOutlook = {
   plannedPreviousPeriodRepaymentCount: number
   plannedExpenses: number
   plannedExpensesCount: number
+  projectedPayablesAmount: number
+  projectedPayablesCount: number
   expensesWithDebt: number
   expensesWithDebtCount: number
   netWithoutPreviousPeriodDebt: number

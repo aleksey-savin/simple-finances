@@ -9,6 +9,9 @@ export function ObligationsMetricCard({
   plannedExpenses,
   includePlannedExpenses,
   onTogglePlannedExpenses,
+  projectedPayablesAmount,
+  includeProjectedPayables,
+  onToggleProjectedPayables,
   overdueDebt,
   includeOverdueDebt,
   onToggleOverdueDebt,
@@ -20,6 +23,9 @@ export function ObligationsMetricCard({
   plannedExpenses: number
   includePlannedExpenses: boolean
   onTogglePlannedExpenses: () => void
+  projectedPayablesAmount: number
+  includeProjectedPayables: boolean
+  onToggleProjectedPayables: () => void
   overdueDebt: number
   includeOverdueDebt: boolean
   onToggleOverdueDebt: () => void
@@ -48,6 +54,15 @@ export function ObligationsMetricCard({
           >
             {includePlannedExpenses ? '+' : ''} Плановые расходы:{' '}
             {formatMoney(plannedExpenses)} ₽
+          </Button>
+
+          <Button
+            variant={includeProjectedPayables ? 'default' : 'outline'}
+            size="sm"
+            onClick={onToggleProjectedPayables}
+          >
+            {includeProjectedPayables ? '+' : ''} Платежи текущего месяца:{' '}
+            {formatMoney(projectedPayablesAmount)} ₽
           </Button>
 
           <Button

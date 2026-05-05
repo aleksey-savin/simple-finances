@@ -26,6 +26,7 @@ function RouteComponent() {
     useState(true)
   const [includeUnissuedInvoices, setIncludeUnissuedInvoices] = useState(true)
   const [includePlannedExpenses, setIncludePlannedExpenses] = useState(true)
+  const [includeProjectedPayables, setIncludeProjectedPayables] = useState(true)
   const [includeOverdueDebt, setIncludeOverdueDebt] = useState(true)
   const [includePlannedRepayment, setIncludePlannedRepayment] = useState(true)
 
@@ -47,6 +48,7 @@ function RouteComponent() {
 
   const selectedObligations =
     (includePlannedExpenses ? monthlyOutlook.plannedExpenses : 0) +
+    (includeProjectedPayables ? monthlyOutlook.projectedPayablesAmount : 0) +
     (includeOverdueDebt ? monthlyOutlook.overduePreviousPeriodDebt : 0) +
     (includePlannedRepayment
       ? monthlyOutlook.plannedPreviousPeriodRepayment
@@ -107,6 +109,11 @@ function RouteComponent() {
           includePlannedExpenses={includePlannedExpenses}
           onTogglePlannedExpenses={() =>
             setIncludePlannedExpenses((current) => !current)
+          }
+          projectedPayablesAmount={monthlyOutlook.projectedPayablesAmount}
+          includeProjectedPayables={includeProjectedPayables}
+          onToggleProjectedPayables={() =>
+            setIncludeProjectedPayables((current) => !current)
           }
           overdueDebt={monthlyOutlook.overduePreviousPeriodDebt}
           includeOverdueDebt={includeOverdueDebt}

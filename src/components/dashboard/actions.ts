@@ -67,6 +67,8 @@ export const fetchDashboardData = createServerFn().handler(async () => {
       plannedPreviousPeriodRepaymentCount: 0,
       plannedExpenses: 0,
       plannedExpensesCount: 0,
+      projectedPayablesAmount: 0,
+      projectedPayablesCount: 0,
       expensesWithDebt: 0,
       expensesWithDebtCount: 0,
       netWithoutPreviousPeriodDebt: 0,
@@ -283,6 +285,11 @@ export const fetchDashboardData = createServerFn().handler(async () => {
     (sum, row) => sum + row.paymentState.outstandingAmount,
     0,
   )
+  const projectedPayables = await buildProjectedPayablesSummary(
+    accountIds,
+    monthStart,
+    monthEnd,
+  )
   const overduePreviousPeriodDebtRows = previousUnpaidPayables.filter(
     (row) =>
       getDueMeta(row.dueDate ? new Date(row.dueDate).toISOString() : null)
@@ -306,7 +313,8 @@ export const fetchDashboardData = createServerFn().handler(async () => {
     (sum, row) => sum + row.paymentState.outstandingAmount,
     0,
   )
-  const expensesWithDebt = plannedExpenses + previousPeriodDebt
+  const expensesWithDebt =
+    plannedExpenses + projectedPayables.amount + previousPeriodDebt
 
   // ── Bank summary ───────────────────────────────────────────────────────────
 
@@ -343,12 +351,20 @@ export const fetchDashboardData = createServerFn().handler(async () => {
         plannedPreviousPeriodRepaymentRows.length,
       plannedExpenses,
       plannedExpensesCount: plannedExpenseRows.length,
+      projectedPayablesAmount: projectedPayables.amount,
+      projectedPayablesCount: projectedPayables.count,
       expensesWithDebt,
       expensesWithDebtCount:
-        plannedExpenseRows.length + previousUnpaidPayables.length,
-      netWithoutPreviousPeriodDebt: currentMonthIncoming - plannedExpenses,
+        plannedExpenseRows.length +
+        projectedPayables.count +
+        previousUnpaidPayables.length,
+      netWithoutPreviousPeriodDebt:
+        currentMonthIncoming - plannedExpenses - projectedPayables.amount,
       netWithPreviousPeriodDebt:
-        currentMonthIncoming - plannedExpenses - previousPeriodDebt,
+        currentMonthIncoming -
+        plannedExpenses -
+        projectedPayables.amount -
+        previousPeriodDebt,
     },
     blockedServices,
   } satisfies DashboardLoaderData
@@ -551,6 +567,53 @@ async function buildProjectedReceivablesSummary(
           count += 1
         }
 
+        after = new Date(next.getTime() + 1)
+      }
+    } catch {
+      // skip rules with invalid cron expressions
+    }
+  }
+
+  return { amount, count }
+}
+
+async function buildProjectedPayablesSummary(
+  accountIds: string[],
+  monthStart: Date,
+  monthEnd: Date,
+) {
+  if (accountIds.length === 0) return { amount: 0, count: 0 }
+
+  const now = new Date()
+
+  const rules = await db.query.recurringRule.findMany({
+    where: (table, { and: andWhere }) =>
+      andWhere(
+        inArray(table.currentAccountId, accountIds),
+        eq(table.type, 'payable'),
+        eq(table.isActive, true),
+      ),
+    columns: {
+      id: true,
+      amount: true,
+      cronExpression: true,
+    },
+  })
+
+  let amount = 0
+  let count = 0
+
+  for (const rule of rules) {
+    try {
+      const job = new Cron(rule.cronExpression, { paused: true })
+      let after = now > monthStart ? now : monthStart
+
+      for (let guard = 0; guard < 200; guard++) {
+        const next = job.nextRun(after)
+        if (!next || next > monthEnd) break
+
+        amount += Number(rule.amount)
+        count += 1
         after = new Date(next.getTime() + 1)
       }
     } catch {
