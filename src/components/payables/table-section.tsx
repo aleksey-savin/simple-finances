@@ -10,7 +10,12 @@ import type { TagItem } from '#/components/ui/tag-picker'
 import { TableCell, TableRow } from '#/components/ui/table'
 
 import { PayablesToolbar } from './toolbar'
-import type { ExpenseRow, NamedEntity, PayablesPeriodGroup } from './types'
+import type {
+  ExpenseRow,
+  NamedEntity,
+  PayablesGroupMode,
+  PayablesPeriodGroup,
+} from './types'
 import { formatCurrency, getPeriodLabel } from './utils'
 
 type PayablesTableSectionProps = {
@@ -40,23 +45,15 @@ export function PayablesTableSection({
   description,
   headerSlot,
 }: PayablesTableSectionProps) {
-  const [groupingEnabled, setGroupingEnabled] = useState(true)
-  const [expandedCounterpartyIds, setExpandedCounterpartyIds] = useState<
-    Set<string>
-  >(() => new Set())
-  const counterpartyIds = [
-    ...new Set(
-      data
-        .map((row) => row.counterparty?.id)
-        .filter((value): value is string => Boolean(value)),
-    ),
-  ]
-  const canToggleAll = counterpartyIds.length > 0
+  const [groupMode, setGroupMode] = useState<PayablesGroupMode>('none')
+  const [expandedGroupIds, setExpandedGroupIds] = useState<Set<string>>(
+    () => new Set(),
+  )
+  const groupIds = getExpenseGroupIds(data, groupMode)
+  const canToggleAll = groupIds.length > 0
   const allExpanded =
-    counterpartyIds.length > 0 &&
-    counterpartyIds.every((counterpartyId) =>
-      expandedCounterpartyIds.has(counterpartyId),
-    )
+    groupIds.length > 0 &&
+    groupIds.every((groupId) => expandedGroupIds.has(groupId))
 
   return (
     <section className="flex flex-col gap-4">
@@ -84,9 +81,9 @@ export function PayablesTableSection({
           renderGroupedBody(
             table,
             monthLabel,
-            groupingEnabled,
-            expandedCounterpartyIds,
-            setExpandedCounterpartyIds,
+            groupMode,
+            expandedGroupIds,
+            setExpandedGroupIds,
           )
         }
         toolbar={(table) => (
@@ -96,14 +93,15 @@ export function PayablesTableSection({
             categories={categories}
             counterparties={counterparties}
             allTags={allTags}
-            groupingEnabled={groupingEnabled}
-            onToggleGrouping={() => setGroupingEnabled((current) => !current)}
-            canToggleAll={groupingEnabled && canToggleAll}
+            groupMode={groupMode}
+            onGroupModeChange={(nextMode) => {
+              setGroupMode(nextMode)
+              setExpandedGroupIds(new Set())
+            }}
+            canToggleAll={groupMode !== 'none' && canToggleAll}
             allExpanded={allExpanded}
             onToggleAll={() =>
-              setExpandedCounterpartyIds(
-                allExpanded ? new Set() : new Set(counterpartyIds),
-              )
+              setExpandedGroupIds(allExpanded ? new Set() : new Set(groupIds))
             }
           />
         )}
@@ -115,9 +113,9 @@ export function PayablesTableSection({
 function renderGroupedBody(
   table: Table<ExpenseRow>,
   monthLabel: string,
-  groupingEnabled: boolean,
-  expandedCounterpartyIds: Set<string>,
-  setExpandedCounterpartyIds: Dispatch<SetStateAction<Set<string>>>,
+  groupMode: PayablesGroupMode,
+  expandedGroupIds: Set<string>,
+  setExpandedGroupIds: Dispatch<SetStateAction<Set<string>>>,
 ) {
   const rows = table.getRowModel().rows
 
@@ -148,18 +146,18 @@ function renderGroupedBody(
         rows: currentRows,
         periodGroup: 'current-month',
         label: `Текущий месяц · ${monthLabel}`,
-        groupingEnabled,
-        expandedCounterpartyIds,
-        setExpandedCounterpartyIds,
+        groupMode,
+        expandedGroupIds,
+        setExpandedGroupIds,
       })}
       {renderGroupSection({
         table,
         rows: previousRows,
         periodGroup: 'previous-periods',
         label: getPeriodLabel('previous-periods'),
-        groupingEnabled,
-        expandedCounterpartyIds,
-        setExpandedCounterpartyIds,
+        groupMode,
+        expandedGroupIds,
+        setExpandedGroupIds,
       })}
     </>
   )
@@ -170,17 +168,17 @@ function renderGroupSection({
   rows,
   periodGroup,
   label,
-  groupingEnabled,
-  expandedCounterpartyIds,
-  setExpandedCounterpartyIds,
+  groupMode,
+  expandedGroupIds,
+  setExpandedGroupIds,
 }: {
   table: Table<ExpenseRow>
   rows: Row<ExpenseRow>[]
   periodGroup: PayablesPeriodGroup
   label: string
-  groupingEnabled: boolean
-  expandedCounterpartyIds: Set<string>
-  setExpandedCounterpartyIds: Dispatch<SetStateAction<Set<string>>>
+  groupMode: PayablesGroupMode
+  expandedGroupIds: Set<string>
+  setExpandedGroupIds: Dispatch<SetStateAction<Set<string>>>
 }) {
   if (rows.length === 0) return null
 
@@ -214,32 +212,34 @@ function renderGroupSection({
         </TableCell>
       </TableRow>
 
-      {groupingEnabled
-        ? renderCounterpartyGroups(
+      {groupMode !== 'none'
+        ? renderExpenseGroups(
             table,
             rows,
-            expandedCounterpartyIds,
-            setExpandedCounterpartyIds,
+            groupMode,
+            expandedGroupIds,
+            setExpandedGroupIds,
           )
         : rows.map((row) => renderPayableRow(row))}
     </>
   )
 }
 
-function renderCounterpartyGroups(
+function renderExpenseGroups(
   table: Table<ExpenseRow>,
   rows: Row<ExpenseRow>[],
-  expandedCounterpartyIds: Set<string>,
-  setExpandedCounterpartyIds: Dispatch<SetStateAction<Set<string>>>,
+  groupMode: Exclude<PayablesGroupMode, 'none'>,
+  expandedGroupIds: Set<string>,
+  setExpandedGroupIds: Dispatch<SetStateAction<Set<string>>>,
 ) {
-  const groupedRows = groupExpenseRowsByCounterparty(rows)
+  const groupedRows = groupExpenseRows(rows, groupMode)
 
   return groupedRows.map((entry) => {
     if (entry.kind === 'row') {
       return renderPayableRow(entry.row)
     }
 
-    const isExpanded = expandedCounterpartyIds.has(entry.counterparty.id)
+    const isExpanded = expandedGroupIds.has(entry.id)
     const total = entry.rows.reduce(
       (sum, row) => sum + row.original.outstandingAmount,
       0,
@@ -247,7 +247,7 @@ function renderCounterpartyGroups(
     const countLabel = entry.rows.length === 1 ? 'запись' : 'записей'
 
     return (
-      <Fragment key={`counterparty-group-${entry.counterparty.id}`}>
+      <Fragment key={`${groupMode}-group-${entry.id}`}>
         <TableRow className="bg-muted/25 hover:bg-muted/25">
           <TableCell
             colSpan={table.getVisibleLeafColumns().length}
@@ -257,12 +257,12 @@ function renderCounterpartyGroups(
               type="button"
               className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 text-left"
               onClick={() =>
-                setExpandedCounterpartyIds((current) => {
+                setExpandedGroupIds((current) => {
                   const next = new Set(current)
-                  if (next.has(entry.counterparty.id)) {
-                    next.delete(entry.counterparty.id)
+                  if (next.has(entry.id)) {
+                    next.delete(entry.id)
                   } else {
-                    next.add(entry.counterparty.id)
+                    next.add(entry.id)
                   }
                   return next
                 })
@@ -274,7 +274,7 @@ function renderCounterpartyGroups(
                 ) : (
                   <ChevronRight className="size-4 text-muted-foreground" />
                 )}
-                <span className="font-bold">{entry.counterparty.name}</span>
+                <span className="font-bold">{entry.label}</span>
               </div>
               <span className="text-xs text-muted-foreground">
                 {entry.rows.length} {countLabel}
@@ -319,46 +319,72 @@ function renderPayableRow(row: Row<ExpenseRow>, className?: string) {
   )
 }
 
-function groupExpenseRowsByCounterparty(rows: Row<ExpenseRow>[]) {
+function getExpenseGroupIds(rows: ExpenseRow[], groupMode: PayablesGroupMode) {
+  if (groupMode === 'none') return []
+
+  return [
+    ...new Set(
+      rows
+        .map((row) => getExpenseGroupEntity(row, groupMode)?.id)
+        .filter((value): value is string => Boolean(value)),
+    ),
+  ]
+}
+
+function groupExpenseRows(
+  rows: Row<ExpenseRow>[],
+  groupMode: Exclude<PayablesGroupMode, 'none'>,
+) {
   const groups: (
     | { kind: 'row'; row: Row<ExpenseRow> }
     | {
-        kind: 'counterparty'
-        counterparty: NonNullable<ExpenseRow['counterparty']>
+        kind: 'group'
+        id: string
+        label: string
         rows: Row<ExpenseRow>[]
       }
   )[] = []
-  const groupByCounterpartyId = new Map<
+  const groupsById = new Map<
     string,
     {
-      kind: 'counterparty'
-      counterparty: NonNullable<ExpenseRow['counterparty']>
+      kind: 'group'
+      id: string
+      label: string
       rows: Row<ExpenseRow>[]
     }
   >()
 
   for (const row of rows) {
-    const counterparty = row.original.counterparty
+    const entity = getExpenseGroupEntity(row.original, groupMode)
 
-    if (!counterparty) {
+    if (!entity) {
       groups.push({ kind: 'row', row })
       continue
     }
 
-    const existing = groupByCounterpartyId.get(counterparty.id)
+    const existing = groupsById.get(entity.id)
     if (existing) {
       existing.rows.push(row)
       continue
     }
 
     const nextGroup = {
-      kind: 'counterparty' as const,
-      counterparty,
+      kind: 'group' as const,
+      id: entity.id,
+      label: entity.name,
       rows: [row],
     }
-    groupByCounterpartyId.set(counterparty.id, nextGroup)
+    groupsById.set(entity.id, nextGroup)
     groups.push(nextGroup)
   }
 
   return groups
+}
+
+function getExpenseGroupEntity(
+  row: ExpenseRow,
+  groupMode: Exclude<PayablesGroupMode, 'none'>,
+) {
+  if (groupMode === 'category') return row.category
+  return row.counterparty
 }

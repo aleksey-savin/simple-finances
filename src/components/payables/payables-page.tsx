@@ -4,6 +4,8 @@ import { toast } from 'sonner'
 
 import { TagSummaryPanel } from '#/components/ui/tag-summary-panel'
 import type { TagItem } from '#/components/ui/tag-picker'
+import { EditInvoice } from '#/components/invoices/edit'
+import type { EditableInvoiceItem } from '#/components/invoices/edit'
 import {
   addExpenseTag,
   createTag,
@@ -15,13 +17,19 @@ import {
 import { buildPayablesColumns } from './columns'
 import { PayablesSummaryCards } from './summary-cards'
 import { PayablesTableSection } from './table-section'
-import type { PayablesLoaderData, PayablesTagTotal, TagsMap } from './types'
+import type {
+  ExpenseRow,
+  PayablesLoaderData,
+  PayablesTagTotal,
+  TagsMap,
+} from './types'
 
 export function PayablesPage({
   currentMonth,
   previousUnpaid,
   accounts,
   categories,
+  formCategories,
   counterparties,
   monthLabel,
   tagsMap: initialTagsMap,
@@ -32,6 +40,13 @@ export function PayablesPage({
   const [allTags, setAllTags] = useState<TagItem[]>(initialAllTags)
   const [tagTotals, setTagTotals] =
     useState<PayablesTagTotal[]>(initialTagTotals)
+  const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null)
+
+  const expenseRows = [...currentMonth, ...previousUnpaid]
+  const editingExpense =
+    expenseRows.find(
+      (row) => row.id === editingExpenseId && !row.isProjected,
+    ) ?? null
 
   const refreshTagData = async () => {
     const [totals, tags] = await Promise.all([fetchTagTotals(), fetchTags()])
@@ -115,6 +130,7 @@ export function PayablesPage({
     onTagAdd: handleTagAdd,
     onTagRemove: handleTagRemove,
     onTagCreate: handleTagCreate,
+    onEdit: (row) => setEditingExpenseId(row.id),
   })
 
   return (
@@ -125,7 +141,7 @@ export function PayablesPage({
       />
 
       <PayablesTableSection
-        data={[...currentMonth, ...previousUnpaid]}
+        data={expenseRows}
         columns={columns}
         initialSorting={[{ id: 'createdAt', desc: false }]}
         monthLabel={monthLabel}
@@ -135,7 +151,39 @@ export function PayablesPage({
         allTags={allTags}
       />
 
+      {editingExpense && (
+        <EditInvoice
+          item={toEditablePayableInvoice(editingExpense)}
+          categories={formCategories}
+          accounts={accounts}
+          counterparties={counterparties}
+          open
+          onOpenChange={(open) => {
+            if (!open) setEditingExpenseId(null)
+          }}
+        />
+      )}
+
       <TagSummaryPanel totals={tagTotals} />
     </>
   )
+}
+
+function toEditablePayableInvoice(row: ExpenseRow): EditableInvoiceItem {
+  return {
+    id: row.id,
+    kind: 'payable',
+    amount: row.amount,
+    description: row.description,
+    category: row.category,
+    currentAccount: row.currentAccount,
+    counterparty: row.counterparty,
+    dueDate: row.dueDate,
+    paidAt: row.paidAt,
+    createdAt: row.createdAt,
+    archivedAt: row.archivedAt,
+    createdBy: row.createdBy,
+    linkedInvoiceId: row.linkedInvoiceId,
+    contractId: row.contractId,
+  }
 }

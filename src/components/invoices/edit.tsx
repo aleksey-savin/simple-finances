@@ -1,7 +1,6 @@
 import { useState } from 'react'
 
 import type { Invoice as DBInvoice } from '@/db/types'
-import type { Invoice } from '#/types'
 
 import { EditInvoiceForm } from './form'
 
@@ -16,8 +15,25 @@ import {
 } from '@/components/ui/dialog'
 import { Pencil } from 'lucide-react'
 
+export type EditableInvoiceItem = {
+  id: string
+  kind: 'payable' | 'receivable'
+  amount: string
+  description: string
+  category: { id: string; name: string }
+  currentAccount: { id: string; name: string }
+  counterparty: { id: string; name: string } | null
+  dueDate: Date | string | null
+  paidAt: Date | string | null
+  createdAt: Date | string
+  archivedAt: Date | string | null
+  createdBy?: string
+  linkedInvoiceId?: string | null
+  contractId?: string | null
+}
+
 type EditInvoiceProps = {
-  item: Invoice
+  item: EditableInvoiceItem
   categories: {
     id: string
     name: string

@@ -1,7 +1,8 @@
 import type { ColumnDef } from '@tanstack/react-table'
-import { Clock } from 'lucide-react'
+import { Clock, Pencil } from 'lucide-react'
 
 import { Badge } from '#/components/ui/badge'
+import { Button } from '#/components/ui/button'
 import { DataTableColumnHeader } from '#/components/ui/data-table'
 import { TagChips, TagPicker } from '#/components/ui/tag-picker'
 import type { TagItem } from '#/components/ui/tag-picker'
@@ -25,6 +26,7 @@ type PayablesColumnOptions = {
   onTagAdd: (expenseId: string, tag: TagItem) => Promise<void>
   onTagRemove: (expenseId: string, tag: TagItem) => Promise<void>
   onTagCreate: (name: string, color: string) => Promise<TagItem>
+  onEdit: (row: ExpenseRow) => void
 }
 
 export function buildPayablesColumns({
@@ -33,6 +35,7 @@ export function buildPayablesColumns({
   onTagAdd,
   onTagRemove,
   onTagCreate,
+  onEdit,
 }: PayablesColumnOptions): ColumnDef<ExpenseRow, unknown>[] {
   return [
     {
@@ -203,6 +206,27 @@ export function buildPayablesColumns({
             onRemove={(tag) => onTagRemove(row.original.id, tag)}
             onCreate={onTagCreate}
           />
+        )
+      },
+    },
+    {
+      id: 'actions',
+      enableSorting: false,
+      size: 40,
+      header: '',
+      cell: ({ row }) => {
+        if (row.original.isProjected) return null
+
+        return (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8"
+            title="Редактировать"
+            onClick={() => onEdit(row.original)}
+          >
+            <Pencil className="size-3.5" />
+          </Button>
         )
       },
     },

@@ -298,6 +298,11 @@ export type NamedEntity = {
   name: string
 }
 
+export type InvoiceFormCategory = Pick<
+  DBCategory,
+  'id' | 'name' | 'useForExpenses' | 'useForIncome' | 'isShared'
+>
+
 export type TagsMap = Partial<Record<string, TagItem[]>>
 
 export type IncomeStatus = 'partial' | 'overdue' | 'soon' | 'ontime' | 'nodate'
@@ -350,6 +355,7 @@ export type ExpenseStatus =
   | 'nodate'
 
 export type PayablesPeriodGroup = 'current-month' | 'previous-periods'
+export type PayablesGroupMode = 'none' | 'counterparty' | 'category'
 
 export type ExpenseRow = {
   id: string
@@ -362,6 +368,9 @@ export type ExpenseRow = {
   dueDate: string | null
   paidAt: string | null
   archivedAt: string | null
+  createdBy: string
+  linkedInvoiceId: string | null
+  contractId: string | null
   manualPaid: boolean
   settledAmount: number
   outstandingAmount: number
@@ -385,6 +394,7 @@ export type PayablesLoaderData = {
   previousUnpaid: ExpenseRow[]
   accounts: NamedEntity[]
   categories: NamedEntity[]
+  formCategories: InvoiceFormCategory[]
   counterparties: NamedEntity[]
   monthLabel: string
   tagsMap: TagsMap

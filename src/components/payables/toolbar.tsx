@@ -1,16 +1,31 @@
 import type { Table } from '@tanstack/react-table'
-import { AlertTriangle, ChevronsDown, Rows3, Search, X } from 'lucide-react'
+import {
+  AlertTriangle,
+  ChevronsDown,
+  Rows3,
+  Search,
+  Wallet,
+  X,
+} from 'lucide-react'
 
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { MultiSelectCombobox } from '#/components/ui/multi-select-combobox'
 import type { MultiSelectOption } from '#/components/ui/multi-select-combobox'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '#/components/ui/select'
 import type { TagItem } from '#/components/ui/tag-picker'
 
 import type {
   ExpenseRow,
   ExpenseStatus,
   NamedEntity,
+  PayablesGroupMode,
   PayablesPeriodGroup,
 } from './types'
 import { formatCurrency } from './utils'
@@ -22,12 +37,20 @@ type PayablesToolbarProps = {
   counterparties: NamedEntity[]
   allTags: TagItem[]
   accentColor?: 'red' | 'orange'
-  groupingEnabled?: boolean
-  onToggleGrouping?: () => void
+  groupMode?: PayablesGroupMode
+  onGroupModeChange?: (groupMode: PayablesGroupMode) => void
   canToggleAll?: boolean
   allExpanded?: boolean
   onToggleAll?: () => void
 }
+
+const payableStatusValues: ExpenseStatus[] = [
+  'overdue',
+  'soon',
+  'ontime',
+  'nodate',
+  'partial',
+]
 
 const statusOptions: MultiSelectOption[] = [
   { value: 'overdue', label: 'Просрочен' },
@@ -51,8 +74,8 @@ export function PayablesToolbar({
   counterparties,
   allTags,
   accentColor = 'red',
-  groupingEnabled = true,
-  onToggleGrouping,
+  groupMode = 'none',
+  onGroupModeChange,
   canToggleAll = false,
   allExpanded = false,
   onToggleAll,
@@ -117,6 +140,10 @@ export function PayablesToolbar({
     statusFilter.length > 0 ||
     tagFilter.length > 0 ||
     periodFilter.length > 0
+
+  const payablePresetSelected =
+    statusFilter.length === payableStatusValues.length &&
+    payableStatusValues.every((status) => statusFilter.includes(status))
 
   const filteredRows = table.getFilteredRowModel().rows
   const filteredTotal = filteredRows.reduce(
@@ -206,6 +233,21 @@ export function PayablesToolbar({
           className="w-48"
         />
 
+        <Button
+          variant={payablePresetSelected ? 'secondary' : 'outline'}
+          size="sm"
+          className="h-8 gap-1.5"
+          onClick={() =>
+            table
+              .getColumn('status')
+              ?.setFilterValue(
+                payablePresetSelected ? undefined : payableStatusValues,
+              )
+          }
+        >
+          <Wallet className="size-3.5" />К оплате
+        </Button>
+
         {allTags.length > 0 && (
           <MultiSelectCombobox
             options={tagOptions}
@@ -221,16 +263,23 @@ export function PayablesToolbar({
           />
         )}
 
-        {onToggleGrouping && (
-          <Button
-            variant={groupingEnabled ? 'secondary' : 'outline'}
-            size="sm"
-            className="h-8 gap-1.5"
-            onClick={onToggleGrouping}
+        {onGroupModeChange && (
+          <Select
+            value={groupMode}
+            onValueChange={(value) =>
+              onGroupModeChange(value as PayablesGroupMode)
+            }
           >
-            <Rows3 className="size-3.5" />
-            {groupingEnabled ? 'Группировка вкл' : 'Группировка выкл'}
-          </Button>
+            <SelectTrigger size="sm" className="h-8 w-48">
+              <Rows3 className="size-3.5" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Без группировки</SelectItem>
+              <SelectItem value="counterparty">По контрагенту</SelectItem>
+              <SelectItem value="category">По категории</SelectItem>
+            </SelectContent>
+          </Select>
         )}
 
         {canToggleAll && onToggleAll && (

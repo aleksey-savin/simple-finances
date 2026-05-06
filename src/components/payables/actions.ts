@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 
 import { Cron } from 'croner'
-import { and, eq, gte, inArray, isNull, lt, lte } from 'drizzle-orm'
+import { and, eq, gte, inArray, isNull, lt, lte, or } from 'drizzle-orm'
 
 import type {
   ExpenseRow,
@@ -10,6 +10,7 @@ import type {
 } from '#/components/payables/types'
 import { db } from '#/db/index.server'
 import {
+  category as categoryTable,
   counterparty,
   currentAccount,
   invoice,
@@ -38,6 +39,7 @@ export const fetchPayables = createServerFn().handler(async () => {
       previousUnpaid: [],
       accounts: [],
       categories: [],
+      formCategories: [],
       counterparties: [],
       monthLabel: '',
       tagsMap: {},
@@ -79,6 +81,7 @@ export const fetchPayables = createServerFn().handler(async () => {
     previousUnpaidRaw,
     activeRules,
     accounts,
+    formCategories,
     counterparties,
   ] = await Promise.all([
     db.query.invoice.findMany({
@@ -113,12 +116,36 @@ export const fetchPayables = createServerFn().handler(async () => {
     db.query.currentAccount.findMany({
       where: inArray(currentAccount.id, accountIds),
       columns: { id: true, name: true },
+      orderBy: (table, { asc }) => asc(table.name),
+    }),
+    db.query.category.findMany({
+      where: and(
+        or(
+          eq(categoryTable.createdBy, session.user.id),
+          eq(categoryTable.isShared, true),
+        ),
+        selectedScope.kind === 'personal'
+          ? isNull(categoryTable.companyId)
+          : or(
+              isNull(categoryTable.companyId),
+              eq(categoryTable.companyId, selectedScope.id),
+            ),
+      ),
+      columns: {
+        id: true,
+        name: true,
+        useForExpenses: true,
+        useForIncome: true,
+        isShared: true,
+      },
+      orderBy: (table, { asc }) => asc(table.name),
     }),
     getScopedCounterpartyIds(session.user.id, selectedScope).then((ids) =>
       ids.length > 0
         ? db.query.counterparty.findMany({
             where: inArray(counterparty.id, ids),
-            columns: { id: true, name: true },
+            columns: { id: true, name: true, linkedUserId: true },
+            orderBy: (table, { asc }) => asc(table.name),
           })
         : [],
     ),
@@ -153,6 +180,9 @@ export const fetchPayables = createServerFn().handler(async () => {
           dueDate: dueDate?.toISOString() ?? null,
           paidAt: null,
           archivedAt: null,
+          createdBy: rule.createdBy,
+          linkedInvoiceId: null,
+          contractId: rule.contractId ?? null,
           manualPaid: false,
           settledAmount: 0,
           outstandingAmount: Number(rule.amount),
@@ -189,6 +219,9 @@ export const fetchPayables = createServerFn().handler(async () => {
       dueDate: record.dueDate ? record.dueDate.toISOString() : null,
       paidAt: paymentState.effectivePaidAt?.toISOString() ?? null,
       archivedAt: record.archivedAt ? record.archivedAt.toISOString() : null,
+      createdBy: record.createdBy,
+      linkedInvoiceId: record.linkedInvoiceId,
+      contractId: record.contractId,
       manualPaid: paymentState.manualPaid,
       settledAmount: paymentState.settledAmount,
       outstandingAmount: paymentState.outstandingAmount,
@@ -347,16 +380,25 @@ export const fetchPayables = createServerFn().handler(async () => {
   return {
     currentMonth,
     previousUnpaid,
-    accounts,
-    categories,
-    counterparties,
+    accounts: sortByName(accounts),
+    categories: sortByName(categories),
+    formCategories: sortByName(formCategories),
+    counterparties: sortByName(counterparties),
     monthLabel,
     tagsMap,
-    allTags: allTags.map((tag) => ({
-      id: tag.id,
-      name: tag.name,
-      color: tag.color,
-    })),
+    allTags: sortByName(
+      allTags.map((tag) => ({
+        id: tag.id,
+        name: tag.name,
+        color: tag.color,
+      })),
+    ),
     tagTotals,
   } satisfies PayablesLoaderData
 })
+
+function sortByName<T extends { name: string }>(items: T[]) {
+  return [...items].sort((left, right) =>
+    left.name.localeCompare(right.name, 'ru'),
+  )
+}
