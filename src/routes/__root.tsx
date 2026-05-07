@@ -3,12 +3,13 @@ import {
   Link,
   Scripts,
   createRootRouteWithContext,
+  useRouterState,
 } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import { ShieldOff } from 'lucide-react'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import TanStackQueryProvider from '../integrations/tanstack-query/root-provider'
 
@@ -129,6 +130,42 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
   },
 })
 
+function NavigationProgress() {
+  const isLoading = useRouterState({ select: (s) => s.isLoading })
+  return (
+    <div aria-hidden className="fixed top-0 left-0 right-0 z-50 h-0.5 overflow-hidden">
+      <div
+        className="h-full w-full bg-primary transition-all duration-300"
+        style={{
+          transform: isLoading ? 'translateX(-20%)' : 'translateX(-100%)',
+          opacity: isLoading ? 1 : 0,
+        }}
+      />
+    </div>
+  )
+}
+
+function AnimatedOutlet({ children }: { children: React.ReactNode }) {
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const ref = useRef<HTMLDivElement>(null)
+  const prevPathname = useRef(pathname)
+
+  if (prevPathname.current !== pathname) {
+    prevPathname.current = pathname
+    ref.current?.animate([{ opacity: 0 }, { opacity: 1 }], {
+      duration: 200,
+      easing: 'ease-out',
+      fill: 'forwards',
+    })
+  }
+
+  return (
+    <div ref={ref} className="flex min-w-0 flex-col gap-4 p-2 sm:p-6">
+      {children}
+    </div>
+  )
+}
+
 function RootDocument({ children }: { children: React.ReactNode }) {
   const initialSession = Route.useLoaderData()
   const [isHydrated, setIsHydrated] = useState(false)
@@ -147,6 +184,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
+        <NavigationProgress />
         <TanStackQueryProvider>
           <ThemeProvider>
             <TooltipProvider>
@@ -155,9 +193,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                   <AppSidebar />
                   <SidebarInset>
                     <AppHeader />
-                    <div className="flex flex-col gap-4 p-2 sm:p-6">
-                      {children}
-                    </div>
+                    <AnimatedOutlet>{children}</AnimatedOutlet>
                   </SidebarInset>
                 </SidebarProvider>
               ) : (

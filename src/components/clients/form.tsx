@@ -35,6 +35,10 @@ const uiFormSchema = z.object({
   managerIds: z.array(z.string()),
 })
 
+const editFormSchema = uiFormSchema.extend({
+  companyId: z.string(),
+})
+
 // ─── Add form (no company field — auto from scope) ────────────────────────────
 
 export const AddClientForm = ({ onDone }: { onDone?: () => void } = {}) => {
@@ -227,7 +231,7 @@ export const EditClientForm = ({
       counterpartiesIds: current.counterparties.map((item) => item.id),
       managerIds: current.managers.map((m) => m.userId),
     },
-    validators: { onSubmit: uiFormSchema },
+    validators: { onSubmit: editFormSchema },
     onSubmit: async ({ value }) => {
       try {
         await updateClient({

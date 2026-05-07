@@ -103,7 +103,7 @@ export const fetchRecurringData = createServerFn().handler(async () => {
 export const fetchRuleById = createServerFn()
   .inputValidator((id: string) => id)
   .handler(async ({ data: id }) => {
-    const session = await requireSession()
+    await requireSession()
 
     const rule = await db.query.recurringRule.findFirst({
       where: eq(recurringRule.id, id),
@@ -125,7 +125,7 @@ const toggleRuleSchema = z.object({ id: z.string(), isActive: z.boolean() })
 export const toggleRecurringRule = createServerFn({ method: 'POST' })
   .inputValidator(toggleRuleSchema)
   .handler(async ({ data }) => {
-    const session = await requireSession()
+    await requireSession()
 
     let nextRunAt: Date | null = null
     if (data.isActive) {
@@ -261,6 +261,7 @@ export const createRecurringNow = createServerFn({ method: 'POST' })
         categoryId: true,
         counterpartyId: true,
         currentAccountId: true,
+        contractId: true,
         dueDaysFromCreation: true,
         createdBy: true,
         updatedBy: true,
@@ -283,7 +284,7 @@ const deleteRuleSchema = z.object({ id: z.string() })
 export const deleteRecurringRule = createServerFn({ method: 'POST' })
   .inputValidator(deleteRuleSchema)
   .handler(async ({ data }) => {
-    const session = await requireSession()
+    await requireSession()
 
     await db.delete(recurringRule).where(eq(recurringRule.id, data.id))
   })

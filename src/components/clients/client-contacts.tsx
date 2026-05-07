@@ -35,9 +35,9 @@ type Contact = ClientDetail['contacts'][number]
 
 const contactSchema = z.object({
   name: z.string().min(1, 'Введите имя'),
-  position: z.string().optional(),
-  phone: z.string().optional(),
-  email: z.string().email('Некорректный email').optional().or(z.literal('')),
+  position: z.string(),
+  phone: z.string(),
+  email: z.union([z.string().email('Некорректный email'), z.literal('')]),
 })
 
 function ContactForm({

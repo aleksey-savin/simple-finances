@@ -91,7 +91,9 @@ function EmailOtpTab({ sent }: { sent: boolean }) {
           search: { method: 'email', emailSent: true },
           replace: true,
         }),
-      onError: (ctx) => toast.error(ctx.error.message),
+      onError: (ctx) => {
+        toast.error(ctx.error.message)
+      },
     })
     setLoading(false)
   }

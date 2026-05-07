@@ -9,7 +9,7 @@ import { requireSession } from '#/utils/session.server'
 export const businessLinesQueryKey = ['business-lines'] as const
 
 export const fetchBusinessLines = createServerFn().handler(async () => {
-  const session = await requireSession()
+  await requireSession()
 
   return db.query.businessLine
     .findMany({
@@ -70,7 +70,7 @@ export const updateBusinessLineSchema = businessLineSchema.extend({
 export const updateBusinessLine = createServerFn({ method: 'POST' })
   .inputValidator(updateBusinessLineSchema)
   .handler(async ({ data }) => {
-    const session = await requireSession()
+    await requireSession()
 
     await db
       .update(businessLine)

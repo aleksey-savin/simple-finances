@@ -393,7 +393,7 @@ export const updateClientSchema = clientSchema.extend({
 export const updateClient = createServerFn({ method: 'POST' })
   .inputValidator(updateClientSchema)
   .handler(async ({ data }) => {
-    const session = await requireSession()
+    await requireSession()
 
     await db.transaction(async (tx) => {
       await tx
@@ -443,7 +443,7 @@ export const clientDetailQueryKey = (id: string) => ['clients', id] as const
 export const fetchClientDetail = createServerFn()
   .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }): Promise<ClientDetail> => {
-    const session = await requireSession()
+    await requireSession()
 
     const row = await db.query.client.findFirst({
       where: eq(client.id, data.id),
@@ -679,7 +679,7 @@ const contactSchema = z.object({
 export const addContact = createServerFn({ method: 'POST' })
   .inputValidator(contactSchema)
   .handler(async ({ data }) => {
-    const session = await requireSession()
+    await requireSession()
 
     const [inserted] = await db
       .insert(contact)
@@ -698,7 +698,7 @@ export const addContact = createServerFn({ method: 'POST' })
 export const updateContact = createServerFn({ method: 'POST' })
   .inputValidator(contactSchema.extend({ id: z.string() }))
   .handler(async ({ data }) => {
-    const session = await requireSession()
+    await requireSession()
 
     await db
       .update(contact)

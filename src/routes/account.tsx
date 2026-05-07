@@ -91,7 +91,9 @@ function TwoFactorSection({
           setPassword('')
           onToggle()
         },
-        onError: (ctx) => toast.error(ctx.error.message),
+        onError: (ctx) => {
+          toast.error(ctx.error.message)
+        },
       },
     )
     setLoading(false)

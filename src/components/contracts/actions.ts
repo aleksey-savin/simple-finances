@@ -222,7 +222,7 @@ const resolveDocumentUrlSchema = z.object({
 export const resolveDocumentUrl = createServerFn({ method: 'POST' })
   .inputValidator(resolveDocumentUrlSchema)
   .handler(async ({ data }) => {
-    const session = await requireSession()
+    await requireSession()
 
     const doc = await db.query.document.findFirst({
       where: eq(document.id, data.documentId),
@@ -255,7 +255,7 @@ const contractDocumentSchema = z.object({
 export const addContractDocument = createServerFn({ method: 'POST' })
   .inputValidator(contractDocumentSchema)
   .handler(async ({ data }) => {
-    const session = await requireSession()
+    await requireSession()
 
     await db.insert(contractDocument).values({
       contractId: data.contractId,
@@ -266,7 +266,7 @@ export const addContractDocument = createServerFn({ method: 'POST' })
 export const removeContractDocument = createServerFn({ method: 'POST' })
   .inputValidator(contractDocumentSchema)
   .handler(async ({ data }) => {
-    const session = await requireSession()
+    await requireSession()
 
     const cd = await db.query.contractDocument.findFirst({
       where: and(
@@ -321,7 +321,7 @@ export const updateContractSchema = contractSchema.extend({
 export const updateContract = createServerFn({ method: 'POST' })
   .inputValidator(updateContractSchema)
   .handler(async ({ data }) => {
-    const session = await requireSession()
+    await requireSession()
 
     const businessLineId =
       data.contractType === 'supplier' ? null : (data.businessLineId ?? null)

@@ -41,7 +41,9 @@ function ForgotPasswordPage() {
         { email: value.email, redirectTo: '/reset-password' },
         {
           onSuccess: () => setSent(true),
-          onError: (ctx) => toast.error(ctx.error.message),
+          onError: (ctx) => {
+            toast.error(ctx.error.message)
+          },
         },
       )
     },

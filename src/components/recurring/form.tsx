@@ -15,8 +15,15 @@ import { Combobox } from '@/components/ui/combobox'
 import { DialogFooter } from '@/components/ui/dialog'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import type { Category } from '@/types'
 import type { CurrentAccount } from '#/db/types'
+
+type FormCategory = {
+  id: string
+  name: string
+  useForExpenses: boolean
+  useForIncome: boolean
+  isShared: boolean
+}
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -52,7 +59,7 @@ export const RecurringForm = ({
 }: {
   defaultValues: RuleFormValues
   onSubmit: (value: RuleFormValues) => Promise<void>
-  categories: Category[]
+  categories: FormCategory[]
   accounts: CurrentAccount[]
   counterparties: { id: string; name: string; linkedUserId: string | null }[]
   isEdit: boolean

@@ -185,7 +185,7 @@ export const ContractForm = ({
           return
         }
 
-        const { id: contractId } = await addContract({
+        await addContract({
           data: {
             name: value.name,
             number: value.number,

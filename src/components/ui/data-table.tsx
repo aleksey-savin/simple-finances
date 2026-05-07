@@ -104,10 +104,10 @@ export function DataTable<TData>({
   })
 
   return (
-    <div className="flex flex-col gap-4">
-      <Card className="p-4">{toolbar?.(table)}</Card>
+    <div className="flex min-w-0 flex-col gap-4">
+      <Card className="min-w-0 p-4">{toolbar?.(table)}</Card>
 
-      <Card className="p-4">
+      <Card className="min-w-0 p-4">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

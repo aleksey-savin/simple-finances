@@ -90,7 +90,7 @@ export const fetchPriceRevisions = createServerFn().handler(
 export const fetchPriceRevision = createServerFn()
   .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }): Promise<PriceRevisionDetail> => {
-    const session = await requireSession()
+    await requireSession()
 
     const revision = await db.query.contractPriceRevision.findFirst({
       where: eq(contractPriceRevision.id, data.id),
@@ -271,7 +271,7 @@ export const fetchPriceRevision = createServerFn()
 export const completeRevision = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
-    const session = await requireSession()
+    await requireSession()
 
     await db
       .update(contractPriceRevision)
@@ -282,7 +282,7 @@ export const completeRevision = createServerFn({ method: 'POST' })
 export const reopenRevision = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
-    const session = await requireSession()
+    await requireSession()
 
     await db
       .update(contractPriceRevision)
@@ -360,7 +360,7 @@ export const createPriceRevision = createServerFn({ method: 'POST' })
 export const deletePriceRevision = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
-    const session = await requireSession()
+    await requireSession()
 
     await db
       .delete(contractPriceRevision)
@@ -379,7 +379,7 @@ const updateRevisionItemSchema = z.object({
 export const updateRevisionItem = createServerFn({ method: 'POST' })
   .inputValidator(updateRevisionItemSchema)
   .handler(async ({ data }) => {
-    const session = await requireSession()
+    await requireSession()
 
     const item = await db.query.contractPriceRevisionItem.findFirst({
       where: eq(contractPriceRevisionItem.id, data.id),
@@ -412,7 +412,7 @@ const applyBulkAdjustmentSchema = z.object({
 export const applyBulkAdjustment = createServerFn({ method: 'POST' })
   .inputValidator(applyBulkAdjustmentSchema)
   .handler(async ({ data }) => {
-    const session = await requireSession()
+    await requireSession()
 
     await assertRevisionOpen(data.revisionId)
 
@@ -547,7 +547,7 @@ const CLEAR_TIMESTAMP_ON_REVERT: Record<string, string[]> = {
 export const revertRevisionItemStatus = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
-    const session = await requireSession()
+    await requireSession()
 
     const item = await db.query.contractPriceRevisionItem.findFirst({
       where: eq(contractPriceRevisionItem.id, data.id),

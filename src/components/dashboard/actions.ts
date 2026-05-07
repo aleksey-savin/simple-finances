@@ -323,7 +323,9 @@ export const fetchDashboardData = createServerFn().handler(async () => {
     buildOpenPriceRevisionTasks(session.user.id, selectedScope),
   ])
   const blockedServices = await getBlockedServicesByContractIds(
-    contractIdsInScopeRows.map((row) => row.contractId),
+    contractIdsInScopeRows
+      .map((row) => row.contractId)
+      .filter((id): id is string => id !== null),
   )
   const tasks = buildDashboardTasks(bankSummary, priceRevisionTasks)
 

@@ -11,7 +11,7 @@ export const fetchTags = createServerFn().handler(async () => {
     import('#/db/index.server'),
     import('#/utils/session.server'),
   ])
-  const session = await requireSession()
+  await requireSession()
 
   return db.query.tag.findMany({
     orderBy: (table, { asc }) => asc(table.name),
@@ -25,7 +25,7 @@ export const fetchExpenseTags = createServerFn()
       import('#/db/index.server'),
       import('#/utils/session.server'),
     ])
-    const session = await requireSession()
+    await requireSession()
 
     if (data.expenseIds.length === 0) return []
 
@@ -44,7 +44,7 @@ export const fetchIncomeTags = createServerFn()
       import('#/db/index.server'),
       import('#/utils/session.server'),
     ])
-    const session = await requireSession()
+    await requireSession()
 
     if (data.incomeIds.length === 0) return []
 
@@ -89,7 +89,7 @@ export const deleteTag = createServerFn({ method: 'POST' })
       import('#/db/index.server'),
       import('#/utils/session.server'),
     ])
-    const session = await requireSession()
+    await requireSession()
 
     await db.delete(tag).where(eq(tag.id, data.id))
   })
@@ -140,7 +140,7 @@ export const removeExpenseTag = createServerFn({ method: 'POST' })
       import('#/db/index.server'),
       import('#/utils/session.server'),
     ])
-    const session = await requireSession()
+    await requireSession()
 
     await db
       .delete(invoiceTag)
@@ -198,7 +198,7 @@ export const removeIncomeTag = createServerFn({ method: 'POST' })
       import('#/db/index.server'),
       import('#/utils/session.server'),
     ])
-    const session = await requireSession()
+    await requireSession()
 
     await db
       .delete(invoiceTag)

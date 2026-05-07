@@ -23,7 +23,7 @@ import { authClient } from 'utils/auth-client'
 export const Route = createFileRoute('/reset-password')({
   validateSearch: (search) => ({
     token: (search.token as string) ?? '',
-    error: (search.error as string) | undefined,
+    error: search.error as string | undefined,
   }),
   component: ResetPasswordPage,
 })
@@ -53,7 +53,9 @@ function ResetPasswordPage() {
             toast.success('Пароль изменён')
             navigate({ to: '/login' })
           },
-          onError: (ctx) => toast.error(ctx.error.message),
+          onError: (ctx) => {
+            toast.error(ctx.error.message)
+          },
         },
       )
     },

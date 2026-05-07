@@ -15,7 +15,7 @@ export const smtpSettingsQueryKey = ['smtp-settings'] as const
 // ─── Fetch ────────────────────────────────────────────────────────────────────
 
 export const fetchSmtpSettings = createServerFn().handler(async () => {
-  const session = await requireSession()
+  await requireSession()
 
   const settingsRows = await db
     .select()

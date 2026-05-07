@@ -41,10 +41,10 @@ export const fetchProxmoxNodes = createServerFn().handler(async () => {
 export const proxmoxNodeSchema = z.object({
   name: z.string().min(1, 'Укажите название'),
   host: z.string().min(1, 'Укажите адрес'),
-  port: z.number().int().min(1).max(65535).default(8006),
+  port: z.number().int().min(1).max(65535),
   tokenId: z.string().min(1, 'Укажите токен (user@realm!tokenname)'),
   tokenSecret: z.string().min(1, 'Укажите секрет токена'),
-  verifySsl: z.boolean().default(false),
+  verifySsl: z.boolean(),
 })
 
 export const addProxmoxNode = createServerFn({ method: 'POST' })

@@ -1,7 +1,10 @@
 import { Cron } from 'croner'
 import { definePlugin } from 'nitro'
 import { runTask } from 'nitro/task'
+// @ts-expect-error virtual nitro module — generated at build time
 import { scheduledTasks } from '#nitro/virtual/tasks'
+
+type ScheduledTask = { cron: string; tasks: string[] }
 
 export default definePlugin(() => {
   // In this stack, Nitro dev runtime does not reliably start scheduled tasks.
@@ -11,10 +14,10 @@ export default definePlugin(() => {
 
   const payload = { scheduledTime: Date.now() }
 
-  for (const schedule of scheduledTasks) {
+  for (const schedule of scheduledTasks as ScheduledTask[]) {
     new Cron(schedule.cron, async () => {
       await Promise.all(
-        schedule.tasks.map((name) =>
+        schedule.tasks.map((name: string) =>
           runTask(name, { payload }).catch((error) => {
             console.error(
               `[dev-task-scheduler] Error while running scheduled task "${name}"`,

@@ -2,15 +2,44 @@ import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 
 import { fetchDashboardData } from '#/components/dashboard/actions'
+import { Skeleton } from '#/components/ui/skeleton'
 import { IncomingMetricCard } from '#/components/dashboard/incoming-metric-card'
 import { ObligationsMetricCard } from '#/components/dashboard/obligations-metric-card'
 import { SaldoMetricCard } from '#/components/dashboard/saldo-metric-card'
 import { TasksSection } from '#/components/dashboard/tasks-section'
 import { BlockedServicesCard } from '#/components/contracts/blocked-services-card'
 
+function DashboardSkeleton() {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="rounded-lg border p-4 flex flex-col gap-3">
+            <Skeleton className="h-5 w-40 rounded" />
+            <Skeleton className="h-9 w-36 rounded" />
+            <div className="flex flex-wrap gap-2">
+              {[...Array(3)].map((_, j) => (
+                <Skeleton key={j} className="h-8 w-40 rounded" />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="rounded-lg border p-4 flex flex-col gap-3">
+        <Skeleton className="h-6 w-48 rounded" />
+        {[...Array(3)].map((_, i) => (
+          <Skeleton key={i} className="h-16 w-full rounded" />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export const Route = createFileRoute('/dashboard')({
   loader: () => fetchDashboardData(),
   component: RouteComponent,
+  pendingComponent: DashboardSkeleton,
+  pendingMs: 300,
 })
 
 function RouteComponent() {

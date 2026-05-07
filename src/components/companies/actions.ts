@@ -244,7 +244,7 @@ const removeCompanyMemberSchema = z.object({
 export const removeCompanyMember = createServerFn({ method: 'POST' })
   .inputValidator(removeCompanyMemberSchema)
   .handler(async ({ data }) => {
-    const session = await requireSession()
+    await requireSession()
 
     const accountIds = await getCompanyAccountIds(data.companyId)
     if (accountIds.length === 0) return
