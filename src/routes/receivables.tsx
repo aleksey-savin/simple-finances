@@ -165,5 +165,5 @@ export const Route = createFileRoute('/receivables')({
   component: ReceivablesRouteComponent,
   loader: () => fetchReceivables(),
   pendingComponent: ReceivablesSkeleton,
-  pendingMs: 300,
+  pendingMs: 0,
 })

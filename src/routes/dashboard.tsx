@@ -39,7 +39,7 @@ export const Route = createFileRoute('/dashboard')({
   loader: () => fetchDashboardData(),
   component: RouteComponent,
   pendingComponent: DashboardSkeleton,
-  pendingMs: 300,
+  pendingMs: 0,
 })
 
 function RouteComponent() {

@@ -196,7 +196,7 @@ export const Route = createFileRoute('/payables')({
   component: PayablesRouteComponent,
   loader: () => fetchPayables(),
   pendingComponent: PayablesSkeleton,
-  pendingMs: 300,
+  pendingMs: 0,
 })
 
 function toEditablePayableInvoice(row: ExpenseRow): EditableInvoiceItem {
