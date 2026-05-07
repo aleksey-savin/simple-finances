@@ -79,8 +79,8 @@ export function ObligationsMetricCard({
             size="sm"
             onClick={onTogglePlannedRepayment}
           >
-            {includePlannedRepayment ? '+' : ''} Задолженность с будущим сроком
-            оплаты: {formatMoney(plannedRepayment)} ₽
+            {includePlannedRepayment ? '+' : ''} Задолженность:{' '}
+            {formatMoney(plannedRepayment)} ₽
           </Button>
         </div>
 
