@@ -21,9 +21,11 @@ import {
 import { authClient } from 'utils/auth-client'
 import { Link, useNavigate } from '@tanstack/react-router'
 
+import { useSession } from '#/hooks/use-session'
+
 export function NavUser() {
   const { isMobile } = useSidebar()
-  const { data: session } = authClient.useSession()
+  const session = useSession()
   const navigate = useNavigate()
 
   const user = session?.user

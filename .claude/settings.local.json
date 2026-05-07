@@ -12,7 +12,16 @@
       "Bash(node -e ' *)",
       "Bash(python3 -c \"import json,sys; p=json.load\\(sys.stdin\\); [print\\(k,':',v\\) for k,v in p.get\\('scripts',{}\\).items\\(\\)]\")",
       "Bash(psql \"postgresql://f1lab:HMuL7hJERqSqTwmwYaoXGeS8yf275XZC5U5hmVyd2psa3V2q9nZhWMTcPfTssiAQ@localhost:5432/smb-budget\" -c \"SELECT id, created_at FROM drizzle.__drizzle_migrations ORDER BY created_at DESC LIMIT 5;\")",
-      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")"
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
+      "Bash(/home/aleksey/projects/smb-budget)",
+      "Bash(git -C /home/aleksey/projects/smb-budget log -20 --oneline)",
+      "Bash(git -C /home/aleksey/projects/smb-budget show 2522b9c --stat)",
+      "Bash(git -C /home/aleksey/projects/smb-budget show 9c66cca --stat)",
+      "Bash(curl -s -I http://localhost:3000/)",
+      "Bash(curl -s -m 3 http://localhost:3000/)",
+      "Bash(curl -s -m 3 http://localhost:3000/login)",
+      "Bash(pnpm dev *)",
+      "Bash(curl -s -m 10 -A \"Mozilla/5.0 \\(iPhone; CPU iPhone OS 17_0 like Mac OS X\\) AppleWebKit/605.1.15 \\(KHTML, like Gecko\\) Version/17.0 Mobile/15E148 Safari/604.1\" http://localhost:3000/login)"
     ]
   }
 }

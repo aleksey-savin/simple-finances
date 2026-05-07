@@ -19,7 +19,7 @@ import { BalanceCorrection } from '.'
 import { ShareAccount } from './share'
 import type { Account } from '#/types'
 import { decodeHtmlEntities } from '#/lib/html-entities'
-import { authClient } from 'utils/auth-client'
+import { useSession } from '#/hooks/use-session'
 
 function AccountRow({
   account,
@@ -30,7 +30,7 @@ function AccountRow({
   editingId: string | null
   setEditingId: (id: string | null) => void
 }) {
-  const { data: session } = authClient.useSession()
+  const session = useSession()
 
   const isEditing = editingId === account.id
   const isOwner = account.createdBy === session?.user.id

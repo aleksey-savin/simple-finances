@@ -3,7 +3,7 @@ import { useState } from 'react'
 
 import { Pencil, Search, Tag, X } from 'lucide-react'
 
-import { authClient } from 'utils/auth-client'
+import { useSession } from '#/hooks/use-session'
 import { BalanceCorrection } from '@/components/accounts/balance-correction'
 import { EditAccountForm } from '@/components/accounts/form-edit'
 import { DeleteAccount } from '@/components/accounts/delete'
@@ -43,7 +43,7 @@ export const Route = createFileRoute('/current-accounts')({
 
 function CurrentAccountsPage() {
   const accounts = Route.useLoaderData()
-  const { data: session } = authClient.useSession()
+  const session = useSession()
 
   const [search, setSearch] = useState('')
   const [acceptPaymentsFilter, setAcceptPaymentsFilter] = useState<

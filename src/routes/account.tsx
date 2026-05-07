@@ -21,6 +21,7 @@ import {
 } from '#/components/ui/input-otp'
 import { Separator } from '#/components/ui/separator'
 import { authClient } from 'utils/auth-client'
+import { useSession } from '#/hooks/use-session'
 
 export const Route = createFileRoute('/account')({
   component: AccountPage,
@@ -248,9 +249,10 @@ function TwoFactorSection({
 }
 
 function AccountPage() {
-  const { data: session, refetch } = authClient.useSession()
+  const session = useSession()
+  const { refetch } = authClient.useSession()
   const user = session?.user as
-    | (typeof session.user & { twoFactorEnabled?: boolean })
+    | (NonNullable<typeof session>['user'] & { twoFactorEnabled?: boolean })
     | undefined
 
   if (!user) return null

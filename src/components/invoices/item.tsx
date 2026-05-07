@@ -1,4 +1,4 @@
-import { authClient } from 'utils/auth-client'
+import { useSession } from '#/hooks/use-session'
 
 import type { Invoice } from '#/types'
 import type { TagItem } from '../ui/tag-picker'
@@ -42,7 +42,7 @@ export function InvoiceItem({
   onTagRemove?: (tag: TagItem) => Promise<void>
   onTagCreate?: (name: string, color: string) => Promise<TagItem>
 }) {
-  const { data: session } = authClient.useSession()
+  const session = useSession()
   const canEditDelete =
     item.kind === 'payable' || item.createdBy === session?.user?.id
 
