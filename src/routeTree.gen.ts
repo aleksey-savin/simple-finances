@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as TwoFactorRouteImport } from './routes/two-factor'
 import { Route as TransactionsRouteImport } from './routes/transactions'
@@ -55,6 +56,11 @@ import { Route as UsersIdBanRouteImport } from './routes/users.$id.ban'
 import { Route as RecurringIdEditRouteImport } from './routes/recurring.$id.edit'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
+const VerifyEmailRoute = VerifyEmailRouteImport.update({
+  id: '/verify-email',
+  path: '/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UsersRoute = UsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -306,6 +312,7 @@ export interface FileRoutesByFullPath {
   '/transactions': typeof TransactionsRouteWithChildren
   '/two-factor': typeof TwoFactorRoute
   '/users': typeof UsersRouteWithChildren
+  '/verify-email': typeof VerifyEmailRoute
   '/business-lines/new': typeof BusinessLinesNewRoute
   '/categories/new': typeof CategoriesNewRoute
   '/clients/$id': typeof ClientsIdRoute
@@ -351,6 +358,7 @@ export interface FileRoutesByTo {
   '/transactions': typeof TransactionsRouteWithChildren
   '/two-factor': typeof TwoFactorRoute
   '/users': typeof UsersRouteWithChildren
+  '/verify-email': typeof VerifyEmailRoute
   '/business-lines/new': typeof BusinessLinesNewRoute
   '/categories/new': typeof CategoriesNewRoute
   '/clients/$id': typeof ClientsIdRoute
@@ -399,6 +407,7 @@ export interface FileRoutesById {
   '/transactions': typeof TransactionsRouteWithChildren
   '/two-factor': typeof TwoFactorRoute
   '/users': typeof UsersRouteWithChildren
+  '/verify-email': typeof VerifyEmailRoute
   '/business-lines/new': typeof BusinessLinesNewRoute
   '/categories/new': typeof CategoriesNewRoute
   '/clients/$id': typeof ClientsIdRoute
@@ -448,6 +457,7 @@ export interface FileRouteTypes {
     | '/transactions'
     | '/two-factor'
     | '/users'
+    | '/verify-email'
     | '/business-lines/new'
     | '/categories/new'
     | '/clients/$id'
@@ -493,6 +503,7 @@ export interface FileRouteTypes {
     | '/transactions'
     | '/two-factor'
     | '/users'
+    | '/verify-email'
     | '/business-lines/new'
     | '/categories/new'
     | '/clients/$id'
@@ -540,6 +551,7 @@ export interface FileRouteTypes {
     | '/transactions'
     | '/two-factor'
     | '/users'
+    | '/verify-email'
     | '/business-lines/new'
     | '/categories/new'
     | '/clients/$id'
@@ -588,11 +600,19 @@ export interface RootRouteChildren {
   TransactionsRoute: typeof TransactionsRouteWithChildren
   TwoFactorRoute: typeof TwoFactorRoute
   UsersRoute: typeof UsersRouteWithChildren
+  VerifyEmailRoute: typeof VerifyEmailRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/verify-email': {
+      id: '/verify-email'
+      path: '/verify-email'
+      fullPath: '/verify-email'
+      preLoaderRoute: typeof VerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/users': {
       id: '/users'
       path: '/users'
@@ -1083,6 +1103,7 @@ const rootRouteChildren: RootRouteChildren = {
   TransactionsRoute: TransactionsRouteWithChildren,
   TwoFactorRoute: TwoFactorRoute,
   UsersRoute: UsersRouteWithChildren,
+  VerifyEmailRoute: VerifyEmailRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport

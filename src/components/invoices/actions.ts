@@ -31,11 +31,12 @@ export const invoiceInputSchema = z.object({
   kind: z.enum(['payable', 'receivable']),
   amount: z.number().min(0.01, 'Минимум 0.01'),
   description: z.string().min(2, 'Минимум 2 символа'),
-  categoryId: z.string().min(1, 'Выберите категорию'),
+  categoryId: z.string().optional(),
   currentAccountId: z.string().min(1, 'Выберите счёт'),
   counterpartyId: z.string().optional(),
   dueDate: z.string().optional(),
   createdAt: z.string().optional(),
+  paidAt: z.string().nullable().optional(),
   paymentAccountId: z.string().optional(),
   paymentCategoryId: z.string().optional(),
   contractId: z.string().optional(),
@@ -53,6 +54,7 @@ export const addInvoice = createServerFn({ method: 'POST' })
 
     const dueDate = data.dueDate ? new Date(data.dueDate) : undefined
     const createdAt = data.createdAt ? new Date(data.createdAt) : new Date()
+    const paidAt = data.paidAt ? new Date(data.paidAt) : null
 
     return db.transaction(async (tx) => {
       const [inserted] = await tx
@@ -61,11 +63,12 @@ export const addInvoice = createServerFn({ method: 'POST' })
           kind: data.kind,
           amount: data.amount.toString(),
           description: data.description,
-          categoryId: data.categoryId,
+          categoryId: data.categoryId ?? null,
           currentAccountId: data.currentAccountId,
           counterpartyId: data.counterpartyId,
           contractId: data.contractId,
           dueDate,
+          paidAt,
           createdAt,
           createdBy: userId,
           updatedBy: userId,
@@ -85,6 +88,7 @@ export const addInvoice = createServerFn({ method: 'POST' })
           currentAccountId: data.paymentAccountId,
           counterpartyId: data.counterpartyId,
           dueDate,
+          paidAt,
           createdAt,
           linkedInvoiceId: inserted.id,
           createdBy: userId,
@@ -107,6 +111,7 @@ export const updateInvoice = createServerFn({ method: 'POST' })
 
     const dueDate = data.dueDate ? new Date(data.dueDate) : undefined
     const createdAt = data.createdAt ? new Date(data.createdAt) : undefined
+    const paidAt = data.paidAt ? new Date(data.paidAt) : null
 
     await db
       .update(invoice)
@@ -114,11 +119,12 @@ export const updateInvoice = createServerFn({ method: 'POST' })
         kind: data.kind,
         amount: data.amount.toString(),
         description: data.description,
-        categoryId: data.categoryId,
+        categoryId: data.categoryId ?? null,
         currentAccountId: data.currentAccountId,
         counterpartyId: data.counterpartyId,
         contractId: data.contractId ?? null,
         dueDate,
+        paidAt,
         ...(createdAt && { createdAt }),
         updatedBy: userId,
       })
@@ -131,6 +137,7 @@ export const updateInvoice = createServerFn({ method: 'POST' })
           amount: data.amount.toString(),
           description: data.description,
           dueDate,
+          paidAt,
           ...(createdAt && { createdAt }),
           updatedBy: userId,
         })

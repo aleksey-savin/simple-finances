@@ -1,0 +1,1 @@
+ALTER TABLE "account_transfer" ADD COLUMN "paid_at" timestamp;

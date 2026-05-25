@@ -1,0 +1,9 @@
+CURRENT=$(node -p "require('./package.json').version")
+LAST=$(git show HEAD:package.json 2>/dev/null | node -e "let d=''; process.stdin.on('data',c=>d+=c); process.stdin.on('end',()=>{try{console.log(JSON.parse(d).version)}catch{console.log('')}})")
+
+if [ -n "$LAST" ] && [ "$CURRENT" = "$LAST" ]; then
+  echo "Error: bump package.json version before committing (current: $CURRENT)"
+  exit 1
+fi
+
+pnpm lint-staged

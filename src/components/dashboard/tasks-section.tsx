@@ -68,6 +68,36 @@ function TaskRow({ task }: { task: DashboardLoaderData['tasks'][number] }) {
     )
   }
 
+  if (task.kind === 'unallocated-transactions') {
+    return (
+      <div className="flex flex-col gap-3 border bg-muted/20 p-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
+          <ClipboardList className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+          <div className="min-w-0 space-y-1">
+            <p className="font-medium">{task.title}</p>
+            <p className="text-sm text-muted-foreground">{task.description}</p>
+            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+              <span>{task.count} операций</span>
+              <span>{formatMoney(task.amount)} ₽</span>
+            </div>
+          </div>
+        </div>
+        <Button asChild variant="outline" size="sm" className="md:ml-auto">
+          <Link
+            to="/transactions"
+            search={{
+              page: 1,
+              pageSize: 25,
+              unallocated: true,
+            }}
+          >
+            Разнести
+          </Link>
+        </Button>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-3 border bg-muted/20 p-4 md:flex-row md:items-center md:justify-between">
       <div className="flex min-w-0 items-start gap-3">

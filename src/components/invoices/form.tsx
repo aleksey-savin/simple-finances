@@ -20,17 +20,20 @@ import { DialogFooter } from '@/components/ui/dialog'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Item, ItemContent, ItemHeader } from '@/components/ui/item'
+import { Switch } from '@/components/ui/switch'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
 const uiFormSchema = z.object({
   amount: z
     .string()
     .refine((value) => !isNaN(+value) && +value >= 0.01, 'Минимум 0.01'),
   description: z.string().min(2, 'Минимум 2 символа'),
-  categoryId: z.string().min(1, 'Выберите категорию'),
+  categoryId: z.string(),
   currentAccountId: z.string().min(1, 'Выберите счёт'),
   counterpartyId: z.string(),
   dueDate: z.string(),
   createdAt: z.string(),
+  isPaid: z.boolean(),
   paymentAccountId: z.string(),
   paymentCategoryId: z.string(),
   contractId: z.string(),
@@ -90,6 +93,9 @@ export function InvoiceForm({
 
   const [paymentAccounts, setPaymentAccounts] = useState<PaymentAccount[]>([])
   const [isFetchingPayments, setIsFetchingPayments] = useState(false)
+  const [submitMode, setSubmitMode] = useState<'close' | 'add-more'>('close')
+  const [entryMode, setEntryMode] = useState<'full' | 'quick'>('full')
+  const isQuickCreate = !isEdit && entryMode === 'quick'
 
   const sharedReceivableCategories = categories.filter(
     (category) => category.useForIncome && category.isShared,
@@ -135,6 +141,8 @@ export function InvoiceForm({
       counterpartyId: currentInvoice?.counterpartyId ?? '',
       dueDate: toDateInputValue(currentInvoice?.dueDate),
       createdAt: toDateInputValue(currentInvoice?.createdAt ?? new Date()),
+      isPaid:
+        currentInvoice?.paidAt !== null && currentInvoice?.paidAt !== undefined,
       paymentAccountId: '',
       paymentCategoryId: '',
       contractId: currentInvoice?.contractId ?? '',
@@ -142,22 +150,35 @@ export function InvoiceForm({
     validators: { onSubmit: uiFormSchema },
     onSubmit: async ({ value }) => {
       try {
+        const includeDetails = !isQuickCreate
         const serverData = {
           kind,
           amount: +value.amount,
           description: value.description,
-          categoryId: value.categoryId,
-          currentAccountId: value.currentAccountId,
-          counterpartyId: value.counterpartyId || undefined,
-          dueDate: value.dueDate
-            ? new Date(`${value.dueDate}T00:00:00.000Z`).toISOString()
+          categoryId: includeDetails
+            ? value.categoryId || undefined
             : undefined,
+          currentAccountId: value.currentAccountId,
+          counterpartyId: includeDetails
+            ? value.counterpartyId || undefined
+            : undefined,
+          dueDate:
+            includeDetails && value.dueDate
+              ? new Date(`${value.dueDate}T00:00:00.000Z`).toISOString()
+              : undefined,
           createdAt: value.createdAt
             ? new Date(`${value.createdAt}T00:00:00.000Z`).toISOString()
             : undefined,
-          paymentAccountId: value.paymentAccountId || undefined,
-          paymentCategoryId: value.paymentCategoryId || undefined,
-          contractId: value.contractId || undefined,
+          paidAt: value.isPaid ? new Date().toISOString() : null,
+          paymentAccountId: includeDetails
+            ? value.paymentAccountId || undefined
+            : undefined,
+          paymentCategoryId: includeDetails
+            ? value.paymentCategoryId || undefined
+            : undefined,
+          contractId: includeDetails
+            ? value.contractId || undefined
+            : undefined,
         } as const
 
         if (isEdit) {
@@ -179,6 +200,12 @@ export function InvoiceForm({
             ? 'Расход успешно добавлен'
             : 'Доход успешно добавлен',
         )
+        if (submitMode === 'add-more') {
+          form.setFieldValue('amount', '')
+          form.setFieldValue('description', '')
+          return
+        }
+
         form.reset()
         setPaymentAccounts([])
         onDone()
@@ -212,6 +239,23 @@ export function InvoiceForm({
         form.handleSubmit()
       }}
     >
+      {!isEdit ? (
+        <ToggleGroup
+          variant="outline"
+          type="single"
+          value={entryMode}
+          onValueChange={(value) => {
+            if (value === 'full' || value === 'quick') {
+              setEntryMode(value)
+            }
+          }}
+          className="w-fit"
+        >
+          <ToggleGroupItem value="full">Обычный ввод</ToggleGroupItem>
+          <ToggleGroupItem value="quick">Быстрый ввод</ToggleGroupItem>
+        </ToggleGroup>
+      ) : null}
+
       <form.Field name="amount">
         {(field) => {
           const isInvalid =
@@ -264,90 +308,161 @@ export function InvoiceForm({
         }}
       </form.Field>
 
-      <div className="flex gap-2">
-        <form.Field name="categoryId">
-          {(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid
-            return (
-              <Field data-invalid={isInvalid}>
-                <FieldLabel htmlFor={field.name}>Категория</FieldLabel>
-                <Combobox
-                  options={filteredCategories.map((category) => ({
-                    value: category.id,
-                    label: category.name,
-                  }))}
-                  value={field.state.value}
-                  onValueChange={(value) => field.handleChange(value)}
-                  placeholder="Выберите категорию"
-                  onBlur={field.handleBlur}
-                />
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
-              </Field>
-            )
-          }}
-        </form.Field>
+      {isQuickCreate && (
+        <>
+          <div className="flex gap-2">
+            <form.Field name="currentAccountId">
+              {(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Расчётный счёт</FieldLabel>
+                    <Combobox
+                      options={accounts.map((account) => ({
+                        value: account.id,
+                        label: account.name,
+                      }))}
+                      value={field.state.value}
+                      onValueChange={(value) => field.handleChange(value)}
+                      placeholder="Выберите счёт"
+                      onBlur={field.handleBlur}
+                    />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            </form.Field>
 
-        <form.Field name="currentAccountId">
-          {(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid
-            return (
-              <Field data-invalid={isInvalid}>
-                <FieldLabel htmlFor={field.name}>Счёт</FieldLabel>
-                <Combobox
-                  options={accounts.map((account) => ({
-                    value: account.id,
-                    label: account.name,
-                  }))}
-                  value={field.state.value}
-                  onValueChange={(value) => field.handleChange(value)}
-                  placeholder="Выберите счёт"
-                  onBlur={field.handleBlur}
-                />
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
-              </Field>
-            )
-          }}
-        </form.Field>
-      </div>
+            <form.Field name="createdAt">
+              {(field) => (
+                <Field>
+                  <FieldLabel htmlFor={field.name}>Дата создания</FieldLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    type="date"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(event.target.value)}
+                  />
+                </Field>
+              )}
+            </form.Field>
+          </div>
 
-      <div className="flex gap-2">
-        {counterparties.length > 0 && (
-          <form.Field name="counterpartyId">
+          <form.Field name="isPaid">
             {(field) => (
-              <form.Field name="paymentAccountId">
-                {(paymentAccountField) => (
-                  <form.Field name="paymentCategoryId">
-                    {(paymentCategoryField) => (
-                      <form.Field name="contractId">
-                        {(contractField) => (
-                          <Field className="sm:w-1/2 sm:pe-2">
-                            <FieldLabel htmlFor={field.name}>
-                              Контрагент
-                            </FieldLabel>
-                            <Combobox
-                              options={[
-                                { value: '__none__', label: 'Не указан' },
-                                ...counterparties.map((counterparty) => ({
-                                  value: counterparty.id,
-                                  label: counterparty.name,
-                                })),
-                              ]}
-                              value={field.state.value || '__none__'}
-                              onValueChange={(value) =>
-                                handleCounterpartyChange(
-                                  value === '__none__' ? '' : value,
-                                  field.handleChange,
-                                  () => paymentAccountField.handleChange(''),
-                                  () => paymentCategoryField.handleChange(''),
-                                  () => contractField.handleChange(''),
-                                )
-                              }
-                              placeholder="Выберите контрагента"
-                              onBlur={field.handleBlur}
-                            />
-                          </Field>
+              <Field orientation="horizontal" className="justify-between">
+                <FieldLabel htmlFor={field.name}>Оплачено</FieldLabel>
+                <Switch
+                  id={field.name}
+                  checked={field.state.value}
+                  onCheckedChange={(checked) => field.handleChange(checked)}
+                />
+              </Field>
+            )}
+          </form.Field>
+        </>
+      )}
+
+      {!isQuickCreate && (
+        <>
+          <div className="flex gap-2">
+            <form.Field name="categoryId">
+              {(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Категория</FieldLabel>
+                    <Combobox
+                      options={filteredCategories.map((category) => ({
+                        value: category.id,
+                        label: category.name,
+                      }))}
+                      value={field.state.value}
+                      onValueChange={(value) => field.handleChange(value)}
+                      placeholder="Выберите категорию"
+                      onBlur={field.handleBlur}
+                      allowClear
+                    />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            </form.Field>
+
+            <form.Field name="currentAccountId">
+              {(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Счёт</FieldLabel>
+                    <Combobox
+                      options={accounts.map((account) => ({
+                        value: account.id,
+                        label: account.name,
+                      }))}
+                      value={field.state.value}
+                      onValueChange={(value) => field.handleChange(value)}
+                      placeholder="Выберите счёт"
+                      onBlur={field.handleBlur}
+                    />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            </form.Field>
+          </div>
+
+          <div className="flex gap-2">
+            {counterparties.length > 0 && (
+              <form.Field name="counterpartyId">
+                {(field) => (
+                  <form.Field name="paymentAccountId">
+                    {(paymentAccountField) => (
+                      <form.Field name="paymentCategoryId">
+                        {(paymentCategoryField) => (
+                          <form.Field name="contractId">
+                            {(contractField) => (
+                              <Field className="sm:w-1/2 sm:pe-2">
+                                <FieldLabel htmlFor={field.name}>
+                                  Контрагент
+                                </FieldLabel>
+                                <Combobox
+                                  options={[
+                                    { value: '__none__', label: 'Не указан' },
+                                    ...counterparties.map((counterparty) => ({
+                                      value: counterparty.id,
+                                      label: counterparty.name,
+                                    })),
+                                  ]}
+                                  value={field.state.value || '__none__'}
+                                  onValueChange={(value) =>
+                                    handleCounterpartyChange(
+                                      value === '__none__' ? '' : value,
+                                      field.handleChange,
+                                      () =>
+                                        paymentAccountField.handleChange(''),
+                                      () =>
+                                        paymentCategoryField.handleChange(''),
+                                      () => contractField.handleChange(''),
+                                    )
+                                  }
+                                  placeholder="Выберите контрагента"
+                                  onBlur={field.handleBlur}
+                                />
+                              </Field>
+                            )}
+                          </form.Field>
                         )}
                       </form.Field>
                     )}
@@ -355,150 +470,165 @@ export function InvoiceForm({
                 )}
               </form.Field>
             )}
-          </form.Field>
-        )}
 
-        {!isEdit && kind === 'payable' && (
-          <>
-            {isFetchingPayments && (
-              <div className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
-                <Loader2 className="size-3 animate-spin" />
-                Загрузка счетов для оплаты…
-              </div>
-            )}
-
-            {!isFetchingPayments && paymentAccounts.length > 0 && (
-              <div className="flex flex-col gap-3 rounded-md border border-dashed p-3 sm:w-1/2">
-                <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                  <ArrowRight className="size-3.5" />
-                  Зачислить доход контрагенту
-                </p>
-
-                <form.Field name="paymentAccountId">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel htmlFor={field.name}>
-                        Счёт получателя
-                      </FieldLabel>
-                      <Combobox
-                        options={paymentAccounts.map((account) => ({
-                          value: account.id,
-                          label: account.name,
-                        }))}
-                        value={field.state.value}
-                        onValueChange={(value) => field.handleChange(value)}
-                        placeholder="Выберите счёт"
-                        onBlur={field.handleBlur}
-                      />
-                    </Field>
-                  )}
-                </form.Field>
-
-                <form.Subscribe
-                  selector={(state) => state.values.paymentAccountId}
-                >
-                  {(paymentAccountId) =>
-                    paymentAccountId ? (
-                      <form.Field name="paymentCategoryId">
-                        {(field) => (
-                          <Field>
-                            <FieldLabel htmlFor={field.name}>
-                              Категория дохода
-                            </FieldLabel>
-                            <Combobox
-                              options={sharedReceivableCategories.map(
-                                (category) => ({
-                                  value: category.id,
-                                  label: category.name,
-                                }),
-                              )}
-                              value={field.state.value}
-                              onValueChange={(value) =>
-                                field.handleChange(value)
-                              }
-                              placeholder="Выберите категорию"
-                              onBlur={field.handleBlur}
-                            />
-                          </Field>
-                        )}
-                      </form.Field>
-                    ) : null
-                  }
-                </form.Subscribe>
-              </div>
-            )}
-          </>
-        )}
-
-        <form.Subscribe selector={(s) => s.values.counterpartyId}>
-          {(counterpartyId) => {
-            const filtered = contracts.filter(
-              (c) => counterpartyId && c.counterpartyId === counterpartyId,
-            )
-            if (!counterpartyId || filtered.length === 0) return null
-            return (
-              <form.Field name="contractId">
-                {(field) => (
-                  <Field className="sm:w-1/2">
-                    <FieldLabel htmlFor={field.name}>Договор</FieldLabel>
-                    <Combobox
-                      options={[
-                        { value: '__none__', label: 'Не указан' },
-                        ...filtered.map((c) => ({
-                          value: c.id,
-                          label: c.name,
-                        })),
-                      ]}
-                      value={field.state.value || '__none__'}
-                      onValueChange={(value) =>
-                        field.handleChange(value === '__none__' ? '' : value)
-                      }
-                      placeholder="Выберите договор"
-                      onBlur={field.handleBlur}
-                    />
-                  </Field>
+            {!isEdit && kind === 'payable' && (
+              <>
+                {isFetchingPayments && (
+                  <div className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
+                    <Loader2 className="size-3 animate-spin" />
+                    Загрузка счетов для оплаты…
+                  </div>
                 )}
-              </form.Field>
-            )
-          }}
-        </form.Subscribe>
-      </div>
 
-      <div className="flex gap-2">
-        <form.Field name="createdAt">
-          {(field) => (
-            <Field>
-              <FieldLabel htmlFor={field.name}>Дата создания</FieldLabel>
-              <Input
-                id={field.name}
-                name={field.name}
-                type="date"
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                onChange={(event) => field.handleChange(event.target.value)}
-              />
-            </Field>
-          )}
-        </form.Field>
+                {!isFetchingPayments && paymentAccounts.length > 0 && (
+                  <div className="flex flex-col gap-3 rounded-md border border-dashed p-3 sm:w-1/2">
+                    <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                      <ArrowRight className="size-3.5" />
+                      Зачислить доход контрагенту
+                    </p>
 
-        <form.Field name="dueDate">
-          {(field) => (
-            <Field>
-              <FieldLabel htmlFor={field.name}>
-                {kind === 'payable' ? 'Оплатить до' : 'Получить до'}
-              </FieldLabel>
-              <Input
-                id={field.name}
-                name={field.name}
-                type="date"
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                onChange={(event) => field.handleChange(event.target.value)}
-              />
-            </Field>
-          )}
-        </form.Field>
-      </div>
+                    <form.Field name="paymentAccountId">
+                      {(field) => (
+                        <Field>
+                          <FieldLabel htmlFor={field.name}>
+                            Счёт получателя
+                          </FieldLabel>
+                          <Combobox
+                            options={paymentAccounts.map((account) => ({
+                              value: account.id,
+                              label: account.name,
+                            }))}
+                            value={field.state.value}
+                            onValueChange={(value) => field.handleChange(value)}
+                            placeholder="Выберите счёт"
+                            onBlur={field.handleBlur}
+                          />
+                        </Field>
+                      )}
+                    </form.Field>
+
+                    <form.Subscribe
+                      selector={(state) => state.values.paymentAccountId}
+                    >
+                      {(paymentAccountId) =>
+                        paymentAccountId ? (
+                          <form.Field name="paymentCategoryId">
+                            {(field) => (
+                              <Field>
+                                <FieldLabel htmlFor={field.name}>
+                                  Категория дохода
+                                </FieldLabel>
+                                <Combobox
+                                  options={sharedReceivableCategories.map(
+                                    (category) => ({
+                                      value: category.id,
+                                      label: category.name,
+                                    }),
+                                  )}
+                                  value={field.state.value}
+                                  onValueChange={(value) =>
+                                    field.handleChange(value)
+                                  }
+                                  placeholder="Выберите категорию"
+                                  onBlur={field.handleBlur}
+                                />
+                              </Field>
+                            )}
+                          </form.Field>
+                        ) : null
+                      }
+                    </form.Subscribe>
+                  </div>
+                )}
+              </>
+            )}
+
+            <form.Subscribe selector={(s) => s.values.counterpartyId}>
+              {(counterpartyId) => {
+                const filtered = contracts.filter(
+                  (c) => counterpartyId && c.counterpartyId === counterpartyId,
+                )
+                if (!counterpartyId || filtered.length === 0) return null
+                return (
+                  <form.Field name="contractId">
+                    {(field) => (
+                      <Field className="sm:w-1/2">
+                        <FieldLabel htmlFor={field.name}>Договор</FieldLabel>
+                        <Combobox
+                          options={[
+                            { value: '__none__', label: 'Не указан' },
+                            ...filtered.map((c) => ({
+                              value: c.id,
+                              label: c.name,
+                            })),
+                          ]}
+                          value={field.state.value || '__none__'}
+                          onValueChange={(value) =>
+                            field.handleChange(
+                              value === '__none__' ? '' : value,
+                            )
+                          }
+                          placeholder="Выберите договор"
+                          onBlur={field.handleBlur}
+                        />
+                      </Field>
+                    )}
+                  </form.Field>
+                )
+              }}
+            </form.Subscribe>
+          </div>
+
+          <div className="flex gap-2">
+            <form.Field name="createdAt">
+              {(field) => (
+                <Field>
+                  <FieldLabel htmlFor={field.name}>Дата создания</FieldLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    type="date"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(event.target.value)}
+                  />
+                </Field>
+              )}
+            </form.Field>
+
+            <form.Field name="dueDate">
+              {(field) => (
+                <Field>
+                  <FieldLabel htmlFor={field.name}>
+                    {kind === 'payable' ? 'Оплатить до' : 'Получить до'}
+                  </FieldLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    type="date"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(event.target.value)}
+                  />
+                </Field>
+              )}
+            </form.Field>
+          </div>
+
+          <form.Field name="isPaid">
+            {(field) => (
+              <Field orientation="horizontal" className="justify-between">
+                <FieldLabel htmlFor={field.name}>Оплачено</FieldLabel>
+                <Switch
+                  id={field.name}
+                  checked={field.state.value}
+                  onCheckedChange={(checked) => field.handleChange(checked)}
+                />
+              </Field>
+            )}
+          </form.Field>
+        </>
+      )}
 
       {isEdit ? (
         <div className="flex gap-2">
@@ -514,11 +644,29 @@ export function InvoiceForm({
           <Button type="button" variant="outline" onClick={onDone}>
             Отмена
           </Button>
-          <Button type="submit">{submitLabel}</Button>
+          <Button
+            type="submit"
+            variant="outline"
+            onClick={() => setSubmitMode('add-more')}
+          >
+            Сохранить и добавить ещё
+          </Button>
+          <Button type="submit" onClick={() => setSubmitMode('close')}>
+            {submitLabel}
+          </Button>
         </DialogFooter>
       ) : (
         <div className="flex items-center justify-end gap-2">
-          <Button type="submit">{submitLabel}</Button>
+          <Button
+            type="submit"
+            variant="outline"
+            onClick={() => setSubmitMode('add-more')}
+          >
+            Сохранить и добавить ещё
+          </Button>
+          <Button type="submit" onClick={() => setSubmitMode('close')}>
+            {submitLabel}
+          </Button>
           <Button type="button" variant="outline" onClick={onDone}>
             Закрыть
           </Button>

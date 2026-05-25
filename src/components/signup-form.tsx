@@ -70,6 +70,7 @@ export function SignupForm({
         <CardContent>
           <form
             id="signup-form"
+            method="post"
             onSubmit={(e) => {
               e.preventDefault()
               form.handleSubmit()

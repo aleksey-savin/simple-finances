@@ -44,7 +44,7 @@ export function InvoiceItem({
 }) {
   const session = useSession()
   const canEditDelete =
-    item.kind === 'payable' || item.createdBy === session?.user?.id
+    item.kind === 'payable' || item.createdBy === session?.user.id
 
   return (
     <InvoiceListItem
@@ -59,7 +59,7 @@ export function InvoiceItem({
             kind: item.kind,
             amount: Number(item.amount),
             description: item.description,
-            categoryId: item.category.id,
+            categoryId: item.category?.id ?? undefined,
             currentAccountId: item.currentAccount.id,
             counterpartyId: item.counterparty?.id ?? undefined,
             ...buildDuplicateInvoiceDates(item),

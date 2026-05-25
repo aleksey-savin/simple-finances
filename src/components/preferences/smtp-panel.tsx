@@ -87,7 +87,7 @@ function SmtpForm({ settings }: SmtpFormProps) {
       host: settings?.host ?? '',
       port: settings?.port ?? 587,
       secure: settings?.secure ?? false,
-      encryption: initialEncryption as EncryptionMode,
+      encryption: initialEncryption,
       username: settings?.username ?? '',
       password: settings?.password ?? '',
       fromName: settings?.fromName ?? '',
@@ -125,6 +125,7 @@ function SmtpForm({ settings }: SmtpFormProps) {
   return (
     <>
       <form
+        method="post"
         onSubmit={(e) => {
           e.preventDefault()
           form.handleSubmit()

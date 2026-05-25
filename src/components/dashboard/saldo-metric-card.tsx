@@ -32,7 +32,10 @@ export function SaldoMetricCard({
 
         <div className="mt-auto flex justify-end">
           <Button asChild variant="outline" size="sm">
-            <Link to="/transactions" search={{ page: 1, pageSize: 25 }}>
+            <Link
+              to="/transactions"
+              search={{ page: 1, pageSize: 25, unallocated: false }}
+            >
               Открыть
             </Link>
           </Button>

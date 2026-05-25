@@ -15,6 +15,7 @@ export const authMiddleware = createMiddleware().server(
       '/forgot-password',
       '/reset-password',
       '/two-factor',
+      '/verify-email',
     ]
 
     if (
@@ -24,6 +25,16 @@ export const authMiddleware = createMiddleware().server(
     ) {
       throw redirect({ to: '/login' })
     }
+
+    if (
+      session &&
+      !session.session.secondFactorVerified &&
+      pathname !== '/verify-email' &&
+      !pathname.startsWith('/api/auth')
+    ) {
+      throw redirect({ to: '/verify-email' })
+    }
+
     return await next()
   },
 )

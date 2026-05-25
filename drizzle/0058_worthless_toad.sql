@@ -1,0 +1,1 @@
+ALTER TABLE "user" ALTER COLUMN "two_factor_enabled" SET DEFAULT true;

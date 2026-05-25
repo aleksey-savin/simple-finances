@@ -24,6 +24,8 @@ import {
 import { getPaymentState } from '#/lib/invoice-payment'
 import { getRequest, requireSession } from '#/utils/session.server'
 
+const UNCATEGORIZED = { id: '__uncategorized__', name: 'Без категории' }
+
 export const fetchPayables = createServerFn().handler(async () => {
   const session = await requireSession()
   const request = await getRequest()
@@ -226,7 +228,7 @@ export const fetchPayables = createServerFn().handler(async () => {
       settledAmount: paymentState.settledAmount,
       outstandingAmount: paymentState.outstandingAmount,
       paymentStatus: paymentState.status,
-      category: record.category,
+      category: record.category ?? UNCATEGORIZED,
       currentAccount: record.currentAccount,
       counterpartyId: record.counterpartyId ?? null,
       counterparty: record.counterparty ?? null,
@@ -251,7 +253,9 @@ export const fetchPayables = createServerFn().handler(async () => {
 
   const categoryMap = new Map<string, string>()
   for (const row of [...currentMonth, ...previousUnpaid]) {
-    categoryMap.set(row.category.id, row.category.name)
+    if (row.category.id !== UNCATEGORIZED.id) {
+      categoryMap.set(row.category.id, row.category.name)
+    }
   }
   const categories = [...categoryMap.entries()].map(([id, name]) => ({
     id,

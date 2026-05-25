@@ -118,6 +118,7 @@ export function InvoiceListItem({
   const isPaid = item.paymentStatus === 'paid'
   const isPartial = item.paymentStatus === 'partial'
   const isArchived = item.archivedAt !== null
+  const categoryName = item.category?.name ?? 'Без категории'
   const isOverdue =
     !isPaid && item.dueDate !== null && new Date(item.dueDate) < new Date()
 
@@ -211,7 +212,11 @@ export function InvoiceListItem({
           onClick={async () => {
             try {
               await togglePaid({
-                data: { id: item.id, kind: item.kind, paid: !isPaid },
+                data: {
+                  id: item.id,
+                  kind: item.kind,
+                  paidAt: !isPaid ? new Date().toISOString() : null,
+                },
               })
               await router.invalidate()
             } catch (error) {
@@ -324,7 +329,7 @@ export function InvoiceListItem({
   const badgesRow = (
     <div className="flex flex-wrap items-center gap-1.5">
       <Badge variant="outline" className="px-1.5 py-0 text-xs">
-        {item.category.name}
+        {categoryName}
       </Badge>
       <Badge variant="outline" className="px-1.5 py-0 text-xs">
         {item.currentAccount.name}
@@ -657,7 +662,7 @@ export function InvoiceListItem({
           <TableCell
             className={cn('text-center', !isPaid && 'text-muted-foreground')}
           >
-            {item.category.name}
+            {categoryName}
           </TableCell>
           <TableCell className="w-56 text-center">
             <div className="flex flex-col gap-2">

@@ -146,6 +146,9 @@ export const session = pgTable(
     userId: text('user_id')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
+    secondFactorVerified: boolean('second_factor_verified')
+      .default(false)
+      .notNull(),
   },
   (table) => [index('session_userId_idx').on(table.userId)],
 )
@@ -744,9 +747,7 @@ export const invoice = pgTable(
     kind: invoiceKindEnum('kind').notNull(),
     amount: numeric('value').notNull(),
     description: text().notNull(),
-    categoryId: text('category_id')
-      .notNull()
-      .references(() => category.id),
+    categoryId: text('category_id').references(() => category.id),
     counterpartyId: text('counterparty_id').references(() => counterparty.id),
     currentAccountId: text('current_account_id')
       .notNull()
@@ -784,6 +785,41 @@ export const invoice = pgTable(
       foreignColumns: [table.id],
       name: 'invoice_linked_invoice_fk',
     }).onDelete('set null'),
+  ],
+)
+
+export const accountTransfer = pgTable(
+  'account_transfer',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    fromAccountId: text('from_account_id')
+      .notNull()
+      .references(() => currentAccount.id, { onDelete: 'cascade' }),
+    toAccountId: text('to_account_id')
+      .notNull()
+      .references(() => currentAccount.id, { onDelete: 'cascade' }),
+    amount: numeric('amount').notNull(),
+    description: text('description').notNull(),
+    transferredAt: timestamp('transferred_at').notNull().defaultNow(),
+    paidAt: timestamp('paid_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+    createdBy: text('created_by')
+      .notNull()
+      .references(() => user.id),
+    updatedBy: text('updated_by')
+      .notNull()
+      .references(() => user.id),
+  },
+  (table) => [
+    index('account_transfer_from_account_idx').on(table.fromAccountId),
+    index('account_transfer_to_account_idx').on(table.toAccountId),
+    index('account_transfer_transferred_at_idx').on(table.transferredAt),
   ],
 )
 
@@ -907,6 +943,12 @@ export const currentAccountRelations = relations(
     incomes: many(income),
     invoices: many(invoice),
     bankTransactions: many(bankTransaction),
+    outgoingTransfers: many(accountTransfer, {
+      relationName: 'accountTransferFrom',
+    }),
+    incomingTransfers: many(accountTransfer, {
+      relationName: 'accountTransferTo',
+    }),
     members: many(currentAccountUser),
     recurringRules: many(recurringRule),
     companyLinks: many(companyCurrentAccount),
@@ -1004,6 +1046,26 @@ export const invoiceRelations = relations(invoice, ({ one, many }) => ({
     references: [contract.id],
   }),
 }))
+
+export const accountTransferRelations = relations(
+  accountTransfer,
+  ({ one }) => ({
+    fromAccount: one(currentAccount, {
+      fields: [accountTransfer.fromAccountId],
+      references: [currentAccount.id],
+      relationName: 'accountTransferFrom',
+    }),
+    toAccount: one(currentAccount, {
+      fields: [accountTransfer.toAccountId],
+      references: [currentAccount.id],
+      relationName: 'accountTransferTo',
+    }),
+    createdByUser: one(user, {
+      fields: [accountTransfer.createdBy],
+      references: [user.id],
+    }),
+  }),
+)
 
 export const bankTransactionRelations = relations(
   bankTransaction,

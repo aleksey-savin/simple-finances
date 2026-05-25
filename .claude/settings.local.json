@@ -21,7 +21,8 @@
       "Bash(curl -s -m 3 http://localhost:3000/)",
       "Bash(curl -s -m 3 http://localhost:3000/login)",
       "Bash(pnpm dev *)",
-      "Bash(curl -s -m 10 -A \"Mozilla/5.0 \\(iPhone; CPU iPhone OS 17_0 like Mac OS X\\) AppleWebKit/605.1.15 \\(KHTML, like Gecko\\) Version/17.0 Mobile/15E148 Safari/604.1\" http://localhost:3000/login)"
+      "Bash(curl -s -m 10 -A \"Mozilla/5.0 \\(iPhone; CPU iPhone OS 17_0 like Mac OS X\\) AppleWebKit/605.1.15 \\(KHTML, like Gecko\\) Version/17.0 Mobile/15E148 Safari/604.1\" http://localhost:3000/login)",
+      "Bash(pnpm exec *)"
     ]
   }
 }

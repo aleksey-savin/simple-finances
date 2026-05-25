@@ -1,4 +1,5 @@
 import type {
+  AccountTransfer as DBAccountTransfer,
   Category as DBCategory,
   Client as DBClient,
   Company as DBCompany,
@@ -54,7 +55,7 @@ export type Invoice = Pick<
       }
     }
   }>
-  category: Pick<DBCategory, 'id' | 'name'>
+  category: Pick<DBCategory, 'id' | 'name'> | null
   contract: {
     id: string
     name: string
@@ -66,6 +67,26 @@ export type Invoice = Pick<
   counterparty: Pick<DBCounterparty, 'id' | 'name'> | null
   createdByUser: { id: string; name: string }
 }
+
+export type AccountTransfer = Pick<
+  DBAccountTransfer,
+  | 'id'
+  | 'amount'
+  | 'description'
+  | 'fromAccountId'
+  | 'toAccountId'
+  | 'transferredAt'
+  | 'paidAt'
+  | 'createdAt'
+  | 'createdBy'
+> & {
+  kind: 'transfer'
+  fromAccount: Pick<CurrentAccount, 'id' | 'name'>
+  toAccount: Pick<CurrentAccount, 'id' | 'name'>
+  createdByUser: { id: string; name: string }
+}
+
+export type TransactionFeedItem = Invoice | AccountTransfer
 
 export type Expense = Invoice
 export type Income = Invoice
@@ -311,7 +332,7 @@ export type IncomeRow = {
   id: string
   amount: string
   description: string
-  categoryId: string
+  categoryId: string | null
   currentAccountId: string
   createdAt: string
   dueDate: string | null
@@ -362,7 +383,7 @@ export type ExpenseRow = {
   periodGroup: PayablesPeriodGroup
   amount: string
   description: string
-  categoryId: string
+  categoryId: string | null
   currentAccountId: string
   createdAt: string
   dueDate: string | null
@@ -435,6 +456,14 @@ export type DashboardTask =
       amount: number
       incomingAmount: number
       outgoingAmount: number
+    }
+  | {
+      id: 'unallocated-transactions'
+      kind: 'unallocated-transactions'
+      title: string
+      description: string
+      count: number
+      amount: number
     }
   | {
       id: string

@@ -20,7 +20,7 @@ export type EditableInvoiceItem = {
   kind: 'payable' | 'receivable'
   amount: string
   description: string
-  category: { id: string; name: string }
+  category: { id: string; name: string } | null
   currentAccount: { id: string; name: string }
   counterparty: { id: string; name: string } | null
   dueDate: Date | string | null
@@ -66,7 +66,7 @@ export function EditInvoice({
     kind: item.kind,
     amount: item.amount,
     description: item.description,
-    categoryId: item.category.id,
+    categoryId: item.category?.id ?? null,
     currentAccountId: item.currentAccount.id,
     counterpartyId: item.counterparty?.id ?? null,
     dueDate: item.dueDate,

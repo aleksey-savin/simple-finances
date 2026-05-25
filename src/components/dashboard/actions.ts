@@ -11,6 +11,7 @@ import {
   isNull,
   lt,
   lte,
+  or,
   sql,
 } from 'drizzle-orm'
 
@@ -101,6 +102,7 @@ export const fetchDashboardData = createServerFn().handler(async () => {
     receivableRows,
     currentMonthPayableRows,
     previousUnpaidPayableRows,
+    unallocatedInvoiceRows,
     contractIdsInScopeRows,
   ] = await Promise.all([
     db.query.currentAccount.findMany({
@@ -178,6 +180,18 @@ export const fetchDashboardData = createServerFn().handler(async () => {
       },
       with: {
         settlements: { columns: { amount: true, settledAt: true } },
+      },
+    }),
+
+    db.query.invoice.findMany({
+      where: and(
+        inArray(invoice.currentAccountId, accountIds),
+        isNull(invoice.archivedAt),
+        or(isNull(invoice.categoryId), isNull(invoice.counterpartyId)),
+      ),
+      columns: {
+        id: true,
+        amount: true,
       },
     }),
 
@@ -322,12 +336,23 @@ export const fetchDashboardData = createServerFn().handler(async () => {
     buildBankSummary(accountIds),
     buildOpenPriceRevisionTasks(session.user.id, selectedScope),
   ])
+  const unallocatedTransactions = {
+    count: unallocatedInvoiceRows.length,
+    amount: unallocatedInvoiceRows.reduce(
+      (sum, row) => sum + Number(row.amount),
+      0,
+    ),
+  }
   const blockedServices = await getBlockedServicesByContractIds(
     contractIdsInScopeRows
       .map((row) => row.contractId)
       .filter((id): id is string => id !== null),
   )
-  const tasks = buildDashboardTasks(bankSummary, priceRevisionTasks)
+  const tasks = buildDashboardTasks(
+    bankSummary,
+    unallocatedTransactions,
+    priceRevisionTasks,
+  )
 
   return {
     accounts,
@@ -381,6 +406,7 @@ function serializeDateValue(value: Date | string | null) {
 
 function buildDashboardTasks(
   bankSummary: DashboardLoaderData['bankSummary'],
+  unallocatedTransactions: { count: number; amount: number },
   priceRevisionTasks: DashboardTask[],
 ) {
   const tasks: DashboardTask[] = []
@@ -395,6 +421,17 @@ function buildDashboardTasks(
       amount: bankSummary.totalRemaining,
       incomingAmount: bankSummary.incomingRemaining,
       outgoingAmount: bankSummary.outgoingRemaining,
+    })
+  }
+
+  if (unallocatedTransactions.count > 0) {
+    tasks.push({
+      id: 'unallocated-transactions',
+      kind: 'unallocated-transactions',
+      title: 'Неразнесённые операции',
+      description: 'Есть доходы или расходы без категории или контрагента.',
+      count: unallocatedTransactions.count,
+      amount: unallocatedTransactions.amount,
     })
   }
 

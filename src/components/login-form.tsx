@@ -20,7 +20,7 @@ import { Input } from '@/components/ui/input'
 import * as z from 'zod'
 import { useForm } from '@tanstack/react-form'
 import { toast } from 'sonner'
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { authClient } from 'utils/auth-client'
 
 const formSchema = z.object({
@@ -32,6 +32,7 @@ export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<'div'>) {
+  const navigate = useNavigate()
   const form = useForm({
     defaultValues: {
       email: '',
@@ -45,11 +46,11 @@ export function LoginForm({
         {
           email: value.email,
           password: value.password,
-          callbackURL: '/dashboard',
         },
         {
-          onSuccess: () => {
-            toast.success('Login successful')
+          onSuccess: (ctx) => {
+            if (ctx.data?.twoFactorRedirect) return
+            navigate({ to: '/verify-email' })
           },
           onError: (ctx) => {
             toast.error(ctx.error.message)
@@ -75,6 +76,7 @@ export function LoginForm({
         <CardContent>
           <form
             id="login-form"
+            method="post"
             onSubmit={(e) => {
               e.preventDefault()
               form.handleSubmit()

@@ -9,7 +9,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { ShieldOff } from 'lucide-react'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
-import { useEffect, useRef, useState } from 'react'
+import { useRef } from 'react'
 
 import TanStackQueryProvider from '../integrations/tanstack-query/root-provider'
 
@@ -22,7 +22,7 @@ import { TooltipProvider } from '#/components/ui/tooltip'
 import { AppSidebar } from '#/components/layout/app-sidebar'
 import { SidebarInset, SidebarProvider } from '#/components/ui/sidebar'
 import { authMiddleware } from '#/utils/auth-middleware'
-import { authClient } from 'utils/auth-client'
+import { useSession } from '#/hooks/use-session'
 import { ThemeProvider } from '#/components/theme-provider'
 import { AppHeader } from '#/components/layout/app-header'
 import { Toaster } from '#/components/ui/sonner'
@@ -133,7 +133,10 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 function NavigationProgress() {
   const isLoading = useRouterState({ select: (s) => s.isLoading })
   return (
-    <div aria-hidden className="fixed top-0 left-0 right-0 z-50 h-0.5 overflow-hidden">
+    <div
+      aria-hidden
+      className="fixed top-0 left-0 right-0 z-50 h-0.5 overflow-hidden"
+    >
       <div
         className="h-full w-full bg-primary transition-all duration-300"
         style={{
@@ -167,15 +170,13 @@ function AnimatedOutlet({ children }: { children: React.ReactNode }) {
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-  const initialSession = Route.useLoaderData()
-  const [isHydrated, setIsHydrated] = useState(false)
-  const { data: clientSession, isPending } = authClient.useSession()
-  const session =
-    isHydrated && !isPending ? (clientSession ?? null) : initialSession
-
-  useEffect(() => {
-    setIsHydrated(true)
-  }, [])
+  const session = useSession() as
+    | (NonNullable<ReturnType<typeof useSession>> & {
+        session: { secondFactorVerified?: boolean }
+      })
+    | null
+  const isFullyAuthed =
+    !!session?.user && session.session.secondFactorVerified === true
 
   return (
     <html lang="ru" suppressHydrationWarning>
@@ -188,7 +189,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <TanStackQueryProvider>
           <ThemeProvider>
             <TooltipProvider>
-              {session?.user ? (
+              {isFullyAuthed ? (
                 <SidebarProvider>
                   <AppSidebar />
                   <SidebarInset>

@@ -1,5 +1,6 @@
 import type {
   account,
+  accountTransfer,
   bankTransaction,
   bankTransactionDirectionEnum,
   category,
@@ -59,6 +60,8 @@ export type UserUpdate = Partial<UserInsert> & { id: string }
 export type Session = typeof session.$inferSelect
 
 export type Account = typeof account.$inferSelect
+
+export type AccountTransfer = typeof accountTransfer.$inferSelect
 
 export type Verification = typeof verification.$inferSelect
 

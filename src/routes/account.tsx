@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { toast } from 'sonner'
-import { ShieldCheck, ShieldOff } from 'lucide-react'
+import { ShieldCheck, Smartphone } from 'lucide-react'
 
 import { Button } from '#/components/ui/button'
 import {
@@ -27,15 +27,15 @@ export const Route = createFileRoute('/account')({
   component: AccountPage,
 })
 
-type TotpSetupStep = 'idle' | 'password' | 'qr' | 'done'
+type TotpSetupStep = 'idle' | 'password' | 'qr'
 type DisableStep = 'idle' | 'confirm'
 
-function TwoFactorSection({
-  enabled,
-  onToggle,
+function TotpAppSection({
+  hasTotp,
+  onChange,
 }: {
-  enabled: boolean
-  onToggle: () => void
+  hasTotp: boolean
+  onChange: () => void
 }) {
   const [setupStep, setSetupStep] = useState<TotpSetupStep>('idle')
   const [disableStep, setDisableStep] = useState<DisableStep>('idle')
@@ -65,10 +65,11 @@ function TwoFactorSection({
       { code },
       {
         onSuccess: () => {
-          toast.success('Двухфакторная аутентификация включена')
+          toast.success('Приложение-аутентификатор подключено')
           setSetupStep('idle')
           setCode('')
-          onToggle()
+          setTotpUri('')
+          onChange()
         },
         onError: (ctx) => {
           toast.error(ctx.error.message)
@@ -86,10 +87,12 @@ function TwoFactorSection({
       { password },
       {
         onSuccess: () => {
-          toast.success('Двухфакторная аутентификация отключена')
+          toast.success(
+            'Приложение-аутентификатор отключено. Код будет приходить на почту.',
+          )
           setDisableStep('idle')
           setPassword('')
-          onToggle()
+          onChange()
         },
         onError: (ctx) => {
           toast.error(ctx.error.message)
@@ -107,12 +110,12 @@ function TwoFactorSection({
     setTotpUri('')
   }
 
-  if (enabled) {
+  if (hasTotp) {
     return (
       <div className="flex flex-col gap-4">
         <div className="flex items-center gap-2 text-sm">
           <ShieldCheck className="size-4 text-green-600" />
-          <span>Двухфакторная аутентификация включена</span>
+          <span>Приложение-аутентификатор подключено</span>
         </div>
         {disableStep === 'idle' ? (
           <Button
@@ -121,12 +124,13 @@ function TwoFactorSection({
             className="w-fit"
             onClick={() => setDisableStep('confirm')}
           >
-            Отключить 2FA
+            Отключить приложение-аутентификатор
           </Button>
         ) : (
           <div className="flex flex-col gap-3 max-w-sm">
             <p className="text-sm text-muted-foreground">
-              Введите пароль для подтверждения.
+              Введите пароль для подтверждения. После отключения код будет
+              приходить на почту.
             </p>
             <FieldGroup>
               <Field>
@@ -162,8 +166,10 @@ function TwoFactorSection({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <ShieldOff className="size-4" />
-        <span>Двухфакторная аутентификация отключена</span>
+        <Smartphone className="size-4" />
+        <span>
+          Приложение-аутентификатор не подключено — код приходит на почту
+        </span>
       </div>
 
       {setupStep === 'idle' && (
@@ -173,7 +179,7 @@ function TwoFactorSection({
           className="w-fit"
           onClick={() => setSetupStep('password')}
         >
-          Настроить 2FA
+          Подключить приложение-аутентификатор
         </Button>
       )}
 
@@ -284,13 +290,14 @@ function AccountPage() {
         <CardHeader>
           <CardTitle>Безопасность</CardTitle>
           <CardDescription>
-            Управление двухфакторной аутентификацией
+            Двухфакторная аутентификация включена. По умолчанию код приходит на
+            почту — подключите приложение, чтобы получать его офлайн.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <TwoFactorSection
-            enabled={user.twoFactorEnabled ?? false}
-            onToggle={() => refetch()}
+          <TotpAppSection
+            hasTotp={user.twoFactorEnabled ?? false}
+            onChange={() => refetch()}
           />
         </CardContent>
       </Card>

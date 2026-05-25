@@ -28,6 +28,7 @@ import {
   fetchTransactionsData,
   togglePaid,
 } from '#/components/transactions/actions'
+import { TransferItem } from '#/components/transactions/transfer-item'
 
 import { createFileRoute, Outlet, useRouter } from '@tanstack/react-router'
 import { format, isSameYear, isToday, isYesterday } from 'date-fns'
@@ -51,10 +52,16 @@ import {
 } from '#/components/tags/actions'
 import type { TagItem } from '#/components/ui/tag-picker'
 import { TagSummaryPanel } from '#/components/ui/tag-summary-panel'
-import type { TagsMap } from '#/types'
+import type {
+  AccountTransfer,
+  Invoice,
+  TagsMap,
+  TransactionFeedItem,
+} from '#/types'
 
 const transactionsSearchSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
+  unallocated: z.coerce.boolean().default(false),
   pageSize: z.coerce
     .number()
     .int()
@@ -74,6 +81,7 @@ function App() {
   const router = useRouter()
   const {
     invoices,
+    transfers,
     categories,
     counterparties,
     accounts,
@@ -88,9 +96,12 @@ function App() {
   const [tagsMap, setTagsMap] = useState<TagsMap>(initialTagsMap)
   const [allTags, setAllTags] = useState<TagItem[]>(initialAllTags)
   const [tagTotals, setTagTotals] = useState(initialTagTotals)
+  const [unallocatedFilter, setUnallocatedFilter] = useState(
+    searchParams.unallocated,
+  )
 
-  const feed = [...invoices].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  const feed: TransactionFeedItem[] = [...invoices, ...transfers].sort(
+    (a, b) => getTransactionTime(b) - getTransactionTime(a),
   )
 
   // Accounts with more than one member are considered shared
@@ -101,7 +112,7 @@ function App() {
   // ── Filters ────────────────────────────────────────────────────────────────
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<
-    'all' | 'payable' | 'receivable'
+    'all' | 'payable' | 'receivable' | 'transfer'
   >('all')
   const [statusFilter, setStatusFilter] = useState<
     'all' | 'paid' | 'unpaid' | 'overdue'
@@ -213,6 +224,7 @@ function App() {
     categoryFilter.length > 0 ||
     counterpartyFilter.length > 0 ||
     tagFilter.length > 0 ||
+    unallocatedFilter ||
     dateRange !== undefined
 
   const clearFilters = () => {
@@ -223,8 +235,19 @@ function App() {
     setCategoryFilter([])
     setCounterpartyFilter([])
     setTagFilter([])
+    setUnallocatedFilter(false)
     setDateRange(undefined)
     setDateField('createdAt')
+    void router.navigate({
+      to: '/transactions',
+      search: {
+        ...searchParams,
+        page: 1,
+        unallocated: false,
+        pageSize,
+      },
+      replace: true,
+    })
   }
 
   const handleDateRangeChange = (nextRange: DateRange | undefined) => {
@@ -239,38 +262,61 @@ function App() {
       : null
 
     return feed.filter((item) => {
+      const isTransfer = isTransferItem(item)
       const isPaid = item.paidAt !== null
       const isOverdue =
-        !isPaid && item.dueDate !== null && new Date(item.dueDate) < now
+        !isTransfer &&
+        !isPaid &&
+        item.dueDate !== null &&
+        new Date(item.dueDate) < now
 
       if (typeFilter !== 'all' && item.kind !== typeFilter) return false
+      if (
+        unallocatedFilter &&
+        (isTransfer || (item.category !== null && item.counterparty !== null))
+      ) {
+        return false
+      }
       if (statusFilter === 'paid' && !isPaid) return false
       if (statusFilter === 'unpaid' && isPaid) return false
       if (statusFilter === 'overdue' && !isOverdue) return false
       if (
         accountFilter.length > 0 &&
-        !accountFilter.includes(item.currentAccount.id)
+        !(isTransfer
+          ? accountFilter.includes(item.fromAccount.id) ||
+            accountFilter.includes(item.toAccount.id)
+          : accountFilter.includes(item.currentAccount.id))
       )
         return false
       if (
         categoryFilter.length > 0 &&
-        !categoryFilter.includes(item.category.id)
+        (isTransfer ||
+          item.category === null ||
+          !categoryFilter.includes(item.category.id))
       )
         return false
       if (
         counterpartyFilter.length > 0 &&
-        !counterpartyFilter.includes(item.counterparty?.id ?? '')
+        (isTransfer ||
+          !counterpartyFilter.includes(item.counterparty?.id ?? ''))
       )
         return false
       if (
         tagFilter.length > 0 &&
-        !(tagsMap[item.id] ?? []).some((tag) => tagFilter.includes(tag.id))
+        (isTransfer ||
+          !(tagsMap[item.id] ?? []).some((tag) => tagFilter.includes(tag.id)))
       ) {
         return false
       }
 
       if (fromDate || toDate) {
-        const rawDate = dateField === 'paidAt' ? item.paidAt : item.createdAt
+        const rawDate = isTransfer
+          ? dateField === 'paidAt'
+            ? item.paidAt
+            : item.transferredAt
+          : dateField === 'paidAt'
+            ? item.paidAt
+            : item.createdAt
         // When filtering by paidAt, items with no paidAt are excluded
         if (!rawDate) return false
         const itemDate = new Date(rawDate)
@@ -280,17 +326,25 @@ function App() {
 
       if (search.trim()) {
         const q = search.trim().toLowerCase()
-        const haystack = [
-          item.description,
-          item.category.name,
-          item.counterparty?.name,
-          item.currentAccount.name,
-          item.createdByUser.name,
-          (tagsMap[item.id] ?? []).map((tag) => tag.name).join(' '),
-          Number(item.amount).toLocaleString('ru-RU'),
-        ]
-          .join(' ')
-          .toLowerCase()
+        const searchableValues = isTransfer
+          ? [
+              item.description,
+              'перевод между счетами',
+              item.fromAccount.name,
+              item.toAccount.name,
+              item.createdByUser.name,
+              Number(item.amount).toLocaleString('ru-RU'),
+            ]
+          : [
+              item.description,
+              item.category?.name,
+              item.counterparty?.name,
+              item.currentAccount.name,
+              item.createdByUser.name,
+              (tagsMap[item.id] ?? []).map((tag) => tag.name).join(' '),
+              Number(item.amount).toLocaleString('ru-RU'),
+            ]
+        const haystack = searchableValues.join(' ').toLowerCase()
         if (!haystack.includes(q)) return false
       }
 
@@ -305,6 +359,7 @@ function App() {
     categoryFilter,
     counterpartyFilter,
     tagFilter,
+    unallocatedFilter,
     dateRange,
     dateField,
     tagsMap,
@@ -321,7 +376,7 @@ function App() {
     const groups = new Map<string, typeof paginatedFeed>()
 
     for (const item of paginatedFeed) {
-      const key = format(new Date(item.createdAt), 'yyyy-MM-dd')
+      const key = format(new Date(getTransactionTime(item)), 'yyyy-MM-dd')
       const group = groups.get(key)
 
       if (group) {
@@ -352,6 +407,7 @@ function App() {
         search: {
           ...searchParams,
           page: 1,
+          unallocated: unallocatedFilter,
           pageSize,
         },
         replace: true,
@@ -369,6 +425,7 @@ function App() {
     categoryFilter,
     counterpartyFilter,
     tagFilter,
+    unallocatedFilter,
     dateRange,
     dateField,
   ])
@@ -380,17 +437,18 @@ function App() {
         search: {
           ...searchParams,
           page: safePage,
+          unallocated: unallocatedFilter,
           pageSize,
         },
         replace: true,
       })
     }
-  }, [router, searchParams, currentPage, safePage, pageSize])
+  }, [router, searchParams, currentPage, safePage, pageSize, unallocatedFilter])
 
   return (
     <div className="flex flex-col gap-4">
       {/* ── Summary cards ──────────────────────────────────────────────────── */}
-      <InvoiceSummary feed={filteredFeed} />
+      <InvoiceSummary feed={filteredFeed.filter(isInvoiceItem)} />
 
       {/* ── Filter bar ─────────────────────────────────────────────────────── */}
       <Card className="flex flex-col gap-4 p-4">
@@ -406,21 +464,46 @@ function App() {
         </div>
         <div className="flex flex-wrap w-full lg:justify-between items-center gap-4">
           {/* Type */}
-          <ToggleGroup variant="outline" type="single" defaultValue="all">
-            {(['all', 'receivable', 'payable'] as const).map((t) => (
-              <ToggleGroupItem
-                value={t}
-                key={t}
-                onClick={() => setTypeFilter(t)}
-              >
-                {t === 'all'
-                  ? 'Все'
-                  : t === 'receivable'
-                    ? 'Поступления'
-                    : 'Списания'}
-              </ToggleGroupItem>
-            ))}
+          <ToggleGroup variant="outline" type="single" value={typeFilter}>
+            {(['all', 'receivable', 'payable', 'transfer'] as const).map(
+              (t) => (
+                <ToggleGroupItem
+                  value={t}
+                  key={t}
+                  onClick={() => setTypeFilter(t)}
+                >
+                  {t === 'all'
+                    ? 'Все'
+                    : t === 'receivable'
+                      ? 'Поступления'
+                      : t === 'payable'
+                        ? 'Списания'
+                        : 'Переводы'}
+                </ToggleGroupItem>
+              ),
+            )}
           </ToggleGroup>
+          <Button
+            variant={unallocatedFilter ? 'secondary' : 'outline'}
+            size="sm"
+            className="h-9"
+            onClick={() => {
+              const next = !unallocatedFilter
+              setUnallocatedFilter(next)
+              void router.navigate({
+                to: '/transactions',
+                search: {
+                  ...searchParams,
+                  page: 1,
+                  unallocated: next,
+                  pageSize,
+                },
+                replace: true,
+              })
+            }}
+          >
+            Неразнесённые
+          </Button>
 
           {/* Date range + field toggle */}
           <div className="flex items-center gap-1">
@@ -613,23 +696,34 @@ function App() {
       ) : (
         <>
           <div className="flex flex-col gap-2 sm:hidden">
-            {paginatedFeed.map((item) => (
-              <InvoiceItem
-                key={item.id}
-                layout="mobile"
-                item={item}
-                sharedAccountIds={sharedAccountIds}
-                togglePaid={togglePaid}
-                categories={categories}
-                accounts={accounts}
-                counterparties={counterparties}
-                assignedTags={tagsMap[item.id] ?? []}
-                allTags={allTags}
-                onTagAdd={(tag) => handleTagAdd(item.id, item.kind, tag)}
-                onTagRemove={(tag) => handleTagRemove(item.id, item.kind, tag)}
-                onTagCreate={handleTagCreate}
-              />
-            ))}
+            {paginatedFeed.map((item) =>
+              isTransferItem(item) ? (
+                <TransferItem
+                  key={item.id}
+                  layout="mobile"
+                  item={item}
+                  sharedAccountIds={sharedAccountIds}
+                />
+              ) : (
+                <InvoiceItem
+                  key={item.id}
+                  layout="mobile"
+                  item={item}
+                  sharedAccountIds={sharedAccountIds}
+                  togglePaid={togglePaid}
+                  categories={categories}
+                  accounts={accounts}
+                  counterparties={counterparties}
+                  assignedTags={tagsMap[item.id] ?? []}
+                  allTags={allTags}
+                  onTagAdd={(tag) => handleTagAdd(item.id, item.kind, tag)}
+                  onTagRemove={(tag) =>
+                    handleTagRemove(item.id, item.kind, tag)
+                  }
+                  onTagCreate={handleTagCreate}
+                />
+              ),
+            )}
           </div>
 
           <Card className="hidden sm:block p-4">
@@ -657,33 +751,42 @@ function App() {
                   <Fragment key={group.dateKey}>
                     <TableRow className="hover:bg-transparent">
                       <TableCell
-                        colSpan={5}
+                        colSpan={6}
                         className="bg-muted/30 py-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase text-center"
                       >
                         {group.label}
                       </TableCell>
                     </TableRow>
-                    {group.items.map((item) => (
-                      <InvoiceItem
-                        key={item.id}
-                        layout="desktop"
-                        item={item}
-                        sharedAccountIds={sharedAccountIds}
-                        togglePaid={togglePaid}
-                        categories={categories}
-                        accounts={accounts}
-                        counterparties={counterparties}
-                        assignedTags={tagsMap[item.id] ?? []}
-                        allTags={allTags}
-                        onTagAdd={(tag) =>
-                          handleTagAdd(item.id, item.kind, tag)
-                        }
-                        onTagRemove={(tag) =>
-                          handleTagRemove(item.id, item.kind, tag)
-                        }
-                        onTagCreate={handleTagCreate}
-                      />
-                    ))}
+                    {group.items.map((item) =>
+                      isTransferItem(item) ? (
+                        <TransferItem
+                          key={item.id}
+                          layout="desktop"
+                          item={item}
+                          sharedAccountIds={sharedAccountIds}
+                        />
+                      ) : (
+                        <InvoiceItem
+                          key={item.id}
+                          layout="desktop"
+                          item={item}
+                          sharedAccountIds={sharedAccountIds}
+                          togglePaid={togglePaid}
+                          categories={categories}
+                          accounts={accounts}
+                          counterparties={counterparties}
+                          assignedTags={tagsMap[item.id] ?? []}
+                          allTags={allTags}
+                          onTagAdd={(tag) =>
+                            handleTagAdd(item.id, item.kind, tag)
+                          }
+                          onTagRemove={(tag) =>
+                            handleTagRemove(item.id, item.kind, tag)
+                          }
+                          onTagCreate={handleTagCreate}
+                        />
+                      ),
+                    )}
                   </Fragment>
                 ))}
               </TableBody>
@@ -709,6 +812,7 @@ function App() {
                       search: {
                         ...searchParams,
                         page: 1,
+                        unallocated: unallocatedFilter,
                         pageSize: Number(event.target.value) as 25 | 50 | 100,
                       },
                       replace: true,
@@ -729,6 +833,7 @@ function App() {
                     search: {
                       ...searchParams,
                       page: Math.max(1, safePage - 1),
+                      unallocated: unallocatedFilter,
                       pageSize,
                     },
                     replace: true,
@@ -747,6 +852,7 @@ function App() {
                     search: {
                       ...searchParams,
                       page: Math.min(totalPages, safePage + 1),
+                      unallocated: unallocatedFilter,
                       pageSize,
                     },
                     replace: true,
@@ -777,4 +883,18 @@ function formatGroupDateLabel(dateKey: string) {
     return format(date, 'd MMMM, EEEE', { locale: ru })
   }
   return format(date, 'd MMMM yyyy, EEEE', { locale: ru })
+}
+
+function isTransferItem(item: TransactionFeedItem): item is AccountTransfer {
+  return item.kind === 'transfer'
+}
+
+function isInvoiceItem(item: TransactionFeedItem): item is Invoice {
+  return item.kind !== 'transfer'
+}
+
+function getTransactionTime(item: TransactionFeedItem) {
+  return new Date(
+    isTransferItem(item) ? item.transferredAt : item.createdAt,
+  ).getTime()
 }

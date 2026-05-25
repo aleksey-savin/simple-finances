@@ -1,5 +1,9 @@
 import { createAuthClient } from 'better-auth/react'
-import { adminClient, twoFactorClient } from 'better-auth/client/plugins'
+import {
+  adminClient,
+  emailOTPClient,
+  twoFactorClient,
+} from 'better-auth/client/plugins'
 import { ac, admin, user } from 'utils/permissions'
 
 export const authClient = createAuthClient({
@@ -18,5 +22,6 @@ export const authClient = createAuthClient({
         window.location.href = '/two-factor'
       },
     }),
+    emailOTPClient(),
   ],
 })

@@ -15,28 +15,29 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from '#/components/ui/input-otp'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import { authClient } from 'utils/auth-client'
 
-type TwoFactorMethod = 'totp' | 'email'
-
 export const Route = createFileRoute('/two-factor')({
-  validateSearch: (search: Record<string, unknown>) => ({
-    method: search.method === 'email' ? 'email' : 'totp',
-    emailSent: search.emailSent === true || search.emailSent === 'true',
-  }),
   component: TwoFactorPage,
 })
 
-function TotpTab() {
+type Mode = 'totp' | 'otp'
+
+function TwoFactorPage() {
   const navigate = useNavigate()
+  const [mode, setMode] = useState<Mode>('totp')
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
+  const [otpSent, setOtpSent] = useState(false)
 
   const verify = async () => {
     if (code.length !== 6) return
     setLoading(true)
-    await authClient.twoFactor.verifyTotp(
+    const call =
+      mode === 'totp'
+        ? authClient.twoFactor.verifyTotp
+        : authClient.twoFactor.verifyOtp
+    await call(
       { code },
       {
         onSuccess: () => navigate({ to: '/dashboard' }),
@@ -49,48 +50,15 @@ function TotpTab() {
     setLoading(false)
   }
 
-  return (
-    <div className="flex flex-col items-center gap-4">
-      <p className="text-muted-foreground text-sm text-center">
-        Введите 6-значный код из приложения-аутентификатора.
-      </p>
-      <InputOTP
-        maxLength={6}
-        value={code}
-        onChange={setCode}
-        onComplete={verify}
-      >
-        <InputOTPGroup>
-          {Array.from({ length: 6 }).map((_, i) => (
-            <InputOTPSlot key={i} index={i} />
-          ))}
-        </InputOTPGroup>
-      </InputOTP>
-      <Button
-        className="w-full"
-        disabled={code.length !== 6 || loading}
-        onClick={verify}
-      >
-        Подтвердить
-      </Button>
-    </div>
-  )
-}
-
-function EmailOtpTab({ sent }: { sent: boolean }) {
-  const navigate = useNavigate()
-  const [code, setCode] = useState('')
-  const [loading, setLoading] = useState(false)
-
-  const sendOtp = async () => {
+  const switchToEmail = async () => {
     setLoading(true)
     await authClient.twoFactor.sendOtp(undefined, {
-      onSuccess: () =>
-        navigate({
-          to: '/two-factor',
-          search: { method: 'email', emailSent: true },
-          replace: true,
-        }),
+      onSuccess: () => {
+        setMode('otp')
+        setOtpSent(true)
+        setCode('')
+        toast.success('Код отправлен на вашу почту')
+      },
       onError: (ctx) => {
         toast.error(ctx.error.message)
       },
@@ -98,77 +66,9 @@ function EmailOtpTab({ sent }: { sent: boolean }) {
     setLoading(false)
   }
 
-  const verify = async () => {
-    if (code.length !== 6) return
-    setLoading(true)
-    await authClient.twoFactor.verifyOtp(
-      { code },
-      {
-        onSuccess: () => navigate({ to: '/dashboard' }),
-        onError: (ctx) => {
-          toast.error(ctx.error.message)
-          setCode('')
-        },
-      },
-    )
-    setLoading(false)
-  }
-
-  return (
-    <div className="flex flex-col items-center gap-4">
-      {sent ? (
-        <>
-          <p className="text-muted-foreground text-sm text-center">
-            Код отправлен на вашу почту. Введите его ниже.
-          </p>
-          <InputOTP
-            maxLength={6}
-            value={code}
-            onChange={setCode}
-            onComplete={verify}
-          >
-            <InputOTPGroup>
-              {Array.from({ length: 6 }).map((_, i) => (
-                <InputOTPSlot key={i} index={i} />
-              ))}
-            </InputOTPGroup>
-          </InputOTP>
-          <Button
-            className="w-full"
-            disabled={code.length !== 6 || loading}
-            onClick={verify}
-          >
-            Подтвердить
-          </Button>
-        </>
-      ) : (
-        <>
-          <p className="text-muted-foreground text-sm text-center">
-            Мы отправим одноразовый код на вашу электронную почту.
-          </p>
-          <Button className="w-full" disabled={loading} onClick={sendOtp}>
-            Отправить код
-          </Button>
-        </>
-      )}
-    </div>
-  )
-}
-
-function TwoFactorPage() {
-  const navigate = useNavigate()
-  const search = Route.useSearch()
-
-  const selectMethod = (method: string) => {
-    const nextMethod: TwoFactorMethod = method === 'email' ? 'email' : 'totp'
-    navigate({
-      to: '/two-factor',
-      search: {
-        method: nextMethod,
-        emailSent: nextMethod === 'email' ? search.emailSent : false,
-      },
-      replace: true,
-    })
+  const switchToTotp = () => {
+    setMode('totp')
+    setCode('')
   }
 
   return (
@@ -179,25 +79,64 @@ function TwoFactorPage() {
             <CardTitle className="text-xl">
               Двухфакторная аутентификация
             </CardTitle>
-            <CardDescription>Подтвердите вашу личность.</CardDescription>
+            <CardDescription>
+              {mode === 'totp'
+                ? 'Введите код из приложения-аутентификатора.'
+                : 'Введите код, который мы отправили на вашу почту.'}
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs value={search.method} onValueChange={selectMethod}>
-              <TabsList className="w-full">
-                <TabsTrigger value="totp" className="flex-1">
-                  Приложение
-                </TabsTrigger>
-                <TabsTrigger value="email" className="flex-1">
-                  Email
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="totp" className="pt-4">
-                <TotpTab />
-              </TabsContent>
-              <TabsContent value="email" className="pt-4">
-                <EmailOtpTab sent={search.emailSent} />
-              </TabsContent>
-            </Tabs>
+            <div className="flex flex-col items-center gap-4">
+              <InputOTP
+                maxLength={6}
+                value={code}
+                onChange={setCode}
+                onComplete={verify}
+                autoFocus
+              >
+                <InputOTPGroup>
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <InputOTPSlot key={i} index={i} />
+                  ))}
+                </InputOTPGroup>
+              </InputOTP>
+              <Button
+                className="w-full"
+                disabled={code.length !== 6 || loading}
+                onClick={verify}
+              >
+                Подтвердить
+              </Button>
+              {mode === 'totp' ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={loading}
+                  onClick={switchToEmail}
+                >
+                  Отправить код на почту
+                </Button>
+              ) : (
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={loading || !otpSent}
+                    onClick={switchToEmail}
+                  >
+                    Отправить ещё раз
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={loading}
+                    onClick={switchToTotp}
+                  >
+                    Вернуться к приложению
+                  </Button>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>

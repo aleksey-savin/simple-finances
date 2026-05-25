@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 
-import { and, eq, inArray, or } from 'drizzle-orm'
+import { and, eq, inArray, or, sql } from 'drizzle-orm'
 import z from 'zod'
 
 import type { TagItem } from '#/components/ui/tag-picker'
@@ -8,6 +8,7 @@ import { db } from '#/db/index.server'
 import {
   category,
   counterparty,
+  accountTransfer,
   currentAccount,
   currentAccountUser,
   invoice,
@@ -62,6 +63,7 @@ export const fetchTransactionsData = createServerFn().handler(async () => {
       invoices: [],
       categories,
       accounts: [],
+      transfers: [],
       counterparties: [],
       tagsMap: {} as Partial<Record<string, TagItem[]>>,
       allTags: [] as TagItem[],
@@ -69,7 +71,7 @@ export const fetchTransactionsData = createServerFn().handler(async () => {
     }
   }
 
-  const [invoices, categories, counterparties, accountsData] =
+  const [invoices, transfers, categories, counterparties, accountsData] =
     await Promise.all([
       db.query.invoice.findMany({
         where: inArray(invoice.currentAccountId, accountIds),
@@ -128,6 +130,17 @@ export const fetchTransactionsData = createServerFn().handler(async () => {
               },
             },
           },
+        },
+      }),
+      db.query.accountTransfer.findMany({
+        where: or(
+          inArray(accountTransfer.fromAccountId, accountIds),
+          inArray(accountTransfer.toAccountId, accountIds),
+        ),
+        with: {
+          fromAccount: { columns: { id: true, name: true } },
+          toAccount: { columns: { id: true, name: true } },
+          createdByUser: { columns: { id: true, name: true } },
         },
       }),
       db.query.category.findMany({
@@ -278,6 +291,10 @@ export const fetchTransactionsData = createServerFn().handler(async () => {
 
   return {
     invoices: normalizedInvoices,
+    transfers: transfers.map((transfer) => ({
+      ...transfer,
+      kind: 'transfer' as const,
+    })),
     categories,
     counterparties,
     accounts,
@@ -294,7 +311,7 @@ export const fetchTransactionsData = createServerFn().handler(async () => {
 const togglePaidSchema = z.object({
   id: z.string(),
   kind: z.enum(['payable', 'receivable']),
-  paid: z.boolean(),
+  paidAt: z.string().nullable(),
 })
 
 export const togglePaid = createServerFn({ method: 'POST' })
@@ -302,6 +319,136 @@ export const togglePaid = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     await db
       .update(invoice)
-      .set({ paidAt: data.paid ? new Date() : null })
+      .set({ paidAt: data.paidAt ? new Date(data.paidAt) : null })
       .where(eq(invoice.id, data.id))
+  })
+
+const accountTransferInputSchema = z
+  .object({
+    amount: z.number().min(0.01, 'Минимум 0.01'),
+    description: z.string().min(2, 'Минимум 2 символа'),
+    fromAccountId: z.string().min(1, 'Выберите счёт списания'),
+    toAccountId: z.string().min(1, 'Выберите счёт зачисления'),
+    transferredAt: z.string().optional(),
+    paidAt: z.string().nullable().optional(),
+  })
+  .refine((data) => data.fromAccountId !== data.toAccountId, {
+    message: 'Выберите разные счета',
+    path: ['toAccountId'],
+  })
+
+async function assertTransferAccountAccess(
+  userId: string,
+  fromAccountId: string,
+  toAccountId: string,
+) {
+  const memberships = await db.query.currentAccountUser.findMany({
+    where: and(
+      eq(currentAccountUser.userId, userId),
+      inArray(currentAccountUser.currentAccountId, [
+        fromAccountId,
+        toAccountId,
+      ]),
+    ),
+  })
+
+  if (memberships.length !== 2) {
+    throw new Error('Недостаточно прав для перевода между выбранными счетами')
+  }
+}
+
+export const addAccountTransfer = createServerFn({ method: 'POST' })
+  .inputValidator(accountTransferInputSchema)
+  .handler(async ({ data }) => {
+    const session = await requireSession()
+    const userId = session.user.id
+    await assertTransferAccountAccess(
+      userId,
+      data.fromAccountId,
+      data.toAccountId,
+    )
+
+    const transferredAt = data.transferredAt
+      ? new Date(data.transferredAt)
+      : new Date()
+    const paidAt = data.paidAt ? new Date(data.paidAt) : null
+    const amount = data.amount.toFixed(2)
+
+    return db.transaction(async (tx) => {
+      const [inserted] = await tx
+        .insert(accountTransfer)
+        .values({
+          amount,
+          description: data.description,
+          fromAccountId: data.fromAccountId,
+          toAccountId: data.toAccountId,
+          transferredAt,
+          paidAt,
+          createdBy: userId,
+          updatedBy: userId,
+        })
+        .returning({ id: accountTransfer.id })
+
+      if (paidAt) {
+        await tx
+          .update(currentAccount)
+          .set({
+            balance: sql`${currentAccount.balance} - ${amount}::numeric`,
+            updatedBy: userId,
+          })
+          .where(eq(currentAccount.id, data.fromAccountId))
+
+        await tx
+          .update(currentAccount)
+          .set({
+            balance: sql`${currentAccount.balance} + ${amount}::numeric`,
+            updatedBy: userId,
+          })
+          .where(eq(currentAccount.id, data.toAccountId))
+      }
+
+      return inserted.id
+    })
+  })
+
+const deleteAccountTransferSchema = z.object({ id: z.string() })
+
+export const deleteAccountTransfer = createServerFn({ method: 'POST' })
+  .inputValidator(deleteAccountTransferSchema)
+  .handler(async ({ data }) => {
+    const session = await requireSession()
+    const userId = session.user.id
+
+    const transfer = await db.query.accountTransfer.findFirst({
+      where: eq(accountTransfer.id, data.id),
+    })
+    if (!transfer) return
+
+    await assertTransferAccountAccess(
+      userId,
+      transfer.fromAccountId,
+      transfer.toAccountId,
+    )
+
+    await db.transaction(async (tx) => {
+      await tx.delete(accountTransfer).where(eq(accountTransfer.id, data.id))
+
+      if (transfer.paidAt) {
+        await tx
+          .update(currentAccount)
+          .set({
+            balance: sql`${currentAccount.balance} + ${transfer.amount}::numeric`,
+            updatedBy: userId,
+          })
+          .where(eq(currentAccount.id, transfer.fromAccountId))
+
+        await tx
+          .update(currentAccount)
+          .set({
+            balance: sql`${currentAccount.balance} - ${transfer.amount}::numeric`,
+            updatedBy: userId,
+          })
+          .where(eq(currentAccount.id, transfer.toAccountId))
+      }
+    })
   })

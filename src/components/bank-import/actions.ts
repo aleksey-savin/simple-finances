@@ -146,14 +146,14 @@ export const fetchBankImportContext = createServerFn().handler(async () => {
         useForIncome: true,
         isShared: true,
       },
-      orderBy: (table, { asc }) => asc(table.name),
+      orderBy: (table) => asc(table.name),
     }),
     getScopedCounterpartyIds(userId, selectedScope).then((ids) =>
       ids.length > 0
         ? db.query.counterparty.findMany({
             where: inArray(counterparty.id, ids),
             columns: { id: true, name: true, tin: true },
-            orderBy: (t, { asc }) => asc(t.name),
+            orderBy: (t) => asc(t.name),
           })
         : [],
     ),
@@ -264,7 +264,7 @@ export const importBankStatement = createServerFn({ method: 'POST' })
         seenExternalIds.add(importKey)
 
         const payload = JSON.stringify(document)
-        const [created] = await tx
+        const created = await tx
           .insert(bankTransaction)
           .values({
             currentAccountId: data.currentAccountId,
@@ -286,7 +286,7 @@ export const importBankStatement = createServerFn({ method: 'POST' })
           })
           .returning({ id: bankTransaction.id })
 
-        if (!created) {
+        if (!created.length) {
           continue
         }
 
@@ -775,7 +775,7 @@ async function listImportedBankTransactions(
     .from(bankTransaction)
     .where(where)
 
-  const total = Number(countRow?.count ?? 0)
+  const total = Number(countRow.count)
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
   const safePage = Math.min(page, totalPages)
   const offset = (safePage - 1) * pageSize
@@ -934,7 +934,7 @@ async function findMatchingInvoices(
         dueDate: invoiceRow.dueDate?.toISOString() ?? null,
         counterpartyId: invoiceRow.counterparty?.id ?? null,
         counterpartyName: invoiceRow.counterparty?.name ?? null,
-        categoryName: invoiceRow.category.name,
+        categoryName: invoiceRow.category?.name ?? 'Без категории',
         score,
         reasons,
       }
