@@ -1,0 +1,9 @@
+onlyBuiltDependencies:
+  - esbuild
+  - lightningcss
+
+ignoredBuiltDependencies:
+  - "@prisma/engines"
+  - prisma
+  - protobufjs
+  - unrs-resolver
