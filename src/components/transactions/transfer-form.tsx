@@ -168,7 +168,7 @@ export function TransferForm({ accounts, onDone }: TransferFormProps) {
         />
       </Field>
 
-      <Field orientation="horizontal" className="justify-between">
+      <Field orientation="horizontal" className="w-fit">
         <FieldLabel htmlFor="transfer-paid">Оплачено</FieldLabel>
         <Switch
           id="transfer-paid"

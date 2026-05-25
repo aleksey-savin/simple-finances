@@ -21,7 +21,6 @@ import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Item, ItemContent, ItemHeader } from '@/components/ui/item'
 import { Switch } from '@/components/ui/switch'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
 const uiFormSchema = z.object({
   amount: z
@@ -61,11 +60,18 @@ type InvoiceFormProps = {
   accounts: { id: string; name: string }[]
   counterparties?: CounterpartyOption[]
   asDialog?: boolean
+  entryMode?: 'full' | 'quick'
 }
 
 function toDateInputValue(value: Date | string | null | undefined) {
   if (!value) return ''
   return new Date(value).toISOString().slice(0, 10)
+}
+
+function addDays(date: Date, days: number) {
+  const result = new Date(date)
+  result.setDate(result.getDate() + days)
+  return result
 }
 
 export function InvoiceForm({
@@ -76,6 +82,7 @@ export function InvoiceForm({
   accounts,
   counterparties = [],
   asDialog = false,
+  entryMode = 'full',
 }: InvoiceFormProps) {
   const { data: contracts = [] } = useQuery({
     queryKey: contractsQueryKey,
@@ -94,7 +101,6 @@ export function InvoiceForm({
   const [paymentAccounts, setPaymentAccounts] = useState<PaymentAccount[]>([])
   const [isFetchingPayments, setIsFetchingPayments] = useState(false)
   const [submitMode, setSubmitMode] = useState<'close' | 'add-more'>('close')
-  const [entryMode, setEntryMode] = useState<'full' | 'quick'>('full')
   const isQuickCreate = !isEdit && entryMode === 'quick'
 
   const sharedReceivableCategories = categories.filter(
@@ -139,7 +145,9 @@ export function InvoiceForm({
       categoryId: currentInvoice?.categoryId ?? '',
       currentAccountId: currentInvoice?.currentAccountId ?? '',
       counterpartyId: currentInvoice?.counterpartyId ?? '',
-      dueDate: toDateInputValue(currentInvoice?.dueDate),
+      dueDate: currentInvoice
+        ? toDateInputValue(currentInvoice.dueDate)
+        : toDateInputValue(addDays(new Date(), 10)),
       createdAt: toDateInputValue(currentInvoice?.createdAt ?? new Date()),
       isPaid:
         currentInvoice?.paidAt !== null && currentInvoice?.paidAt !== undefined,
@@ -239,23 +247,6 @@ export function InvoiceForm({
         form.handleSubmit()
       }}
     >
-      {!isEdit ? (
-        <ToggleGroup
-          variant="outline"
-          type="single"
-          value={entryMode}
-          onValueChange={(value) => {
-            if (value === 'full' || value === 'quick') {
-              setEntryMode(value)
-            }
-          }}
-          className="w-fit"
-        >
-          <ToggleGroupItem value="full">Обычный ввод</ToggleGroupItem>
-          <ToggleGroupItem value="quick">Быстрый ввод</ToggleGroupItem>
-        </ToggleGroup>
-      ) : null}
-
       <form.Field name="amount">
         {(field) => {
           const isInvalid =
@@ -355,7 +346,7 @@ export function InvoiceForm({
 
           <form.Field name="isPaid">
             {(field) => (
-              <Field orientation="horizontal" className="justify-between">
+              <Field orientation="horizontal" className="w-fit">
                 <FieldLabel htmlFor={field.name}>Оплачено</FieldLabel>
                 <Switch
                   id={field.name}
@@ -617,7 +608,7 @@ export function InvoiceForm({
 
           <form.Field name="isPaid">
             {(field) => (
-              <Field orientation="horizontal" className="justify-between">
+              <Field orientation="horizontal" className="w-fit">
                 <FieldLabel htmlFor={field.name}>Оплачено</FieldLabel>
                 <Switch
                   id={field.name}
