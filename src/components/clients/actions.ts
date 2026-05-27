@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 
-import { and, desc, eq, inArray, isNull, lt } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { db } from '#/db/index.server'
@@ -19,7 +19,6 @@ import {
 import { getRequest, requireSession } from '#/utils/session.server'
 import { getBlockedServicesByContractIds } from '#/lib/blocked-services'
 import { resolveSelectedScope } from '#/lib/company-scope'
-import { getContractPaymentTermDueDate } from '#/lib/contract-payment-term'
 import { getPaymentState } from '#/lib/invoice-payment'
 import type { ClientDetail, ClientProxmoxResource } from '@/types'
 
@@ -556,25 +555,24 @@ export const fetchClientDetail = createServerFn()
 
     const contractSuspensionContext = new Map<
       string,
-      { hasOverdue: boolean; paymentTermDueDate: Date | null }
+      { hasOverdue: boolean; nearestUnpaidDueDate: Date | null }
     >()
     await Promise.all(
       [...bindingsByContract.keys()].map(async (cid) => {
-        const [overdue, paymentTermDueDate] = await Promise.all([
-          db.query.invoice.findFirst({
-            where: and(
-              eq(invoice.contractId, cid),
-              isNull(invoice.paidAt),
-              isNull(invoice.archivedAt),
-              lt(invoice.dueDate, now),
-            ),
-            columns: { id: true },
-          }),
-          getContractPaymentTermDueDate(cid, now),
-        ])
+        const nearestUnpaid = await db.query.invoice.findFirst({
+          where: and(
+            eq(invoice.contractId, cid),
+            isNull(invoice.paidAt),
+            isNull(invoice.archivedAt),
+            isNotNull(invoice.dueDate),
+          ),
+          columns: { dueDate: true },
+          orderBy: [asc(invoice.dueDate)],
+        })
+        const dueDate = nearestUnpaid?.dueDate ?? null
         contractSuspensionContext.set(cid, {
-          hasOverdue: overdue !== undefined,
-          paymentTermDueDate,
+          hasOverdue: dueDate !== null && dueDate < now,
+          nearestUnpaidDueDate: dueDate,
         })
       }),
     )
@@ -582,15 +580,15 @@ export const fetchClientDetail = createServerFn()
     const proxmoxResources: ClientProxmoxResource[] = bindings.map((b) => {
       const ctx = contractSuspensionContext.get(b.contractId)
       const hasOverdue = ctx?.hasOverdue ?? false
-      const paymentTermDueDate = ctx?.paymentTermDueDate ?? null
+      const nearestUnpaidDueDate = ctx?.nearestUnpaidDueDate ?? null
 
       const futurePausedUntil =
         b.pausedUntil && b.pausedUntil > now ? b.pausedUntil : null
 
       const candidates: Date[] = []
       if (futurePausedUntil) candidates.push(futurePausedUntil)
-      if (paymentTermDueDate && paymentTermDueDate > now) {
-        candidates.push(paymentTermDueDate)
+      if (nearestUnpaidDueDate && nearestUnpaidDueDate > now) {
+        candidates.push(nearestUnpaidDueDate)
       }
       const willSuspendAt =
         !b.isPausedBySystem && candidates.length > 0

@@ -1,6 +1,6 @@
 import '@tanstack/react-start/server-only'
 
-import { and, eq, inArray, isNull, lt } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 
 import { db } from '#/db/index.server'
 import { contractVm, invoice } from '#/db/schema'
@@ -144,15 +144,20 @@ export async function getPendingBlockedServicesByContractIds(
     [...grouped.entries()].map(async ([contractId, items]) => {
       if (items.some((item) => item.isPausedBySystem)) return null
 
-      const overdueInvoice = await db.query.invoice.findFirst({
+      const nearestUnpaid = await db.query.invoice.findFirst({
         where: and(
           eq(invoice.contractId, contractId),
           isNull(invoice.paidAt),
           isNull(invoice.archivedAt),
-          lt(invoice.dueDate, now),
+          isNotNull(invoice.dueDate),
         ),
-        columns: { id: true },
+        columns: { dueDate: true },
+        orderBy: [asc(invoice.dueDate)],
       })
+
+      if (!nearestUnpaid?.dueDate) return null
+
+      const hasOverdue = nearestUnpaid.dueDate < now
 
       const latestPausedUntil =
         items
@@ -162,11 +167,10 @@ export async function getPendingBlockedServicesByContractIds(
           .at(0) ?? null
 
       let willSuspendAt: Date | null = null
-      if (overdueInvoice) {
+      if (hasOverdue) {
         willSuspendAt = latestPausedUntil ?? now
-      } else {
-        const dueDate = await getContractPaymentTermDueDate(contractId, now)
-        if (dueDate && dueDate > now) willSuspendAt = dueDate
+      } else if (nearestUnpaid.dueDate > now) {
+        willSuspendAt = nearestUnpaid.dueDate
       }
 
       if (!willSuspendAt) return null
