@@ -193,6 +193,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   })
 
   const scopes = scopeData?.scopes ?? []
+  if (scopes.length === 0) return null
+
   const selectedScope =
     scopes.find((s) => s.id === scopeData?.selectedScopeId) ?? scopes[0]
   const isPersonal = selectedScope.kind === 'personal'
