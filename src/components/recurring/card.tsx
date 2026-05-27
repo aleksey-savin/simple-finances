@@ -15,7 +15,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Calendar, Clock, PenLine, Plus, SkipForward } from 'lucide-react'
+import {
+  Calendar,
+  Clock,
+  FileText,
+  PenLine,
+  Plus,
+  SkipForward,
+} from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 import {
   formatRuleAmount,
@@ -68,7 +75,24 @@ export const RuleCard = ({
           <div className="flex flex-wrap gap-1 text-xs">
             <Badge>{rule.category.name}</Badge>
             <Badge>{rule.currentAccount.name}</Badge>
-            <Badge>{rule.counterparty?.name}</Badge>
+            {rule.counterparty?.name && <Badge>{rule.counterparty.name}</Badge>}
+            {rule.contract ? (
+              <Badge
+                variant="outline"
+                className="gap-1 font-normal text-green-600 border-green-300"
+              >
+                <FileText className="size-3 shrink-0" />
+                Договор
+              </Badge>
+            ) : (
+              <Badge
+                variant="outline"
+                className="gap-1 font-normal text-muted-foreground"
+              >
+                <FileText className="size-3 shrink-0" />
+                Без договора
+              </Badge>
+            )}
           </div>
 
           {/* Schedule */}

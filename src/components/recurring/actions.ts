@@ -70,6 +70,7 @@ export const fetchRecurringData = createServerFn().handler(async () => {
         category: { columns: { id: true, name: true } },
         currentAccount: { columns: { id: true, name: true } },
         counterparty: { columns: { id: true, name: true } },
+        contract: { columns: { id: true, name: true, number: true } },
       },
     }),
     db.query.category.findMany({

@@ -22,11 +22,8 @@ import { Button } from '#/components/ui/button'
 import { Card } from '#/components/ui/card'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
-import {
-  MultiSelectCombobox
-  
-} from '#/components/ui/multi-select-combobox'
-import type {MultiSelectOption} from '#/components/ui/multi-select-combobox';
+import { MultiSelectCombobox } from '#/components/ui/multi-select-combobox'
+import type { MultiSelectOption } from '#/components/ui/multi-select-combobox'
 import { Switch } from '#/components/ui/switch'
 import {
   Table,
@@ -72,6 +69,9 @@ function RecurringPage() {
   const [categoryFilter, setCategoryFilter] = useState<string[]>([])
   const [accountFilter, setAccountFilter] = useState<string[]>([])
   const [counterpartyFilter, setCounterpartyFilter] = useState<string[]>([])
+  const [contractFilter, setContractFilter] = useState<
+    'all' | 'with' | 'without'
+  >('all')
   const [selectedMonth, setSelectedMonth] = useState<Date>(startOfCurrentMonth)
   const [onlySelectedMonth, setOnlySelectedMonth] = useState(false)
 
@@ -154,6 +154,7 @@ function RecurringPage() {
     categoryFilter.length > 0 ||
     accountFilter.length > 0 ||
     counterpartyFilter.length > 0 ||
+    contractFilter !== 'all' ||
     onlySelectedMonth
 
   const clearFilters = () => {
@@ -162,6 +163,7 @@ function RecurringPage() {
     setCategoryFilter([])
     setAccountFilter([])
     setCounterpartyFilter([])
+    setContractFilter('all')
     setOnlySelectedMonth(false)
   }
 
@@ -200,6 +202,8 @@ function RecurringPage() {
           !counterpartyFilter.includes(rule.counterparty?.id ?? '')
         )
           return false
+        if (contractFilter === 'with' && !rule.contract) return false
+        if (contractFilter === 'without' && rule.contract) return false
 
         if (onlySelectedMonth && !ruleHasOccurrenceInMonth(rule, selectedMonth))
           return false
@@ -222,6 +226,7 @@ function RecurringPage() {
     categoryFilter,
     accountFilter,
     counterpartyFilter,
+    contractFilter,
     onlySelectedMonth,
     selectedMonth,
   ])
@@ -296,6 +301,26 @@ function RecurringPage() {
                 searchPlaceholder="Поиск контрагента…"
                 emptyText="Контрагенты не найдены"
               />
+
+              <ToggleGroup
+                variant="outline"
+                type="single"
+                value={contractFilter}
+              >
+                {(['all', 'with', 'without'] as const).map((c) => (
+                  <ToggleGroupItem
+                    value={c}
+                    key={c}
+                    onClick={() => setContractFilter(c)}
+                  >
+                    {c === 'all'
+                      ? 'Все'
+                      : c === 'with'
+                        ? 'С договором'
+                        : 'Без договора'}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
 
               <div className="flex items-center gap-2">
                 <Switch

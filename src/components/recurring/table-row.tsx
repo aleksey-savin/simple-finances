@@ -3,6 +3,7 @@ import { useRouter } from '@tanstack/react-router'
 import {
   Calendar,
   Clock,
+  FileText,
   MoreHorizontal,
   PenLine,
   Plus,
@@ -94,6 +95,23 @@ export function RuleTableRow({
             {rule.counterparty && (
               <Badge variant="outline" className="text-xs font-normal">
                 {rule.counterparty.name}
+              </Badge>
+            )}
+            {rule.contract ? (
+              <Badge
+                variant="outline"
+                className="gap-1 text-xs font-normal text-green-600 border-green-300"
+              >
+                <FileText className="size-3 shrink-0" />
+                Договор
+              </Badge>
+            ) : (
+              <Badge
+                variant="outline"
+                className="gap-1 text-xs font-normal text-muted-foreground"
+              >
+                <FileText className="size-3 shrink-0" />
+                Без договора
               </Badge>
             )}
           </div>

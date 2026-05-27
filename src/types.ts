@@ -576,6 +576,7 @@ export type RuleWithRelations = Pick<
   | 'description'
   | 'categoryId'
   | 'counterpartyId'
+  | 'contractId'
   | 'currentAccountId'
   | 'cronExpression'
   | 'dueDaysFromCreation'
@@ -592,6 +593,7 @@ export type RuleWithRelations = Pick<
   category: { id: string; name: string }
   currentAccount: { id: string; name: string }
   counterparty: { id: string; name: string } | null
+  contract: { id: string; name: string; number: string | null } | null
 }
 
 export type RecurringMonthTotals = {
