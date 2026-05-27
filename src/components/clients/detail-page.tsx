@@ -6,13 +6,13 @@ import type { ClientDetail } from '@/types'
 import { BlockedServicesCard } from '@/components/contracts/blocked-services-card'
 
 import { clientDetailQueryKey, clientsQueryKey } from './actions'
-import { ClientContacts } from './client-contacts'
 import { ClientContracts } from './client-contracts'
 import { ClientCounterparties } from './client-counterparties'
 import { ClientHistoryLog } from './client-history-log'
 import { ClientInfoCard } from './client-info-card'
 import { ClientPendingActivities } from './client-pending-activities'
 import { ClientPendingPayments } from './client-pending-payments'
+import { ClientProxmoxResources } from './client-proxmox-resources'
 import type { HistoryEntry } from './client-history-log'
 import type { PendingActivity } from './client-pending-activities'
 
@@ -83,17 +83,35 @@ export function ClientDetailPage({ client }: { client: ClientDetail }) {
   const router = useRouter()
   const queryClient = useQueryClient()
 
-  const activities: PendingActivity[] = client.activeRevisions.map((r) => ({
-    id: r.itemId,
-    type: 'price_revision',
-    typeLabel: 'Ревизия цен',
-    title: r.revisionName,
-    subtitle: r.contractName,
-    status: r.status,
-    statusLabel: revisionStatusLabel[r.status] ?? r.status,
-    statusVariant: revisionStatusVariant[r.status] ?? 'secondary',
-    link: { to: '/price-revisions/$id', params: { id: r.revisionId } },
-  }))
+  const revisionGroups = new Map<
+    string,
+    (typeof client.activeRevisions)[number][]
+  >()
+  for (const r of client.activeRevisions) {
+    const list = revisionGroups.get(r.revisionId) ?? []
+    list.push(r)
+    revisionGroups.set(r.revisionId, list)
+  }
+
+  const activities: PendingActivity[] = [...revisionGroups.values()].map(
+    (items) => {
+      const first = items[0]
+      const counterpartyNames = [
+        ...new Set(items.map((i) => i.counterpartyName)),
+      ].join(', ')
+      return {
+        id: first.revisionId,
+        type: 'price_revision',
+        typeLabel: 'Ревизия цен',
+        title: first.revisionName,
+        subtitle: counterpartyNames,
+        status: first.status,
+        statusLabel: revisionStatusLabel[first.status] ?? first.status,
+        statusVariant: revisionStatusVariant[first.status] ?? 'secondary',
+        link: { to: '/price-revisions/$id', params: { id: first.revisionId } },
+      }
+    },
+  )
 
   const historyEntries: HistoryEntry[] = client.amountHistory.map((h) => ({
     id: h.id,
@@ -132,13 +150,13 @@ export function ClientDetailPage({ client }: { client: ClientDetail }) {
         />
       )}
 
-      <ClientContacts clientId={client.id} contacts={client.contacts} />
+      <ClientProxmoxResources resources={client.proxmoxResources} />
+      <ClientPendingPayments payments={client.pendingPayments} />
       <ClientContracts
         clientId={client.id}
         counterparties={client.counterparties}
         contracts={client.contracts}
       />
-      <ClientPendingPayments payments={client.pendingPayments} />
       <ClientPendingActivities activities={activities} />
       <ClientHistoryLog entries={historyEntries} />
     </div>

@@ -24,7 +24,6 @@ import {
 } from '#/db/schema'
 import {
   buildBankTransactionImportKey,
-  extractDocumentRefs,
   normalizeCounterpartyName,
   parseBankStatement,
   parseStoredBankTransactionPayload,
@@ -296,7 +295,7 @@ export const importBankStatement = createServerFn({ method: 'POST' })
             ? Number(document.amount)
             : -Number(document.amount)
 
-        nextIds.push(created.id)
+        nextIds.push(created[0].id)
       }
 
       if (balanceDelta !== 0) {
@@ -843,12 +842,8 @@ async function findMatchingInvoices(
   })
 
   const targetAmountCents = toMoneyCents(transaction.amount)
-  const normalizedCounterparty = normalizeCounterpartyName(
-    resolvedPayload?.counterpartyName ?? '',
-  )
-  const refs = extractDocumentRefs(resolvedPayload?.description)
 
-  return invoiceRows
+  const scored = invoiceRows
     .map((invoiceRow) => {
       const state = getPaymentState({
         amount: invoiceRow.amount,
@@ -861,9 +856,6 @@ async function findMatchingInvoices(
       const reasons: string[] = []
       let score = 0
       const outstandingCents = toMoneyCents(state.outstandingAmount)
-      const normalizedInvoiceCounterparty = normalizeCounterpartyName(
-        invoiceRow.counterparty?.name,
-      )
 
       if (
         resolvedPayload?.counterpartyTin &&
@@ -874,24 +866,9 @@ async function findMatchingInvoices(
         reasons.push('совпадает ИНН контрагента')
       }
 
-      if (
-        normalizedCounterparty &&
-        normalizedInvoiceCounterparty &&
-        (normalizedCounterparty.includes(normalizedInvoiceCounterparty) ||
-          normalizedInvoiceCounterparty.includes(normalizedCounterparty))
-      ) {
-        score += 20
-        reasons.push('совпадает контрагент')
-      }
-
       if (outstandingCents === targetAmountCents) {
-        score += 15
+        score += 40
         reasons.push('точное совпадение суммы')
-      }
-
-      if (outstandingCents > targetAmountCents) {
-        score += 5
-        reasons.push('доход/расход может быть частично закрыт')
       }
 
       if (
@@ -901,27 +878,8 @@ async function findMatchingInvoices(
           normalizeCounterpartyName(invoiceRow.description),
         )
       ) {
-        score += 5
-        reasons.push('назначение похоже на описание документа')
-      }
-
-      if (
-        refs.length > 0 &&
-        refs.some((ref) => invoiceRow.description.toLowerCase().includes(ref))
-      ) {
         score += 10
-        reasons.push('найден номер документа в назначении')
-      }
-
-      const dateDistanceDays = Math.abs(
-        Math.round(
-          (transaction.bookedAt.getTime() - invoiceRow.createdAt.getTime()) /
-            (1000 * 60 * 60 * 24),
-        ),
-      )
-      if (dateDistanceDays <= 14) {
-        score += 5
-        reasons.push('даты близки')
+        reasons.push('назначение похоже на описание документа')
       }
 
       return {
@@ -940,7 +898,50 @@ async function findMatchingInvoices(
       }
     })
     .filter((value): value is NonNullable<typeof value> => value !== null)
-    .sort((left, right) => right.score - left.score)
+
+  // If multiple unpaid invoices share the same counterparty and amount, the
+  // oldest one is the most likely match — give it a small bonus so it sorts
+  // above its siblings. Restricted to invoices whose counterparty TIN matches
+  // the bank transaction's TIN, otherwise the bonus inflates unrelated
+  // invoices that just happen to be the oldest in their own group.
+  const txCounterpartyTin = resolvedPayload?.counterpartyTin ?? null
+  if (txCounterpartyTin) {
+    const tinByInvoiceId = new Map(
+      invoiceRows.map((row) => [row.id, row.counterparty?.tin ?? null]),
+    )
+    const relevant = scored.filter(
+      (item) =>
+        item.counterpartyId !== null &&
+        tinByInvoiceId.get(item.id) === txCounterpartyTin,
+    )
+    const byAmount = new Map<number, typeof relevant>()
+    for (const item of relevant) {
+      const bucket = byAmount.get(item.amount) ?? []
+      bucket.push(item)
+      byAmount.set(item.amount, bucket)
+    }
+    for (const bucket of byAmount.values()) {
+      if (bucket.length < 2) continue
+      const oldest = bucket.reduce((acc, s) =>
+        s.createdAt < acc.createdAt ? s : acc,
+      )
+      oldest.score += 10
+      oldest.reasons.push(
+        'самый старый неоплаченный счёт этого контрагента с такой суммой',
+      )
+    }
+  }
+
+  return scored.sort((left, right) => {
+    if (right.score !== left.score) return right.score - left.score
+    // Among equal-scored invoices prefer the oldest (unpaid recurring invoices
+    // should be matched in chronological order — oldest first)
+    return left.createdAt < right.createdAt
+      ? -1
+      : left.createdAt > right.createdAt
+        ? 1
+        : 0
+  })
 }
 
 async function loadTransactionPayload(bankTransactionId: string) {

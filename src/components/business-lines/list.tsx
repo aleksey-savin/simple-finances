@@ -40,6 +40,15 @@ function BusinessLineRow({
               businessLine.allowServerBindings ? 'разрешены' : 'запрещены'
             } · Уведомления: ${businessLine.allowNotifications ? 'вкл' : 'выкл'}`}
           </p>
+          {businessLine.allowNotifications && (
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {`Напоминания: за ${businessLine.reminderDaysBefore} дн., каждые ${
+                businessLine.reminderFrequencyDays
+              } дн., тон: ${
+                businessLine.notificationStyle === 'soft' ? 'мягко' : 'строго'
+              }`}
+            </p>
+          )}
         </ItemContent>
 
         <ItemActions>

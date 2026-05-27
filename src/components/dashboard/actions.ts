@@ -23,7 +23,10 @@ import {
   invoice,
   settlement,
 } from '#/db/schema'
-import { getBlockedServicesByContractIds } from '#/lib/blocked-services'
+import {
+  getBlockedServicesByContractIds,
+  getPendingBlockedServicesByContractIds,
+} from '#/lib/blocked-services'
 import { getPaymentState } from '#/lib/invoice-payment'
 import { getDueMeta } from '#/components/payables/utils'
 import type { AppScope } from '#/lib/company-scope'
@@ -76,6 +79,7 @@ export const fetchDashboardData = createServerFn().handler(async () => {
       netWithPreviousPeriodDebt: 0,
     },
     blockedServices: [],
+    pendingBlockedServices: [],
   } satisfies DashboardLoaderData
 
   if (accountIds.length === 0) return empty
@@ -343,11 +347,13 @@ export const fetchDashboardData = createServerFn().handler(async () => {
       0,
     ),
   }
-  const blockedServices = await getBlockedServicesByContractIds(
-    contractIdsInScopeRows
-      .map((row) => row.contractId)
-      .filter((id): id is string => id !== null),
-  )
+  const scopedContractIds = contractIdsInScopeRows
+    .map((row) => row.contractId)
+    .filter((id): id is string => id !== null)
+  const [blockedServices, pendingBlockedServices] = await Promise.all([
+    getBlockedServicesByContractIds(scopedContractIds),
+    getPendingBlockedServicesByContractIds(scopedContractIds),
+  ])
   const tasks = buildDashboardTasks(
     bankSummary,
     unallocatedTransactions,
@@ -394,6 +400,7 @@ export const fetchDashboardData = createServerFn().handler(async () => {
         previousPeriodDebt,
     },
     blockedServices,
+    pendingBlockedServices,
   } satisfies DashboardLoaderData
 })
 

@@ -6,6 +6,7 @@ import z from 'zod'
 
 import type { BusinessLine } from '@/types'
 import { Button } from '@/components/ui/button'
+import { Combobox } from '@/components/ui/combobox'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
@@ -19,7 +20,44 @@ const uiFormSchema = z.object({
   name: z.string().min(2, 'Минимум 2 символа'),
   allowServerBindings: z.boolean(),
   allowNotifications: z.boolean(),
+  reminderDaysBefore: z.number().int().min(0).max(60),
+  reminderFrequencyDays: z.number().int().min(1).max(60),
+  notificationStyle: z.enum(['strict', 'soft']),
 })
+
+const notificationStyleOptions = [
+  { value: 'strict', label: 'Строго' },
+  { value: 'soft', label: 'Мягко' },
+]
+
+ 
+function NumberFormField(props: {
+  field: any
+  label: string
+  min: number
+  max: number
+}) {
+  const { field, label, min, max } = props
+  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+  return (
+    <Field data-invalid={isInvalid}>
+      <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
+      <Input
+        id={field.name}
+        name={field.name}
+        value={String(field.state.value)}
+        onBlur={field.handleBlur}
+        onChange={(e) => field.handleChange(Number(e.target.value))}
+        aria-invalid={isInvalid}
+        type="number"
+        min={min}
+        max={max}
+        required
+      />
+      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+    </Field>
+  )
+}
 
 type BusinessLineFormProps =
   | { businessLine?: undefined; onDone?: () => void }
@@ -38,6 +76,9 @@ export const BusinessLineForm = ({
       name: current?.name ?? '',
       allowServerBindings: current?.allowServerBindings ?? true,
       allowNotifications: current?.allowNotifications ?? true,
+      reminderDaysBefore: current?.reminderDaysBefore ?? 5,
+      reminderFrequencyDays: current?.reminderFrequencyDays ?? 7,
+      notificationStyle: (current?.notificationStyle ?? 'strict'),
     },
     validators: { onSubmit: uiFormSchema },
     onSubmit: async ({ value }) => {
@@ -49,6 +90,9 @@ export const BusinessLineForm = ({
               name: value.name,
               allowServerBindings: value.allowServerBindings,
               allowNotifications: value.allowNotifications,
+              reminderDaysBefore: value.reminderDaysBefore,
+              reminderFrequencyDays: value.reminderFrequencyDays,
+              notificationStyle: value.notificationStyle,
             },
           })
           await router.invalidate()
@@ -66,6 +110,9 @@ export const BusinessLineForm = ({
             name: value.name,
             allowServerBindings: value.allowServerBindings,
             allowNotifications: value.allowNotifications,
+            reminderDaysBefore: value.reminderDaysBefore,
+            reminderFrequencyDays: value.reminderFrequencyDays,
+            notificationStyle: value.notificationStyle,
           },
         })
         await router.invalidate()
@@ -172,6 +219,60 @@ export const BusinessLineForm = ({
             </Field>
           )}
         </form.Field>
+
+        <form.Subscribe selector={(state) => state.values.allowNotifications}>
+          {(allowNotifications) =>
+            allowNotifications ? (
+              <>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <form.Field name="reminderDaysBefore">
+                    {(field) => (
+                      <NumberFormField
+                        field={field}
+                        label="За сколько дней напоминать"
+                        min={0}
+                        max={60}
+                      />
+                    )}
+                  </form.Field>
+
+                  <form.Field name="reminderFrequencyDays">
+                    {(field) => (
+                      <NumberFormField
+                        field={field}
+                        label="Как часто повторять (дни)"
+                        min={1}
+                        max={60}
+                      />
+                    )}
+                  </form.Field>
+                </div>
+
+                <form.Field name="notificationStyle">
+                  {(field) => (
+                    <Field>
+                      <FieldLabel htmlFor={field.name}>
+                        Тон напоминаний
+                      </FieldLabel>
+                      <Combobox
+                        options={notificationStyleOptions}
+                        value={field.state.value}
+                        onValueChange={(value) =>
+                          field.handleChange(value as 'strict' | 'soft')
+                        }
+                        placeholder="Выберите тон"
+                        onBlur={field.handleBlur}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Мягкий тон убирает упоминания о блокировке услуги.
+                      </p>
+                    </Field>
+                  )}
+                </form.Field>
+              </>
+            ) : null
+          }
+        </form.Subscribe>
 
         <Button type="submit">{isEdit ? 'Сохранить' : 'Создать'}</Button>
       </div>

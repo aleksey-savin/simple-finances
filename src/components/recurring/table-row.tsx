@@ -6,6 +6,7 @@ import {
   MoreHorizontal,
   PenLine,
   Plus,
+  SkipForward,
   Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -44,17 +45,22 @@ export function RuleTableRow({
   rule,
   onEdit,
   onCreateNow,
+  onSkipNext,
   onToggle,
 }: {
   rule: RuleWithRelations
   onEdit: () => void
-  onCreateNow: () => Promise<void>
+  onCreateNow: (skipNext: boolean) => Promise<void>
+  onSkipNext: () => Promise<void>
   onToggle: (value: boolean) => void
 }) {
   const router = useRouter()
   const isExpense = rule.type === 'payable'
   const [createNowOpen, setCreateNowOpen] = useState(false)
+  const [skipNext, setSkipNext] = useState(false)
+  const [skipDialogOpen, setSkipDialogOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const canSkip = rule.isActive && Boolean(rule.nextRunAt)
 
   const handleDelete = async () => {
     try {
@@ -143,7 +149,13 @@ export function RuleTableRow({
 
       <TableCell>
         <div className="flex justify-end">
-          <AlertDialog open={createNowOpen} onOpenChange={setCreateNowOpen}>
+          <AlertDialog
+            open={createNowOpen}
+            onOpenChange={(open) => {
+              setCreateNowOpen(open)
+              if (!open) setSkipNext(false)
+            }}
+          >
             <AlertDialogContent size="sm">
               <AlertDialogHeader>
                 <AlertDialogTitle>
@@ -151,18 +163,62 @@ export function RuleTableRow({
                 </AlertDialogTitle>
                 <AlertDialogDescription>
                   Будет создана новая запись по правилу «{rule.description}».
-                  Расписание и следующий запуск правила не изменятся.
+                  Расписание не изменится.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <label className="flex items-center justify-between gap-3 rounded-md border p-3 text-sm">
+                <span className="flex flex-col gap-0.5">
+                  <span className="font-medium">
+                    Пропустить следующий запуск
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {canSkip
+                      ? 'Cron не создаст дубль по расписанию'
+                      : 'Недоступно для приостановленных правил'}
+                  </span>
+                </span>
+                <Switch
+                  checked={skipNext}
+                  onCheckedChange={setSkipNext}
+                  disabled={!canSkip}
+                  aria-label="Пропустить следующий запуск"
+                />
+              </label>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Отмена</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={async () => {
+                    await onCreateNow(skipNext)
+                    setCreateNowOpen(false)
+                    setSkipNext(false)
+                  }}
+                >
+                  Создать
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          <AlertDialog open={skipDialogOpen} onOpenChange={setSkipDialogOpen}>
+            <AlertDialogContent size="sm">
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  Пропустить следующий запуск?
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  Запланированный запуск {formatRuleDate(rule.nextRunAt)} будет
+                  пропущен. Запись создана не будет.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Отмена</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={async () => {
-                    await onCreateNow()
-                    setCreateNowOpen(false)
+                    await onSkipNext()
+                    setSkipDialogOpen(false)
                   }}
                 >
-                  Создать
+                  Пропустить
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -197,6 +253,12 @@ export function RuleTableRow({
                 <Plus className="size-3.5" />
                 Создать сейчас
               </DropdownMenuItem>
+              {canSkip ? (
+                <DropdownMenuItem onClick={() => setSkipDialogOpen(true)}>
+                  <SkipForward className="size-3.5" />
+                  Пропустить следующий
+                </DropdownMenuItem>
+              ) : null}
               <DropdownMenuItem onClick={onEdit}>
                 <PenLine className="size-3.5" />
                 Изменить

@@ -75,7 +75,7 @@ export function InvoiceSummary({ feed }: Props) {
 
   return (
     <div className="flex gap-4">
-      <Card className="gap-2 px-4 py-4 sm:width-fit">
+      <Card className="gap-2 px-4 py-4 w-full sm:w-auto">
         <CardHeader className="p-0">
           <CardTitle className="font-medium">Расходы</CardTitle>
         </CardHeader>
@@ -96,7 +96,7 @@ export function InvoiceSummary({ feed }: Props) {
           </div>
         </CardContent>
       </Card>
-      <Card className="gap-2 px-4 py-4 sm:width-fit">
+      <Card className="gap-2 px-4 py-4 w-full sm:w-auto">
         <CardHeader className="p-0">
           <CardTitle className="font-medium">Доходы</CardTitle>
         </CardHeader>

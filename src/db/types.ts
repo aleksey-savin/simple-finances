@@ -15,6 +15,7 @@ import type {
   contractDocument,
   contractPriceRevision,
   contractPriceRevisionItem,
+  contractPriceRevisionBulkSnapshot,
   contractAmountHistory,
   contractVm,
   document,
@@ -215,6 +216,13 @@ export type ContractPriceRevisionItemInsert =
   typeof contractPriceRevisionItem.$inferInsert
 export type ContractPriceRevisionItemUpdate =
   Partial<ContractPriceRevisionItemInsert> & { id: string }
+
+export type ContractPriceRevisionBulkSnapshot =
+  typeof contractPriceRevisionBulkSnapshot.$inferSelect
+export type ContractPriceRevisionBulkSnapshotInsert =
+  typeof contractPriceRevisionBulkSnapshot.$inferInsert
+export type ContractPriceRevisionBulkSnapshotUpdate =
+  Partial<ContractPriceRevisionBulkSnapshotInsert> & { id: string }
 
 export type ContractAmountHistory = typeof contractAmountHistory.$inferSelect
 export type ContractAmountHistoryInsert =

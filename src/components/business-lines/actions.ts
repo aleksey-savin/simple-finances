@@ -18,6 +18,9 @@ export const fetchBusinessLines = createServerFn().handler(async () => {
         name: true,
         allowServerBindings: true,
         allowNotifications: true,
+        reminderDaysBefore: true,
+        reminderFrequencyDays: true,
+        notificationStyle: true,
         createdBy: true,
       },
       with: {
@@ -36,6 +39,9 @@ export const fetchBusinessLines = createServerFn().handler(async () => {
         name: row.name,
         allowServerBindings: row.allowServerBindings,
         allowNotifications: row.allowNotifications,
+        reminderDaysBefore: row.reminderDaysBefore,
+        reminderFrequencyDays: row.reminderFrequencyDays,
+        notificationStyle: row.notificationStyle,
         createdBy: row.createdBy,
         contracts: row.contracts,
       })),
@@ -46,6 +52,9 @@ const businessLineSchema = z.object({
   name: z.string().min(2, 'Минимум 2 символа'),
   allowServerBindings: z.boolean(),
   allowNotifications: z.boolean(),
+  reminderDaysBefore: z.number().int().min(0).max(60),
+  reminderFrequencyDays: z.number().int().min(1).max(60),
+  notificationStyle: z.enum(['strict', 'soft']),
 })
 
 export const addBusinessLineSchema = businessLineSchema
@@ -59,6 +68,9 @@ export const addBusinessLine = createServerFn({ method: 'POST' })
       name: data.name,
       allowServerBindings: data.allowServerBindings,
       allowNotifications: data.allowNotifications,
+      reminderDaysBefore: data.reminderDaysBefore,
+      reminderFrequencyDays: data.reminderFrequencyDays,
+      notificationStyle: data.notificationStyle,
       createdBy: session.user.id,
     })
   })
@@ -78,6 +90,9 @@ export const updateBusinessLine = createServerFn({ method: 'POST' })
         name: data.name,
         allowServerBindings: data.allowServerBindings,
         allowNotifications: data.allowNotifications,
+        reminderDaysBefore: data.reminderDaysBefore,
+        reminderFrequencyDays: data.reminderFrequencyDays,
+        notificationStyle: data.notificationStyle,
       })
       .where(eq(businessLine.id, data.id))
   })

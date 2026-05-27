@@ -154,6 +154,29 @@ export type BlockedServiceSummary = {
   paymentTermDueDate: string | null
 }
 
+export type PendingBlockSummary = {
+  contractId: string
+  contractName: string
+  clientName: string | null
+  vmNames: string[]
+  willSuspendAt: string
+}
+
+export type ClientProxmoxResource = {
+  id: string
+  vmid: number
+  vmType: 'qemu' | 'lxc'
+  name: string
+  contractId: string
+  contractName: string
+  counterpartyName: string
+  nodeName: string
+  isPausedBySystem: boolean
+  pausedUntil: string | null
+  hasOverdueInvoices: boolean
+  willSuspendAt: string | null
+}
+
 export type ClientDetail = {
   id: string
   name: string
@@ -176,6 +199,7 @@ export type ClientDetail = {
     signedAt: string | null
     contractType: 'customer' | 'supplier'
     amount: string[]
+    allowNotifications: boolean
     businessLine: {
       id: string
       name: string
@@ -197,6 +221,7 @@ export type ClientDetail = {
     itemId: string
     contractId: string
     contractName: string
+    counterpartyName: string
     status: string
     included: boolean
     currentAmounts: string[]
@@ -219,6 +244,7 @@ export type ClientDetail = {
     email: string | null
   }[]
   blockedServices: BlockedServiceSummary[]
+  proxmoxResources: ClientProxmoxResource[]
 }
 
 export type Company = Pick<DBCompany, 'id' | 'name' | 'createdBy'> & {
@@ -228,7 +254,14 @@ export type Company = Pick<DBCompany, 'id' | 'name' | 'createdBy'> & {
 
 export type BusinessLine = Pick<
   DBBusinessLine,
-  'id' | 'name' | 'createdBy' | 'allowServerBindings' | 'allowNotifications'
+  | 'id'
+  | 'name'
+  | 'createdBy'
+  | 'allowServerBindings'
+  | 'allowNotifications'
+  | 'reminderDaysBefore'
+  | 'reminderFrequencyDays'
+  | 'notificationStyle'
 > & {
   contracts: Pick<DBContract, 'id' | 'name'>[]
 }
@@ -241,6 +274,7 @@ export type Contract = Pick<
   | 'signedAt'
   | 'contractType'
   | 'amount'
+  | 'allowNotifications'
   | 'businessLineId'
   | 'counterpartyId'
   | 'companyId'
@@ -261,7 +295,13 @@ export type { PriceRevisionItemStatus } from '@/db/types'
 
 export type PriceRevision = Pick<
   DBRevision,
-  'id' | 'name' | 'businessLineId' | 'companyId' | 'createdAt' | 'completedAt'
+  | 'id'
+  | 'name'
+  | 'businessLineId'
+  | 'companyId'
+  | 'createdAt'
+  | 'startedAt'
+  | 'completedAt'
 > & {
   businessLine: { id: string; name: string }
   itemCount: number
@@ -269,10 +309,24 @@ export type PriceRevision = Pick<
 
 export type PriceRevisionDetail = Pick<
   DBRevision,
-  'id' | 'name' | 'businessLineId' | 'companyId' | 'createdAt' | 'completedAt'
+  | 'id'
+  | 'name'
+  | 'businessLineId'
+  | 'companyId'
+  | 'createdAt'
+  | 'startedAt'
+  | 'completedAt'
 > & {
   businessLine: { id: string; name: string }
   items: PriceRevisionItemRow[]
+  bulkSnapshot: { actionLabel: string } | null
+}
+
+export type AvailableContractForRevision = {
+  id: string
+  name: string
+  number: string | null
+  counterpartyName: string
 }
 
 export type PriceRevisionItemRow = Pick<
@@ -504,6 +558,7 @@ export type DashboardMonthlyOutlook = {
 
 export type DashboardLoaderData = {
   accounts: DashboardAccountBalance[]
+  pendingBlockedServices: PendingBlockSummary[]
   totalBalance: number
   bankSummary: DashboardBankSummary
   tasks: DashboardTask[]
@@ -551,5 +606,4 @@ export type RecurringLoaderData = {
   categories: NamedEntity[]
   accounts: NamedEntity[]
   counterparties: NamedEntity[]
-  currentMonthTotals: RecurringMonthTotals
 }

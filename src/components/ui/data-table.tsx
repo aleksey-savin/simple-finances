@@ -105,7 +105,7 @@ export function DataTable<TData>({
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <Card className="min-w-0 p-4">{toolbar?.(table)}</Card>
+      {toolbar ? <Card className="min-w-0 p-4">{toolbar(table)}</Card> : null}
 
       <Card className="min-w-0 p-4">
         <Table>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Paperclip, Pencil, Plus } from 'lucide-react'
+import { Paperclip, Pencil, Plus, Server } from 'lucide-react'
 import { toast } from 'sonner'
 
 import type { ClientDetail } from '@/types'
@@ -8,6 +8,7 @@ import { AddContractForm, EditContractForm } from '@/components/contracts/form'
 import { resolveDocumentUrl } from '@/components/contracts/actions'
 import { DeleteContract } from '@/components/contracts/delete'
 import { ContractDocuments } from '@/components/contracts/documents'
+import { ContractIntegrationsSection } from '@/components/contracts/proxmox-integrations'
 import { ContractsTable } from '@/components/contracts/table'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -18,7 +19,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { clientDetailQueryKey } from './actions'
+import { sumAmounts } from './client-info-card'
 
 export function ClientContracts({
   clientId,
@@ -34,12 +43,21 @@ export function ClientContracts({
   const [addOpen, setAddOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [docsContractId, setDocsContractId] = useState<string | null>(null)
+  const [proxmoxContractId, setProxmoxContractId] = useState<string | null>(
+    null,
+  )
 
   const defaultCounterpartyId =
     counterparties.length === 1 ? counterparties[0].id : undefined
 
   const editingContract = contracts.find((c) => c.id === editingId) ?? null
   const docsContract = contracts.find((c) => c.id === docsContractId) ?? null
+  const proxmoxContract =
+    contracts.find((c) => c.id === proxmoxContractId) ?? null
+
+  const totals = sumAmounts(contracts)
+  const formatTotal = (value: number) =>
+    new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(value)
 
   const refresh = () =>
     queryClient.invalidateQueries({ queryKey: clientDetailQueryKey(clientId) })
@@ -77,16 +95,30 @@ export function ClientContracts({
   return (
     <>
       <Card className="p-4">
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-3 flex items-center justify-between gap-2">
           <h3 className="text-sm font-semibold">Договоры</h3>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-7"
-            onClick={() => setAddOpen(true)}
-          >
-            <Plus className="size-4" />
-          </Button>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-xs font-mono tabular-nums">
+              {totals.income > 0 && (
+                <span className="text-success">
+                  +{formatTotal(totals.income)} ₽
+                </span>
+              )}
+              {totals.expense > 0 && (
+                <span className="text-destructive">
+                  −{formatTotal(totals.expense)} ₽
+                </span>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7"
+              onClick={() => setAddOpen(true)}
+            >
+              <Plus className="size-4" />
+            </Button>
+          </div>
         </div>
         {contracts.length === 0 ? (
           <p className="text-sm text-muted-foreground">Нет договоров</p>
@@ -98,6 +130,17 @@ export function ClientContracts({
             directionMode="cashflow"
             renderActions={(contract) => (
               <>
+                {contract.businessLine?.allowServerBindings && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-7"
+                    title="Proxmox"
+                    onClick={() => setProxmoxContractId(contract.id)}
+                  >
+                    <Server className="size-3.5" />
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="icon"
@@ -176,6 +219,27 @@ export function ClientContracts({
           ) : null}
         </DialogContent>
       </Dialog>
+
+      <Sheet
+        open={proxmoxContract !== null}
+        onOpenChange={(open) => {
+          if (open) return
+          setProxmoxContractId(null)
+          void refresh()
+        }}
+      >
+        <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
+          <SheetHeader>
+            <SheetTitle>Proxmox</SheetTitle>
+            <SheetDescription>{proxmoxContract?.name}</SheetDescription>
+          </SheetHeader>
+          {proxmoxContract && (
+            <div className="mt-4">
+              <ContractIntegrationsSection contractId={proxmoxContract.id} />
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </>
   )
 }

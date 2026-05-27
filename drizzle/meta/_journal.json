@@ -421,6 +421,27 @@
       "when": 1779699239507,
       "tag": "0059_bouncy_paibok",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1779853027625,
+      "tag": "0060_confused_the_anarchist",
+      "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1779855335234,
+      "tag": "0061_yellow_meltdown",
+      "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1779856624881,
+      "tag": "0062_loose_talon",
+      "breakpoints": true
     }
   ]
 }

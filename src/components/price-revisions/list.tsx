@@ -14,6 +14,11 @@ import {
 } from '#/components/ui/table'
 import type { PriceRevision } from '@/types'
 import { DeletePriceRevision } from './delete'
+import {
+  REVISION_STATUS_LABELS,
+  getRevisionStatus,
+  getRevisionStatusVariant,
+} from './utils'
 
 function formatDate(date: Date) {
   return new Intl.DateTimeFormat('ru-RU', {
@@ -35,6 +40,7 @@ export function PriceRevisionList({
           <TableRow>
             <TableHead className="font-bold">Название</TableHead>
             <TableHead className="font-bold">Направление</TableHead>
+            <TableHead className="font-bold">Статус</TableHead>
             <TableHead className="font-bold">Договоров</TableHead>
             <TableHead className="font-bold">Создана</TableHead>
             <TableHead className="w-28 text-right font-bold">
@@ -43,35 +49,48 @@ export function PriceRevisionList({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {revisions.map((revision) => (
-            <TableRow key={revision.id}>
-              <TableCell className="font-medium">{revision.name}</TableCell>
-              <TableCell>
-                <Badge variant="secondary">{revision.businessLine.name}</Badge>
-              </TableCell>
-              <TableCell>{revision.itemCount}</TableCell>
-              <TableCell>{formatDate(revision.createdAt)}</TableCell>
-              <TableCell>
-                <div className="flex justify-end gap-1">
-                  <Button
-                    asChild
-                    variant="ghost"
-                    size="icon"
-                    className="size-8"
-                    title="Открыть ревизию"
-                  >
-                    <Link
-                      to="/price-revisions/$id"
-                      params={{ id: revision.id }}
+          {revisions.map((revision) => {
+            const status = getRevisionStatus(revision)
+            const statusVariant = getRevisionStatusVariant(status)
+            return (
+              <TableRow key={revision.id}>
+                <TableCell className="font-medium">{revision.name}</TableCell>
+                <TableCell>
+                  <Badge variant="secondary">
+                    {revision.businessLine.name}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={statusVariant}>
+                    {REVISION_STATUS_LABELS[status]}
+                  </Badge>
+                </TableCell>
+                <TableCell>{revision.itemCount}</TableCell>
+                <TableCell>{formatDate(revision.createdAt)}</TableCell>
+                <TableCell>
+                  <div className="flex justify-end gap-1">
+                    <Button
+                      asChild
+                      variant="ghost"
+                      size="icon"
+                      className="size-8"
+                      title="Открыть ревизию"
                     >
-                      <Eye className="size-4" />
-                    </Link>
-                  </Button>
-                  <DeletePriceRevision entityId={revision.id} />
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
+                      <Link
+                        to="/price-revisions/$id"
+                        params={{ id: revision.id }}
+                      >
+                        <Eye className="size-4" />
+                      </Link>
+                    </Button>
+                    {status === 'draft' && (
+                      <DeletePriceRevision entityId={revision.id} />
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            )
+          })}
         </TableBody>
       </Table>
     </Card>

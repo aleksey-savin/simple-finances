@@ -160,27 +160,34 @@ export function buildInvoiceReminderEmail(params: {
   dueDateLabel: string
   renewalHtml?: string
   renewalText?: string
+  style?: 'strict' | 'soft'
 }): EmailTemplate {
   const renewalHtml = params.renewalHtml?.trim() || ''
   const renewalText = params.renewalText ?? ''
+  const style = params.style ?? 'strict'
+
+  const callToAction =
+    style === 'soft'
+      ? 'Будем признательны за своевременную оплату направленного в ЭДО счёта.'
+      : 'Чтобы избежать приостановки услуги, пожалуйста, оплатите направленный в ЭДО счёт.'
 
   return {
     subject: `Напоминание об оплате счёта до ${params.dueDateLabel}`,
     html: renderEmailLayout({
       title: 'Напоминаем об оплате',
-      tone: 'critical',
+      tone: style === 'soft' ? 'info' : 'critical',
       metaLabel: 'Услуга',
       metaValue: params.contractLabel,
       statusText: `Срок истекает: ${params.dueDateLabel}`,
       sectionsHtml: [
         renewalHtml,
-        'Чтобы избежать приостановки услуги, пожалуйста, оплатите направленный в ЭДО счёт.',
+        callToAction,
         'Если оплата уже выполнена — просьба проигнорировать это сообщение.',
       ],
     }),
-    text: `Здравствуйте, ${params.contactName}!\n\nСрок действия услуги "${params.contractLabel}" истекает ${params.dueDateLabel}.${
+    text: `Здравствуйте, ${params.contactName}!\n\nСрок действия оплаты счёта за услугу "${params.contractLabel}" истекает ${params.dueDateLabel}.${
       renewalText ? `\n\n${renewalText}` : ''
-    }\n\nЧтобы избежать приостановки услуги, пожалуйста, оплатите направленный в ЭДО счёт.\nЕсли оплата уже выполнена — просьба проигнорировать это сообщение.\n\nЕсли у вас возникли вопросы или нужна помощь — мы всегда на связи.`,
+    }\n\n${callToAction}\nЕсли оплата уже выполнена — просьба проигнорировать это сообщение.\n\nЕсли у вас возникли вопросы или нужна помощь — мы всегда на связи.`,
   }
 }
 

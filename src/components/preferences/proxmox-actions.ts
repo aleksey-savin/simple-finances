@@ -4,7 +4,7 @@ import { and, eq } from 'drizzle-orm'
 import z from 'zod'
 
 import { db } from '#/db/index.server'
-import { proxmoxAccountSettings, proxmoxNode } from '#/db/schema'
+import { proxmoxNode } from '#/db/schema'
 import { createProxmoxClient } from '#/lib/proxmox'
 import { resolveSelectedScope } from '#/lib/company-scope'
 import { getRequest, requireSession } from '#/utils/session.server'
@@ -12,7 +12,6 @@ import { getRequest, requireSession } from '#/utils/session.server'
 // ─── Query keys ───────────────────────────────────────────────────────────────
 
 export const proxmoxNodesQueryKey = ['proxmox-nodes'] as const
-export const proxmoxSettingsQueryKey = ['proxmox-settings'] as const
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -94,16 +93,18 @@ export const testProxmoxNodeConnection = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
     const accountId = await getAccountId()
-    const [node] = await db
-      .select()
-      .from(proxmoxNode)
-      .where(
-        and(
-          eq(proxmoxNode.id, data.id),
-          eq(proxmoxNode.currentAccountId, accountId),
-        ),
-      )
-      .limit(1)
+    const node = (
+      await db
+        .select()
+        .from(proxmoxNode)
+        .where(
+          and(
+            eq(proxmoxNode.id, data.id),
+            eq(proxmoxNode.currentAccountId, accountId),
+          ),
+        )
+        .limit(1)
+    ).at(0)
     if (!node) throw new Error('Нода не найдена')
 
     const client = createProxmoxClient({
@@ -122,49 +123,5 @@ export const testProxmoxNodeConnection = createServerFn({ method: 'POST' })
         ok: false,
         error: err instanceof Error ? err.message : String(err),
       }
-    }
-  })
-
-// ─── Account settings ─────────────────────────────────────────────────────────
-
-export const fetchProxmoxAccountSettings = createServerFn().handler(
-  async () => {
-    const accountId = await getAccountId()
-    const [settings] = await db
-      .select()
-      .from(proxmoxAccountSettings)
-      .where(eq(proxmoxAccountSettings.currentAccountId, accountId))
-      .limit(1)
-    return settings ?? null
-  },
-)
-
-export const proxmoxAccountSettingsSchema = z.object({
-  reminderDaysBefore: z.number().int().min(0).max(365),
-})
-
-export const saveProxmoxAccountSettings = createServerFn({ method: 'POST' })
-  .inputValidator(proxmoxAccountSettingsSchema)
-  .handler(async ({ data }) => {
-    const accountId = await getAccountId()
-    const existing = await db
-      .select({ id: proxmoxAccountSettings.id })
-      .from(proxmoxAccountSettings)
-      .where(eq(proxmoxAccountSettings.currentAccountId, accountId))
-      .limit(1)
-
-    if (existing.length > 0) {
-      await db
-        .update(proxmoxAccountSettings)
-        .set({
-          reminderDaysBefore: data.reminderDaysBefore,
-          updatedAt: new Date(),
-        })
-        .where(eq(proxmoxAccountSettings.currentAccountId, accountId))
-    } else {
-      await db.insert(proxmoxAccountSettings).values({
-        currentAccountId: accountId,
-        reminderDaysBefore: data.reminderDaysBefore,
-      })
     }
   })

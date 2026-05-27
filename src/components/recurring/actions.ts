@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 
 import { z } from 'zod'
+import { Cron } from 'croner'
 import { db } from '#/db/index.server'
 import {
   category,
@@ -10,14 +11,21 @@ import {
   recurringRule,
 } from '@/db/schema'
 import { eq, inArray, or } from 'drizzle-orm'
-import { Cron } from 'croner'
 import { getRequest, requireSession } from '#/utils/session.server'
 import { createRecurringEntry } from '#/lib/recurring'
 import {
   getScopedCounterpartyIds,
   resolveScopedAccountIds,
 } from '#/lib/company-scope'
-import type { RecurringLoaderData, RecurringMonthTotals } from '@/types'
+import type { RecurringLoaderData } from '@/types'
+
+function cronNextRun(expression: string): Date | null {
+  return new Cron(expression, { paused: true }).nextRun() ?? null
+}
+
+function cronAdvanceFrom(expression: string, after: Date): Date | null {
+  return new Cron(expression, { paused: true }).nextRun(after) ?? null
+}
 
 // ─── Fetch list (route loader) ────────────────────────────────────────────────
 
@@ -52,12 +60,6 @@ export const fetchRecurringData = createServerFn().handler(async () => {
       categories,
       accounts: [],
       counterparties,
-      currentMonthTotals: {
-        income: 0,
-        incomeCount: 0,
-        expenses: 0,
-        expensesCount: 0,
-      },
     } satisfies RecurringLoaderData
   }
 
@@ -94,7 +96,6 @@ export const fetchRecurringData = createServerFn().handler(async () => {
     categories,
     accounts,
     counterparties,
-    currentMonthTotals: buildCurrentMonthTotals(rules),
   } satisfies RecurringLoaderData
 })
 
@@ -134,8 +135,7 @@ export const toggleRecurringRule = createServerFn({ method: 'POST' })
         columns: { cronExpression: true },
       })
       if (existing) {
-        const job = new Cron(existing.cronExpression, { paused: true })
-        nextRunAt = job.nextRun() ?? null
+        nextRunAt = cronNextRun(existing.cronExpression)
       }
     }
 
@@ -169,8 +169,7 @@ export const createRecurringRule = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const session = await requireSession()
 
-    const job = new Cron(data.cronExpression, { paused: true })
-    const nextRunAt = job.nextRun()
+    const nextRunAt = cronNextRun(data.cronExpression)
 
     await db.insert(recurringRule).values({
       type: data.type,
@@ -212,8 +211,7 @@ export const updateRecurringRule = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const session = await requireSession()
 
-    const job = new Cron(data.cronExpression, { paused: true })
-    const nextRunAt = job.nextRun()
+    const nextRunAt = cronNextRun(data.cronExpression)
 
     await db
       .update(recurringRule)
@@ -237,7 +235,10 @@ export const updateRecurringRule = createServerFn({ method: 'POST' })
 
 // ─── Create now ───────────────────────────────────────────────────────────────
 
-const createNowSchema = z.object({ id: z.string() })
+const createNowSchema = z.object({
+  id: z.string(),
+  skipNext: z.boolean().optional(),
+})
 
 export const createRecurringNow = createServerFn({ method: 'POST' })
   .inputValidator(createNowSchema)
@@ -262,11 +263,13 @@ export const createRecurringNow = createServerFn({ method: 'POST' })
         counterpartyId: true,
         currentAccountId: true,
         contractId: true,
+        cronExpression: true,
         dueDaysFromCreation: true,
         createdBy: true,
         updatedBy: true,
         paymentAccountId: true,
         paymentCategoryId: true,
+        nextRunAt: true,
       },
     })
 
@@ -275,6 +278,71 @@ export const createRecurringNow = createServerFn({ method: 'POST' })
     }
 
     await createRecurringEntry(rule, new Date(), session.user.id)
+
+    if (data.skipNext && rule.nextRunAt) {
+      const advanced = cronAdvanceFrom(
+        rule.cronExpression,
+        new Date(rule.nextRunAt.getTime() + 1),
+      )
+      if (advanced) {
+        await db
+          .update(recurringRule)
+          .set({ nextRunAt: advanced })
+          .where(eq(recurringRule.id, rule.id))
+      }
+    }
+  })
+
+// ─── Skip next occurrence ────────────────────────────────────────────────────
+
+const skipNextSchema = z.object({ id: z.string() })
+
+export const skipNextRecurringOccurrence = createServerFn({ method: 'POST' })
+  .inputValidator(skipNextSchema)
+  .handler(async ({ data }) => {
+    const session = await requireSession()
+
+    const memberships = await db
+      .select({ currentAccountId: currentAccountUser.currentAccountId })
+      .from(currentAccountUser)
+      .where(eq(currentAccountUser.userId, session.user.id))
+
+    const accountIds = memberships.map((m) => m.currentAccountId)
+
+    const rule = await db.query.recurringRule.findFirst({
+      where: eq(recurringRule.id, data.id),
+      columns: {
+        id: true,
+        currentAccountId: true,
+        cronExpression: true,
+        nextRunAt: true,
+        isActive: true,
+      },
+    })
+
+    if (!rule || !accountIds.includes(rule.currentAccountId)) {
+      throw new Error('Правило не найдено')
+    }
+    if (!rule.isActive) {
+      throw new Error('Правило приостановлено')
+    }
+    if (!rule.nextRunAt) {
+      throw new Error('Нет следующего запуска для пропуска')
+    }
+
+    const advanced = cronAdvanceFrom(
+      rule.cronExpression,
+      new Date(rule.nextRunAt.getTime() + 1),
+    )
+
+    if (!advanced) {
+      throw new Error('Не удалось вычислить следующий запуск')
+    }
+
+    await db
+      .update(recurringRule)
+      .set({ nextRunAt: advanced })
+      .where(eq(recurringRule.id, rule.id))
   })
 
 // ─── Delete ───────────────────────────────────────────────────────────────────
@@ -288,57 +356,3 @@ export const deleteRecurringRule = createServerFn({ method: 'POST' })
 
     await db.delete(recurringRule).where(eq(recurringRule.id, data.id))
   })
-
-function buildCurrentMonthTotals(
-  rules: Array<{
-    type: string
-    amount: string
-    cronExpression: string
-    isActive: boolean
-  }>,
-): RecurringMonthTotals {
-  const now = new Date()
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-  const monthEnd = new Date(
-    now.getFullYear(),
-    now.getMonth() + 1,
-    0,
-    23,
-    59,
-    59,
-    999,
-  )
-
-  let income = 0
-  let incomeCount = 0
-  let expenses = 0
-  let expensesCount = 0
-
-  for (const rule of rules) {
-    if (!rule.isActive) continue
-
-    try {
-      const schedule = new Cron(rule.cronExpression, { paused: true })
-      let cursor = new Date(monthStart.getTime() - 1)
-
-      for (let guard = 0; guard < 500; guard++) {
-        const next = schedule.nextRun(cursor)
-        if (!next || next > monthEnd) break
-
-        if (rule.type === 'receivable') {
-          income += Number(rule.amount)
-          incomeCount += 1
-        } else if (rule.type === 'payable') {
-          expenses += Number(rule.amount)
-          expensesCount += 1
-        }
-
-        cursor = new Date(next.getTime() + 1)
-      }
-    } catch {
-      // Skip rules with invalid cron expressions.
-    }
-  }
-
-  return { income, incomeCount, expenses, expensesCount }
-}

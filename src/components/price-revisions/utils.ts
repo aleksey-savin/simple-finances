@@ -1,14 +1,35 @@
 import type { PriceRevisionItemRow } from '@/types'
 
+export type PriceRevisionStatus = 'draft' | 'in_progress' | 'completed'
+
+export function getRevisionStatus(r: {
+  startedAt: Date | null
+  completedAt: Date | null
+}): PriceRevisionStatus {
+  if (r.completedAt) return 'completed'
+  if (r.startedAt) return 'in_progress'
+  return 'draft'
+}
+
+export const REVISION_STATUS_LABELS: Record<PriceRevisionStatus, string> = {
+  draft: 'Черновик',
+  in_progress: 'В работе',
+  completed: 'Завершена',
+}
+
+export function getRevisionStatusVariant(
+  status: PriceRevisionStatus,
+): 'success' | 'default' | 'secondary' {
+  if (status === 'completed') return 'success'
+  if (status === 'in_progress') return 'default'
+  return 'secondary'
+}
+
 export type PriceRevisionSummary = {
-  minCurrent: number
-  maxCurrent: number
-  minProposed: number
-  maxProposed: number
-  minDelta: number
-  maxDelta: number
-  minDeltaPercent: number | null
-  maxDeltaPercent: number | null
+  current: number
+  proposed: number
+  delta: number
+  deltaPercent: number | null
   includedCount: number
   excludedCount: number
 }
@@ -21,51 +42,32 @@ export function computeRevisionSummary(
 
   if (included.length === 0) {
     return {
-      minCurrent: 0,
-      maxCurrent: 0,
-      minProposed: 0,
-      maxProposed: 0,
-      minDelta: 0,
-      maxDelta: 0,
-      minDeltaPercent: null,
-      maxDeltaPercent: null,
+      current: 0,
+      proposed: 0,
+      delta: 0,
+      deltaPercent: null,
       includedCount: 0,
       excludedCount: excluded.length,
     }
   }
 
-  // Sum each contract's own min/max tier amounts independently
-  const minCurrent = included.reduce(
+  const current = included.reduce(
     (s, i) => s + Math.min(...i.currentAmounts.map(Number)),
     0,
   )
-  const maxCurrent = included.reduce(
-    (s, i) => s + Math.max(...i.currentAmounts.map(Number)),
-    0,
-  )
-  const minProposed = included.reduce(
+  const proposed = included.reduce(
     (s, i) => s + Math.min(...i.proposedAmounts.map(Number)),
     0,
   )
-  const maxProposed = included.reduce(
-    (s, i) => s + Math.max(...i.proposedAmounts.map(Number)),
-    0,
-  )
 
-  const minDelta = minProposed - minCurrent
-  const maxDelta = maxProposed - maxCurrent
-  const minDeltaPercent = minCurrent > 0 ? (minDelta / minCurrent) * 100 : null
-  const maxDeltaPercent = maxCurrent > 0 ? (maxDelta / maxCurrent) * 100 : null
+  const delta = proposed - current
+  const deltaPercent = current > 0 ? (delta / current) * 100 : null
 
   return {
-    minCurrent,
-    maxCurrent,
-    minProposed,
-    maxProposed,
-    minDelta,
-    maxDelta,
-    minDeltaPercent,
-    maxDeltaPercent,
+    current,
+    proposed,
+    delta,
+    deltaPercent,
     includedCount: included.length,
     excludedCount: excluded.length,
   }
@@ -81,4 +83,13 @@ export function formatCurrency(value: number): string {
 
 export function formatPercent(value: number): string {
   return `${value.toFixed(1)}%`
+}
+
+export function hasManualEdits(items: PriceRevisionItemRow[]): boolean {
+  return items.some(
+    (i) =>
+      i.included &&
+      (i.currentAmounts.length !== i.proposedAmounts.length ||
+        i.currentAmounts.some((v, idx) => v !== i.proposedAmounts[idx])),
+  )
 }

@@ -1,4 +1,94 @@
+import { Cron } from 'croner'
 import { CRON_PRESETS } from '@/components/recurring/constants'
+import type { RecurringMonthTotals } from '@/types'
+
+type RuleForMonthCalc = {
+  type: string
+  amount: string
+  cronExpression: string
+  isActive: boolean
+}
+
+export function computeMonthTotals(
+  rules: RuleForMonthCalc[],
+  monthStart: Date,
+): RecurringMonthTotals {
+  const monthEnd = new Date(
+    monthStart.getFullYear(),
+    monthStart.getMonth() + 1,
+    0,
+    23,
+    59,
+    59,
+    999,
+  )
+
+  let income = 0
+  let incomeCount = 0
+  let expenses = 0
+  let expensesCount = 0
+
+  for (const rule of rules) {
+    if (!rule.isActive) continue
+
+    try {
+      const schedule = new Cron(rule.cronExpression, { paused: true })
+      let cursor = new Date(monthStart.getTime() - 1)
+
+      for (let guard = 0; guard < 500; guard++) {
+        const next = schedule.nextRun(cursor)
+        if (!next || next > monthEnd) break
+
+        if (rule.type === 'receivable') {
+          income += Number(rule.amount)
+          incomeCount += 1
+        } else if (rule.type === 'payable') {
+          expenses += Number(rule.amount)
+          expensesCount += 1
+        }
+
+        cursor = new Date(next.getTime() + 1)
+      }
+    } catch {
+      // Skip rules with invalid cron expressions.
+    }
+  }
+
+  return { income, incomeCount, expenses, expensesCount }
+}
+
+export function ruleHasOccurrenceInMonth(
+  rule: { cronExpression: string; isActive: boolean },
+  monthStart: Date,
+): boolean {
+  if (!rule.isActive) return false
+
+  const monthEnd = new Date(
+    monthStart.getFullYear(),
+    monthStart.getMonth() + 1,
+    0,
+    23,
+    59,
+    59,
+    999,
+  )
+
+  try {
+    const schedule = new Cron(rule.cronExpression, { paused: true })
+    const next = schedule.nextRun(new Date(monthStart.getTime() - 1))
+    return Boolean(next && next <= monthEnd)
+  } catch {
+    return false
+  }
+}
+
+export function formatMonthLabel(date: Date): string {
+  const label = date.toLocaleDateString('ru-RU', {
+    month: 'long',
+    year: 'numeric',
+  })
+  return label.charAt(0).toUpperCase() + label.slice(1)
+}
 
 export function getCronLabel(expr: string): string {
   const found = CRON_PRESETS.find(

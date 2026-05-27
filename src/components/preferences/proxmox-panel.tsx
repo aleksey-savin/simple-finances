@@ -24,16 +24,12 @@ import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import {
   proxmoxNodesQueryKey,
-  proxmoxSettingsQueryKey,
   fetchProxmoxNodes,
-  fetchProxmoxAccountSettings,
   addProxmoxNode,
   updateProxmoxNode,
   deleteProxmoxNode,
   testProxmoxNodeConnection,
-  saveProxmoxAccountSettings,
   proxmoxNodeSchema,
-  proxmoxAccountSettingsSchema,
 } from './proxmox-actions'
 
 type ProxmoxNode = {
@@ -265,7 +261,7 @@ function NodeRow({ node }: { node: ProxmoxNode }) {
       if (result.ok) {
         toast.success(`${node.name}: подключение успешно`)
       } else {
-        toast.error(`${node.name}: ${result.error ?? 'Ошибка подключения'}`)
+        toast.error(`${node.name}: ${result.error}`)
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Ошибка')
@@ -323,84 +319,6 @@ function NodeRow({ node }: { node: ProxmoxNode }) {
         </Button>
       </div>
     </div>
-  )
-}
-
-function ReminderSettings() {
-  const queryClient = useQueryClient()
-  const { data: settings } = useQuery({
-    queryKey: proxmoxSettingsQueryKey,
-    queryFn: () => fetchProxmoxAccountSettings(),
-  })
-
-  const form = useForm({
-    defaultValues: { reminderDaysBefore: settings?.reminderDaysBefore ?? 3 },
-    validators: { onSubmit: proxmoxAccountSettingsSchema },
-    onSubmit: async ({ value }) => {
-      try {
-        await saveProxmoxAccountSettings({ data: value })
-        await queryClient.invalidateQueries({
-          queryKey: proxmoxSettingsQueryKey,
-        })
-        toast.success('Настройки сохранены')
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Произошла ошибка')
-      }
-    },
-  })
-
-  return (
-    <form
-      className="grid gap-4"
-      onSubmit={(e) => {
-        e.preventDefault()
-        form.handleSubmit()
-      }}
-    >
-      <form.Field name="reminderDaysBefore">
-        {(field) => (
-          <Field>
-            <FieldLabel htmlFor={field.name}>
-              Напоминать за N дней до срока оплаты
-            </FieldLabel>
-            <Input
-              id={field.name}
-              type="number"
-              min={0}
-              max={365}
-              className="w-24"
-              value={field.state.value}
-              onBlur={field.handleBlur}
-              onChange={(e) => field.handleChange(Number(e.target.value))}
-            />
-          </Field>
-        )}
-      </form.Field>
-      <form.Subscribe selector={(s) => s.isSubmitting}>
-        {(isSubmitting) => (
-          <Button type="submit" disabled={isSubmitting} className="w-fit">
-            {isSubmitting ? 'Сохранение…' : 'Сохранить'}
-          </Button>
-        )}
-      </form.Subscribe>
-    </form>
-  )
-}
-
-export function NotificationsPreferencesPanel() {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Напоминания об оплате</CardTitle>
-        <CardDescription>
-          Email-уведомление контактному лицу клиента за N дней до срока оплаты
-          по счёту, привязанному к договору
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="max-w-lg">
-        <ReminderSettings />
-      </CardContent>
-    </Card>
   )
 }
 

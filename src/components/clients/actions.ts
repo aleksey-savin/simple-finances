@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 
-import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull, lt } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { db } from '#/db/index.server'
@@ -19,8 +19,9 @@ import {
 import { getRequest, requireSession } from '#/utils/session.server'
 import { getBlockedServicesByContractIds } from '#/lib/blocked-services'
 import { resolveSelectedScope } from '#/lib/company-scope'
+import { getContractPaymentTermDueDate } from '#/lib/contract-payment-term'
 import { getPaymentState } from '#/lib/invoice-payment'
-import type { ClientDetail } from '@/types'
+import type { ClientDetail, ClientProxmoxResource } from '@/types'
 
 export const clientsQueryKey = ['clients'] as const
 
@@ -503,6 +504,7 @@ export const fetchClientDetail = createServerFn()
               signedAt: true,
               contractType: true,
               amount: true,
+              allowNotifications: true,
               businessLineId: true,
               counterpartyId: true,
             },
@@ -521,6 +523,104 @@ export const fetchClientDetail = createServerFn()
 
     const contractIds = contractRows.map((c) => c.id)
     const blockedServices = await getBlockedServicesByContractIds(contractIds)
+
+    // ── Proxmox resources ─────────────────────────────────────────────────
+    const now = new Date()
+    const contractsById = new Map(contractRows.map((c) => [c.id, c]))
+
+    const bindings =
+      contractIds.length === 0
+        ? []
+        : await db.query.contractVm.findMany({
+            where: inArray(contractVm.contractId, contractIds),
+            columns: {
+              id: true,
+              contractId: true,
+              vmid: true,
+              vmType: true,
+              name: true,
+              pausedUntil: true,
+              isPausedBySystem: true,
+            },
+            with: {
+              proxmoxNode: { columns: { id: true, name: true } },
+            },
+          })
+
+    const bindingsByContract = new Map<string, typeof bindings>()
+    for (const b of bindings) {
+      const list = bindingsByContract.get(b.contractId) ?? []
+      list.push(b)
+      bindingsByContract.set(b.contractId, list)
+    }
+
+    const contractSuspensionContext = new Map<
+      string,
+      { hasOverdue: boolean; paymentTermDueDate: Date | null }
+    >()
+    await Promise.all(
+      [...bindingsByContract.keys()].map(async (cid) => {
+        const [overdue, paymentTermDueDate] = await Promise.all([
+          db.query.invoice.findFirst({
+            where: and(
+              eq(invoice.contractId, cid),
+              isNull(invoice.paidAt),
+              isNull(invoice.archivedAt),
+              lt(invoice.dueDate, now),
+            ),
+            columns: { id: true },
+          }),
+          getContractPaymentTermDueDate(cid, now),
+        ])
+        contractSuspensionContext.set(cid, {
+          hasOverdue: overdue !== undefined,
+          paymentTermDueDate,
+        })
+      }),
+    )
+
+    const proxmoxResources: ClientProxmoxResource[] = bindings.map((b) => {
+      const ctx = contractSuspensionContext.get(b.contractId)
+      const hasOverdue = ctx?.hasOverdue ?? false
+      const paymentTermDueDate = ctx?.paymentTermDueDate ?? null
+
+      const futurePausedUntil =
+        b.pausedUntil && b.pausedUntil > now ? b.pausedUntil : null
+
+      const candidates: Date[] = []
+      if (futurePausedUntil) candidates.push(futurePausedUntil)
+      if (paymentTermDueDate && paymentTermDueDate > now) {
+        candidates.push(paymentTermDueDate)
+      }
+      const willSuspendAt =
+        !b.isPausedBySystem && candidates.length > 0
+          ? new Date(
+              Math.max(...candidates.map((d) => d.getTime())),
+            ).toISOString()
+          : null
+
+      const contractInfo = contractsById.get(b.contractId)
+      return {
+        id: b.id,
+        vmid: b.vmid,
+        vmType: b.vmType,
+        name: b.name,
+        contractId: b.contractId,
+        contractName: contractInfo?.name ?? 'Без названия',
+        counterpartyName: contractInfo?.counterparty.name ?? '—',
+        nodeName: b.proxmoxNode.name,
+        isPausedBySystem: b.isPausedBySystem,
+        pausedUntil: b.pausedUntil ? b.pausedUntil.toISOString() : null,
+        hasOverdueInvoices: hasOverdue,
+        willSuspendAt,
+      }
+    })
+
+    proxmoxResources.sort((a, b) => {
+      const byContract = a.contractName.localeCompare(b.contractName, 'ru')
+      if (byContract !== 0) return byContract
+      return a.name.localeCompare(b.name, 'ru')
+    })
 
     // ── Pending payments ───────────────────────────────────────────────────
     const paymentRows =
@@ -624,6 +724,7 @@ export const fetchClientDetail = createServerFn()
         signedAt: c.signedAt ?? null,
         contractType: c.contractType,
         amount: c.amount,
+        allowNotifications: c.allowNotifications,
         businessLine: c.businessLine ?? null,
         counterparty: c.counterparty,
         documents: c.contractDocuments.map((cd) => cd.document),
@@ -641,6 +742,8 @@ export const fetchClientDetail = createServerFn()
         itemId: r.itemId,
         contractId: r.contractId,
         contractName: r.contractName,
+        counterpartyName:
+          contractsById.get(r.contractId)?.counterparty.name ?? '—',
         status: r.status,
         included: r.included,
         currentAmounts: r.currentAmounts,
@@ -663,6 +766,7 @@ export const fetchClientDetail = createServerFn()
         email: c.email ?? null,
       })),
       blockedServices,
+      proxmoxResources,
     }
   })
 

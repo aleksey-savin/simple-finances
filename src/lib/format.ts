@@ -8,3 +8,11 @@ export function formatMoney(value: number) {
 export function formatShortDate(value: string) {
   return new Date(value).toLocaleDateString('ru-RU')
 }
+
+export function formatLongDate(value: string | Date) {
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(value))
+}

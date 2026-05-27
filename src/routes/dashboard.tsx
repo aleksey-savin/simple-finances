@@ -7,6 +7,7 @@ import { IncomingMetricCard } from '#/components/dashboard/incoming-metric-card'
 import { ObligationsMetricCard } from '#/components/dashboard/obligations-metric-card'
 import { SaldoMetricCard } from '#/components/dashboard/saldo-metric-card'
 import { TasksSection } from '#/components/dashboard/tasks-section'
+import { PendingBlocksCard } from '#/components/dashboard/pending-blocks-card'
 import { BlockedServicesCard } from '#/components/contracts/blocked-services-card'
 
 function DashboardSkeleton() {
@@ -18,7 +19,7 @@ function DashboardSkeleton() {
             <Skeleton className="h-5 w-40 rounded" />
             <Skeleton className="h-9 w-36 rounded" />
             <div className="flex flex-wrap gap-2">
-              {[...Array(3)].map((_, j) => (
+              {[...Array(3)].map((_item, j) => (
                 <Skeleton key={j} className="h-8 w-40 rounded" />
               ))}
             </div>
@@ -43,8 +44,13 @@ export const Route = createFileRoute('/dashboard')({
 })
 
 function RouteComponent() {
-  const { accounts, tasks, monthlyOutlook, blockedServices } =
-    Route.useLoaderData()
+  const {
+    accounts,
+    tasks,
+    monthlyOutlook,
+    blockedServices,
+    pendingBlockedServices,
+  } = Route.useLoaderData()
   const router = useRouter()
   const [includedAccountIds, setIncludedAccountIds] = useState(
     () => new Set(accounts.map((account) => account.id)),
@@ -109,6 +115,8 @@ function RouteComponent() {
           }}
         />
       )}
+
+      <PendingBlocksCard services={pendingBlockedServices} />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <IncomingMetricCard

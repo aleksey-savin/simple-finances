@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, inArray, isNull, notInArray } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { db } from '#/db/index.server'
@@ -10,13 +10,18 @@ import {
   contract,
   contractAmountHistory,
   contractPriceRevision,
+  contractPriceRevisionBulkSnapshot,
   contractPriceRevisionItem,
   clientCounterparty,
   clientManager,
+  counterparty,
   user,
 } from '@/db/schema'
-import { inArray } from 'drizzle-orm'
-import type { PriceRevisionDetail, PriceRevision } from '@/types'
+import type {
+  AvailableContractForRevision,
+  PriceRevisionDetail,
+  PriceRevision,
+} from '@/types'
 import { getRequest, requireSession } from '#/utils/session.server'
 import { resolveSelectedScope } from '#/lib/company-scope'
 
@@ -29,6 +34,40 @@ async function assertRevisionOpen(revisionId: string) {
   if (revision?.completedAt) {
     throw new Error('Ревизия завершена и не допускает изменений')
   }
+}
+
+// Build the where-clause that scopes a `contract` query to a revision's
+// businessLine + (company OR personal-scope createdBy) context.
+async function buildRevisionContractScopeWhere(revisionId: string) {
+  const session = await requireSession()
+  const revision = await db.query.contractPriceRevision.findFirst({
+    where: eq(contractPriceRevision.id, revisionId),
+    columns: { businessLineId: true, companyId: true },
+  })
+  if (!revision) throw new Error('Ревизия не найдена')
+
+  const where = revision.companyId
+    ? and(
+        eq(contract.businessLineId, revision.businessLineId),
+        eq(contract.companyId, revision.companyId),
+      )
+    : and(
+        eq(contract.businessLineId, revision.businessLineId),
+        isNull(contract.companyId),
+        eq(contract.createdBy, session.user.id),
+      )
+
+  return { where, revision }
+}
+
+function formatActionLabel(
+  mode: 'percent' | 'fixed' | 'reset',
+  value: number,
+): string {
+  if (mode === 'reset') return 'Сброс'
+  const sign = value > 0 ? '+' : ''
+  if (mode === 'percent') return `${sign}${value}%`
+  return `${sign}${value} ₽`
 }
 
 export const priceRevisionsQueryKey = ['price-revisions'] as const
@@ -63,6 +102,7 @@ export const fetchPriceRevisions = createServerFn().handler(
         businessLineId: true,
         companyId: true,
         createdAt: true,
+        startedAt: true,
         completedAt: true,
       },
       with: {
@@ -78,8 +118,9 @@ export const fetchPriceRevisions = createServerFn().handler(
       businessLineId: r.businessLineId,
       companyId: r.companyId,
       createdAt: r.createdAt,
+      startedAt: r.startedAt,
       completedAt: r.completedAt,
-      businessLine: r.businessLine!,
+      businessLine: r.businessLine,
       itemCount: r.items.length,
     }))
   },
@@ -100,10 +141,12 @@ export const fetchPriceRevision = createServerFn()
         businessLineId: true,
         companyId: true,
         createdAt: true,
+        startedAt: true,
         completedAt: true,
       },
       with: {
         businessLine: { columns: { id: true, name: true } },
+        bulkSnapshot: { columns: { actionLabel: true } },
         items: {
           columns: {
             id: true,
@@ -140,7 +183,7 @@ export const fetchPriceRevision = createServerFn()
     if (!revision) throw new Error('Ревизия не найдена')
 
     const counterpartyIds = [
-      ...new Set(revision.items.map((i) => i.contract!.counterparty!.id)),
+      ...new Set(revision.items.map((i) => i.contract.counterparty.id)),
     ]
 
     const managersMap = new Map<string, { userId: string; name: string }[]>()
@@ -235,24 +278,26 @@ export const fetchPriceRevision = createServerFn()
       businessLineId: revision.businessLineId,
       companyId: revision.companyId,
       createdAt: revision.createdAt,
+      startedAt: revision.startedAt,
       completedAt: revision.completedAt,
-      businessLine: revision.businessLine!,
+      businessLine: revision.businessLine,
+      bulkSnapshot: (revision.bulkSnapshot as { actionLabel: string } | null)
+        ? { actionLabel: revision.bulkSnapshot.actionLabel }
+        : null,
       items: revision.items
         .map((item) => ({
           ...item,
           contract: {
-            ...item.contract!,
-            signedAt: item.contract!.signedAt ?? null,
+            ...item.contract,
+            signedAt: item.contract.signedAt ?? null,
             counterparty: {
-              ...item.contract!.counterparty!,
-              client: clientMap.get(item.contract!.counterparty!.id) ?? null,
-              contacts: contactsMap.get(item.contract!.counterparty!.id) ?? [],
+              ...item.contract.counterparty,
+              client: clientMap.get(item.contract.counterparty.id) ?? null,
+              contacts: contactsMap.get(item.contract.counterparty.id) ?? [],
             },
-            documents: item.contract!.contractDocuments.map(
-              (cd) => cd.document,
-            ),
+            documents: item.contract.contractDocuments.map((cd) => cd.document),
           },
-          managers: managersMap.get(item.contract!.counterparty!.id) ?? [],
+          managers: managersMap.get(item.contract.counterparty.id) ?? [],
         }))
         .sort((a, b) => {
           const nameA = (
@@ -266,12 +311,40 @@ export const fetchPriceRevision = createServerFn()
     }
   })
 
-// ─── Complete / reopen revision ───────────────────────────────────────────────
+// ─── Start / complete / reopen revision ───────────────────────────────────────
+
+export const startRevision = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ id: z.string() }))
+  .handler(async ({ data }) => {
+    await requireSession()
+
+    const revision = await db.query.contractPriceRevision.findFirst({
+      where: eq(contractPriceRevision.id, data.id),
+      columns: { startedAt: true, completedAt: true },
+    })
+    if (!revision) throw new Error('Ревизия не найдена')
+    if (revision.completedAt) throw new Error('Ревизия уже завершена')
+    if (revision.startedAt) return
+
+    await db
+      .update(contractPriceRevision)
+      .set({ startedAt: new Date() })
+      .where(eq(contractPriceRevision.id, data.id))
+  })
 
 export const completeRevision = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
     await requireSession()
+
+    const revision = await db.query.contractPriceRevision.findFirst({
+      where: eq(contractPriceRevision.id, data.id),
+      columns: { startedAt: true, completedAt: true },
+    })
+    if (!revision) throw new Error('Ревизия не найдена')
+    if (!revision.startedAt)
+      throw new Error('Сначала возьмите ревизию в работу')
+    if (revision.completedAt) return
 
     await db
       .update(contractPriceRevision)
@@ -362,6 +435,15 @@ export const deletePriceRevision = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     await requireSession()
 
+    const revision = await db.query.contractPriceRevision.findFirst({
+      where: eq(contractPriceRevision.id, data.id),
+      columns: { startedAt: true, completedAt: true },
+    })
+    if (!revision) return
+    if (revision.startedAt || revision.completedAt) {
+      throw new Error('Удалять можно только черновики')
+    }
+
     await db
       .delete(contractPriceRevision)
       .where(eq(contractPriceRevision.id, data.id))
@@ -421,36 +503,161 @@ export const applyBulkAdjustment = createServerFn({ method: 'POST' })
         eq(contractPriceRevisionItem.revisionId, data.revisionId),
         eq(contractPriceRevisionItem.included, true),
       ),
-      columns: { id: true, currentAmounts: true },
+      columns: { id: true, currentAmounts: true, proposedAmounts: true },
     })
 
     if (items.length === 0) return
 
     const v = data.value ? Number(data.value) : 0
+    const actionLabel = formatActionLabel(data.mode, v)
 
-    for (const item of items) {
-      const proposedAmounts = item.currentAmounts.map((amt) => {
-        const current = Number(amt)
-        let proposed: number
-        if (data.mode === 'percent') {
-          proposed = current * (1 + v / 100)
-        } else if (data.mode === 'fixed') {
-          proposed = current + v
-        } else {
-          proposed = current
-        }
-        return proposed.toFixed(2)
+    await db.transaction(async (tx) => {
+      // Snapshot current proposedAmounts for single-step undo (upsert).
+      await tx
+        .insert(contractPriceRevisionBulkSnapshot)
+        .values({
+          revisionId: data.revisionId,
+          actionLabel,
+          items: items.map((i) => ({
+            itemId: i.id,
+            proposedAmounts: i.proposedAmounts,
+          })),
+        })
+        .onConflictDoUpdate({
+          target: contractPriceRevisionBulkSnapshot.revisionId,
+          set: {
+            actionLabel,
+            items: items.map((i) => ({
+              itemId: i.id,
+              proposedAmounts: i.proposedAmounts,
+            })),
+            createdAt: new Date(),
+          },
+        })
+
+      for (const item of items) {
+        const proposedAmounts = item.currentAmounts.map((amt) => {
+          const current = Number(amt)
+          let proposed: number
+          if (data.mode === 'percent') {
+            proposed = current * (1 + v / 100)
+          } else if (data.mode === 'fixed') {
+            proposed = current + v
+          } else {
+            proposed = current
+          }
+          return proposed.toFixed(2)
+        })
+        await tx
+          .update(contractPriceRevisionItem)
+          .set({ proposedAmounts })
+          .where(eq(contractPriceRevisionItem.id, item.id))
+      }
+    })
+  })
+
+// ─── Undo last bulk adjustment ────────────────────────────────────────────────
+
+export const undoBulkAdjustment = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ revisionId: z.string() }))
+  .handler(async ({ data }) => {
+    await requireSession()
+    await assertRevisionOpen(data.revisionId)
+
+    const snapshot = await db.query.contractPriceRevisionBulkSnapshot.findFirst(
+      {
+        where: eq(
+          contractPriceRevisionBulkSnapshot.revisionId,
+          data.revisionId,
+        ),
+        columns: { id: true, items: true },
+      },
+    )
+    if (!snapshot) throw new Error('Нет последнего изменения для отмены')
+
+    await db.transaction(async (tx) => {
+      for (const entry of snapshot.items) {
+        await tx
+          .update(contractPriceRevisionItem)
+          .set({ proposedAmounts: entry.proposedAmounts })
+          .where(
+            and(
+              eq(contractPriceRevisionItem.id, entry.itemId),
+              eq(contractPriceRevisionItem.revisionId, data.revisionId),
+            ),
+          )
+      }
+      await tx
+        .delete(contractPriceRevisionBulkSnapshot)
+        .where(eq(contractPriceRevisionBulkSnapshot.id, snapshot.id))
+    })
+  })
+
+// ─── Add contracts to revision ────────────────────────────────────────────────
+
+export const fetchAvailableContractsForRevision = createServerFn()
+  .inputValidator(z.object({ revisionId: z.string() }))
+  .handler(async ({ data }): Promise<AvailableContractForRevision[]> => {
+    await requireSession()
+    const { where } = await buildRevisionContractScopeWhere(data.revisionId)
+
+    const existingIds = await db
+      .select({ contractId: contractPriceRevisionItem.contractId })
+      .from(contractPriceRevisionItem)
+      .where(eq(contractPriceRevisionItem.revisionId, data.revisionId))
+    const existing = existingIds.map((r) => r.contractId)
+
+    const rows = await db
+      .select({
+        id: contract.id,
+        name: contract.name,
+        number: contract.number,
+        counterpartyName: counterparty.name,
       })
-      await db
-        .update(contractPriceRevisionItem)
-        .set({ proposedAmounts })
-        .where(eq(contractPriceRevisionItem.id, item.id))
-    }
+      .from(contract)
+      .innerJoin(counterparty, eq(counterparty.id, contract.counterpartyId))
+      .where(
+        existing.length > 0
+          ? and(where, notInArray(contract.id, existing))
+          : where,
+      )
+      .orderBy(contract.name)
+
+    return rows
+  })
+
+export const addContractsToRevision = createServerFn({ method: 'POST' })
+  .inputValidator(
+    z.object({
+      revisionId: z.string(),
+      contractIds: z.array(z.string()).min(1),
+    }),
+  )
+  .handler(async ({ data }) => {
+    await requireSession()
+    await assertRevisionOpen(data.revisionId)
+    const { where } = await buildRevisionContractScopeWhere(data.revisionId)
+
+    const contracts = await db
+      .select({ id: contract.id, amount: contract.amount })
+      .from(contract)
+      .where(and(where, inArray(contract.id, data.contractIds)))
+
+    if (contracts.length === 0) return
+
+    await db.insert(contractPriceRevisionItem).values(
+      contracts.map((c) => ({
+        revisionId: data.revisionId,
+        contractId: c.id,
+        currentAmounts: c.amount,
+        proposedAmounts: c.amount,
+      })),
+    )
   })
 
 // ─── Advance item status ──────────────────────────────────────────────────────
 
-const VALID_TRANSITIONS: Record<string, string[]> = {
+const VALID_TRANSITIONS: Partial<Record<string, string[]>> = {
   draft: ['agreed'],
   agreed: ['notified'],
   notified: ['signed'],
@@ -504,10 +711,12 @@ export const advanceRevisionItemStatus = createServerFn({ method: 'POST' })
         .where(eq(contractPriceRevisionItem.id, data.id))
 
       if (data.targetStatus === 'success') {
-        const [currentContract] = await tx
-          .select({ amount: contract.amount })
-          .from(contract)
-          .where(eq(contract.id, item.contractId))
+        const currentContract = (
+          await tx
+            .select({ amount: contract.amount })
+            .from(contract)
+            .where(eq(contract.id, item.contractId))
+        ).at(0)
 
         if (currentContract) {
           await tx.insert(contractAmountHistory).values({

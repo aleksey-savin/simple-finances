@@ -15,7 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Calendar, Clock, PenLine, Plus } from 'lucide-react'
+import { Calendar, Clock, PenLine, Plus, SkipForward } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 import {
   formatRuleAmount,
@@ -28,15 +28,20 @@ export const RuleCard = ({
   rule,
   onEdit,
   onCreateNow,
+  onSkipNext,
   onToggle,
 }: {
   rule: RuleWithRelations
   onEdit: () => void
-  onCreateNow: () => Promise<void>
+  onCreateNow: (skipNext: boolean) => Promise<void>
+  onSkipNext: () => Promise<void>
   onToggle: (v: boolean) => void
 }) => {
   const isExpense = rule.type === 'payable'
   const [createNowOpen, setCreateNowOpen] = useState(false)
+  const [skipNext, setSkipNext] = useState(false)
+  const [skipDialogOpen, setSkipDialogOpen] = useState(false)
+  const canSkip = rule.isActive && Boolean(rule.nextRunAt)
 
   return (
     <Item variant="outline" className="px-4">
@@ -107,7 +112,13 @@ export const RuleCard = ({
       <Separator />
 
       <ItemFooter className="flex justify-end items-center">
-        <AlertDialog open={createNowOpen} onOpenChange={setCreateNowOpen}>
+        <AlertDialog
+          open={createNowOpen}
+          onOpenChange={(open) => {
+            setCreateNowOpen(open)
+            if (!open) setSkipNext(false)
+          }}
+        >
           <Button
             variant="ghost"
             size="sm"
@@ -124,14 +135,30 @@ export const RuleCard = ({
               </AlertDialogTitle>
               <AlertDialogDescription>
                 Будет создана новая запись по правилу «{rule.description}».
-                Расписание и следующий запуск правила не изменятся.
+                Расписание не изменится.
               </AlertDialogDescription>
             </AlertDialogHeader>
+            <label className="flex items-center justify-between gap-3 rounded-md border p-3 text-sm">
+              <span className="flex flex-col gap-0.5">
+                <span className="font-medium">Пропустить следующий запуск</span>
+                <span className="text-xs text-muted-foreground">
+                  {canSkip
+                    ? 'Cron не создаст дубль по расписанию'
+                    : 'Недоступно для приостановленных правил'}
+                </span>
+              </span>
+              <Switch
+                checked={skipNext}
+                onCheckedChange={setSkipNext}
+                disabled={!canSkip}
+                aria-label="Пропустить следующий запуск"
+              />
+            </label>
             <AlertDialogFooter>
               <AlertDialogCancel>Отмена</AlertDialogCancel>
               <AlertDialogAction
                 onClick={async () => {
-                  await onCreateNow()
+                  await onCreateNow(skipNext)
                   setCreateNowOpen(false)
                 }}
               >
@@ -140,6 +167,43 @@ export const RuleCard = ({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {canSkip && (
+          <AlertDialog open={skipDialogOpen} onOpenChange={setSkipDialogOpen}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 text-muted-foreground"
+              onClick={() => setSkipDialogOpen(true)}
+            >
+              <SkipForward className="size-3.5" />
+              Пропустить следующий
+            </Button>
+            <AlertDialogContent size="sm">
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  Пропустить следующий запуск?
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  Запланированный запуск {formatRuleDate(rule.nextRunAt)} будет
+                  пропущен. Запись создана не будет.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Отмена</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={async () => {
+                    await onSkipNext()
+                    setSkipDialogOpen(false)
+                  }}
+                >
+                  Пропустить
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+
         <Button
           variant="ghost"
           size="sm"

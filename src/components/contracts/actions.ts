@@ -73,6 +73,7 @@ export const fetchContracts = createServerFn().handler(async () => {
         signedAt: true,
         contractType: true,
         amount: true,
+        allowNotifications: true,
         businessLineId: true,
         counterpartyId: true,
         companyId: true,
@@ -154,6 +155,7 @@ const contractSchema = z
     counterpartyId: z.string().min(1, 'Выберите контрагента'),
     companyId: z.string().optional(),
     amount: z.array(amountItemSchema).min(1, 'Добавьте хотя бы одну сумму'),
+    allowNotifications: z.boolean().optional(),
   })
   .superRefine((value, ctx) => {
     if (value.contractType === 'customer' && !value.businessLineId?.trim()) {
@@ -307,6 +309,7 @@ export const addContract = createServerFn({ method: 'POST' })
         counterpartyId: data.counterpartyId,
         companyId: data.companyId ?? null,
         amount: data.amount,
+        allowNotifications: data.allowNotifications ?? true,
         createdBy: session.user.id,
       })
       .returning({ id: contract.id })
@@ -337,6 +340,7 @@ export const updateContract = createServerFn({ method: 'POST' })
         counterpartyId: data.counterpartyId,
         companyId: data.companyId ?? null,
         amount: data.amount,
+        allowNotifications: data.allowNotifications ?? true,
       })
       .where(eq(contract.id, data.id))
   })

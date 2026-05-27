@@ -75,11 +75,7 @@ export function RevisionItemNotesCell({
       onClick={startEditing}
       title={readOnly ? undefined : 'Нажмите, чтобы изменить'}
     >
-      {notes?.trim() ? (
-        notes
-      ) : (
-        <span className="text-muted-foreground">—</span>
-      )}
+      {notes?.trim() ? notes : <span className="text-muted-foreground">—</span>}
     </button>
   )
 }

@@ -10,6 +10,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  useSidebar,
 } from '@/components/ui/sidebar'
 import {
   Collapsible,
@@ -180,6 +181,11 @@ const navMain = [
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const router = useRouter()
   const queryClient = useQueryClient()
+  const { isMobile, setOpenMobile } = useSidebar()
+
+  const handleNavClick = () => {
+    if (isMobile) setOpenMobile(false)
+  }
 
   const { data: scopeData } = useQuery({
     queryKey: appScopesQueryKey,
@@ -189,7 +195,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const scopes = scopeData?.scopes ?? []
   const selectedScope =
     scopes.find((s) => s.id === scopeData?.selectedScopeId) ?? scopes[0]
-  const isPersonal = selectedScope?.kind === 'personal'
+  const isPersonal = selectedScope.kind === 'personal'
 
   function handleScopeChange(scopeId: string) {
     document.cookie = `${SCOPE_COOKIE_NAME}=${encodeURIComponent(scopeId)}; path=/; max-age=31536000; SameSite=Lax`
@@ -216,13 +222,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton className="h-12 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
                   <span className="flex min-w-0 items-center gap-2">
-                    {selectedScope?.kind === 'personal' ? (
+                    {selectedScope.kind === 'personal' ? (
                       <UserRound className="size-4 shrink-0" />
                     ) : (
                       <Building2 className="size-4 shrink-0" />
                     )}
                     <span className="truncate font-semibold">
-                      {selectedScope?.name ?? '…'}
+                      {selectedScope.name}
                     </span>
                   </span>
                   <ChevronsUpDown className="ml-auto size-4 shrink-0 text-muted-foreground" />
@@ -244,7 +250,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       <Building2 className="size-4 text-muted-foreground" />
                     )}
                     <span>{scope.name}</span>
-                    {scope.id === selectedScope?.id && (
+                    {scope.id === selectedScope.id && (
                       <Check className="ml-auto size-4" />
                     )}
                   </DropdownMenuItem>
@@ -275,8 +281,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             asChild
                             className="flex items-center gap-2 text-base"
                           >
-                            <Link to={item.url}>
-                              {item.icon && <span>{item.icon}</span>}
+                            <Link to={item.url} onClick={handleNavClick}>
+                              <span>{item.icon}</span>
                               {item.title}
                             </Link>
                           </SidebarMenuButton>
@@ -300,8 +306,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         asChild
                         className="flex items-center gap-2 text-base"
                       >
-                        <Link to={item.url}>
-                          {item.icon && <span>{item.icon}</span>}
+                        <Link to={item.url} onClick={handleNavClick}>
+                          <span>{item.icon}</span>
                           {item.title}
                         </Link>
                       </SidebarMenuButton>

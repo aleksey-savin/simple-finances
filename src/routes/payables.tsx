@@ -176,7 +176,10 @@ function PayablesSkeleton() {
     <>
       <div className="flex flex-wrap gap-3">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="flex min-w-35 flex-col justify-center gap-2 rounded-lg border p-4">
+          <div
+            key={i}
+            className="flex min-w-35 flex-col justify-center gap-2 rounded-lg border p-4"
+          >
             <Skeleton className="h-4 w-28 rounded" />
             <Skeleton className="h-6 w-24 rounded" />
           </div>

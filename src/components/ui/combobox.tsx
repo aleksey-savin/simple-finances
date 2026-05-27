@@ -6,12 +6,21 @@ import { Button } from '#/components/ui/button'
 import { Popover, PopoverTrigger } from '#/components/ui/popover'
 import { cn } from '#/lib/utils'
 
+export type ComboboxBadgeVariant = 'default' | 'success' | 'warning'
+
 export type ComboboxOption = {
   value: string
   label: string
   description?: string
   badge?: string
+  badgeVariant?: ComboboxBadgeVariant
   keywords?: string[]
+}
+
+const BADGE_VARIANT_CLASSES: Record<ComboboxBadgeVariant, string> = {
+  default: 'bg-muted text-muted-foreground',
+  success: 'bg-success text-success-foreground',
+  warning: 'bg-warning text-white',
 }
 
 type ComboboxProps = {
@@ -107,7 +116,14 @@ export function Combobox({
               {selectedOption?.label ?? placeholder}
             </span>
             {selectedOption?.badge && (
-              <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
+              <span
+                className={cn(
+                  'shrink-0 rounded px-1.5 py-0.5 text-xs font-bold',
+                  BADGE_VARIANT_CLASSES[
+                    selectedOption.badgeVariant ?? 'default'
+                  ],
+                )}
+              >
                 {selectedOption.badge}
               </span>
             )}
@@ -179,7 +195,14 @@ export function Combobox({
                             : null}
                         </span>
                         {option.badge && (
-                          <span className="mt-0.5 shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
+                          <span
+                            className={cn(
+                              'mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-xs font-bold',
+                              BADGE_VARIANT_CLASSES[
+                                option.badgeVariant ?? 'default'
+                              ],
+                            )}
+                          >
                             {option.badge}
                           </span>
                         )}

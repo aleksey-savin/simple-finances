@@ -5,6 +5,7 @@ import {
   foreignKey,
   index,
   integer,
+  jsonb,
   numeric,
   pgEnum,
   pgTable,
@@ -46,6 +47,11 @@ export const contractTypeEnum = pgEnum('contract_type', [
 ])
 
 export const vmTypeEnum = pgEnum('vm_type', ['qemu', 'lxc'])
+
+export const notificationStyleEnum = pgEnum('notification_style', [
+  'strict',
+  'soft',
+])
 
 export const priceRevisionItemStatusEnum = pgEnum(
   'price_revision_item_status',
@@ -439,6 +445,13 @@ export const businessLine = pgTable('business_line', {
   name: text('name').notNull(),
   allowServerBindings: boolean('allow_server_bindings').notNull().default(true),
   allowNotifications: boolean('allow_notifications').notNull().default(true),
+  reminderDaysBefore: integer('reminder_days_before').notNull().default(5),
+  reminderFrequencyDays: integer('reminder_frequency_days')
+    .notNull()
+    .default(7),
+  notificationStyle: notificationStyleEnum('notification_style')
+    .notNull()
+    .default('strict'),
   createdBy: text('created_by')
     .notNull()
     .references(() => user.id),
@@ -469,6 +482,7 @@ export const contract = pgTable(
       onDelete: 'set null',
     }),
     amount: numeric('amount').array().notNull(),
+    allowNotifications: boolean('allow_notifications').notNull().default(true),
     createdBy: text('created_by')
       .notNull()
       .references(() => user.id),
@@ -532,6 +546,7 @@ export const contractPriceRevision = pgTable(
     createdBy: text('created_by')
       .notNull()
       .references(() => user.id),
+    startedAt: timestamp('started_at'),
     completedAt: timestamp('completed_at'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
@@ -543,6 +558,24 @@ export const contractPriceRevision = pgTable(
     index('price_revision_business_line_idx').on(table.businessLineId),
     index('price_revision_company_idx').on(table.companyId),
   ],
+)
+
+export const contractPriceRevisionBulkSnapshot = pgTable(
+  'contract_price_revision_bulk_snapshot',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    revisionId: text('revision_id')
+      .notNull()
+      .unique()
+      .references(() => contractPriceRevision.id, { onDelete: 'cascade' }),
+    actionLabel: text('action_label').notNull(),
+    items: jsonb('items')
+      .$type<{ itemId: string; proposedAmounts: string[] }[]>()
+      .notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
 )
 
 export const contractAmountHistory = pgTable(
@@ -1332,6 +1365,20 @@ export const contractPriceRevisionRelations = relations(
       references: [user.id],
     }),
     items: many(contractPriceRevisionItem),
+    bulkSnapshot: one(contractPriceRevisionBulkSnapshot, {
+      fields: [contractPriceRevision.id],
+      references: [contractPriceRevisionBulkSnapshot.revisionId],
+    }),
+  }),
+)
+
+export const contractPriceRevisionBulkSnapshotRelations = relations(
+  contractPriceRevisionBulkSnapshot,
+  ({ one }) => ({
+    revision: one(contractPriceRevision, {
+      fields: [contractPriceRevisionBulkSnapshot.revisionId],
+      references: [contractPriceRevision.id],
+    }),
   }),
 )
 
@@ -1431,7 +1478,6 @@ export const proxmoxAccountSettings = pgTable(
     currentAccountId: text('current_account_id')
       .notNull()
       .references(() => currentAccount.id, { onDelete: 'cascade' }),
-    reminderDaysBefore: integer('reminder_days_before').notNull().default(5),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
       .defaultNow()

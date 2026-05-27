@@ -14,7 +14,5 @@ export function useSession() {
     setIsHydrated(true)
   }, [])
 
-  return isHydrated && !isPending
-    ? (clientSession ?? null)
-    : initialSession
+  return isHydrated && !isPending ? (clientSession ?? null) : initialSession
 }

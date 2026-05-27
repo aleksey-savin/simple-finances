@@ -15,15 +15,19 @@ import { RuleTableRow } from '#/components/recurring/table-row'
 import {
   createRecurringNow,
   fetchRecurringData,
+  skipNextRecurringOccurrence,
   toggleRecurringRule,
 } from '#/components/recurring/actions'
 import { Button } from '#/components/ui/button'
 import { Card } from '#/components/ui/card'
 import { Input } from '#/components/ui/input'
+import { Label } from '#/components/ui/label'
 import {
-  MultiSelectCombobox,
-  type MultiSelectOption,
+  MultiSelectCombobox
+  
 } from '#/components/ui/multi-select-combobox'
+import type {MultiSelectOption} from '#/components/ui/multi-select-combobox';
+import { Switch } from '#/components/ui/switch'
 import {
   Table,
   TableBody,
@@ -33,7 +37,11 @@ import {
 } from '#/components/ui/table'
 import { ToggleGroup, ToggleGroupItem } from '#/components/ui/toggle-group'
 import type { RuleWithRelations } from '@/types'
-import { getCronLabel } from '#/components/recurring/utils'
+import {
+  computeMonthTotals,
+  getCronLabel,
+  ruleHasOccurrenceInMonth,
+} from '#/components/recurring/utils'
 
 // ─── Route ────────────────────────────────────────────────────────────────────
 
@@ -48,11 +56,15 @@ export type { RuleWithRelations } from '@/types'
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
+function startOfCurrentMonth(): Date {
+  const now = new Date()
+  return new Date(now.getFullYear(), now.getMonth(), 1)
+}
+
 function RecurringPage() {
   const router = useRouter()
   const navigate = useNavigate()
-  const { rules, categories, accounts, counterparties, currentMonthTotals } =
-    Route.useLoaderData()
+  const { rules, categories, accounts, counterparties } = Route.useLoaderData()
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<
     'all' | 'payable' | 'receivable'
@@ -60,6 +72,23 @@ function RecurringPage() {
   const [categoryFilter, setCategoryFilter] = useState<string[]>([])
   const [accountFilter, setAccountFilter] = useState<string[]>([])
   const [counterpartyFilter, setCounterpartyFilter] = useState<string[]>([])
+  const [selectedMonth, setSelectedMonth] = useState<Date>(startOfCurrentMonth)
+  const [onlySelectedMonth, setOnlySelectedMonth] = useState(false)
+
+  const nextMonth = useMemo(
+    () =>
+      new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 1),
+    [selectedMonth],
+  )
+
+  const currentTotals = useMemo(
+    () => computeMonthTotals(rules, selectedMonth),
+    [rules, selectedMonth],
+  )
+  const nextTotals = useMemo(
+    () => computeMonthTotals(rules, nextMonth),
+    [rules, nextMonth],
+  )
 
   const categoryOptions: MultiSelectOption[] = categories.map((category) => ({
     value: category.id,
@@ -88,11 +117,32 @@ function RecurringPage() {
     }
   }
 
-  const handleCreateNow = async (rule: RuleWithRelations) => {
+  const handleCreateNow = async (
+    rule: RuleWithRelations,
+    skipNext: boolean,
+  ) => {
     try {
-      await createRecurringNow({ data: { id: rule.id } })
+      await createRecurringNow({ data: { id: rule.id, skipNext } })
       await router.invalidate()
-      toast.success(rule.type === 'payable' ? 'Расход создан' : 'Доход создан')
+      toast.success(
+        skipNext
+          ? rule.type === 'payable'
+            ? 'Расход создан, следующий запуск пропущен'
+            : 'Доход создан, следующий запуск пропущен'
+          : rule.type === 'payable'
+            ? 'Расход создан'
+            : 'Доход создан',
+      )
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Произошла ошибка')
+    }
+  }
+
+  const handleSkipNext = async (rule: RuleWithRelations) => {
+    try {
+      await skipNextRecurringOccurrence({ data: { id: rule.id } })
+      await router.invalidate()
+      toast.success('Следующий запуск пропущен')
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Произошла ошибка')
     }
@@ -103,7 +153,8 @@ function RecurringPage() {
     typeFilter !== 'all' ||
     categoryFilter.length > 0 ||
     accountFilter.length > 0 ||
-    counterpartyFilter.length > 0
+    counterpartyFilter.length > 0 ||
+    onlySelectedMonth
 
   const clearFilters = () => {
     setSearch('')
@@ -111,6 +162,7 @@ function RecurringPage() {
     setCategoryFilter([])
     setAccountFilter([])
     setCounterpartyFilter([])
+    setOnlySelectedMonth(false)
   }
 
   const filteredRules = useMemo(() => {
@@ -149,6 +201,9 @@ function RecurringPage() {
         )
           return false
 
+        if (onlySelectedMonth && !ruleHasOccurrenceInMonth(rule, selectedMonth))
+          return false
+
         return true
       })
       .sort((a, b) => {
@@ -167,11 +222,18 @@ function RecurringPage() {
     categoryFilter,
     accountFilter,
     counterpartyFilter,
+    onlySelectedMonth,
+    selectedMonth,
   ])
 
   return (
     <>
-      <RecurringSummaryCards currentMonthTotals={currentMonthTotals} />
+      <RecurringSummaryCards
+        selectedMonth={selectedMonth}
+        onMonthChange={setSelectedMonth}
+        currentTotals={currentTotals}
+        nextTotals={nextTotals}
+      />
 
       {rules.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
@@ -235,6 +297,20 @@ function RecurringPage() {
                 emptyText="Контрагенты не найдены"
               />
 
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="only-selected-month"
+                  checked={onlySelectedMonth}
+                  onCheckedChange={setOnlySelectedMonth}
+                />
+                <Label
+                  htmlFor="only-selected-month"
+                  className="cursor-pointer text-sm"
+                >
+                  Только за выбранный месяц
+                </Label>
+              </div>
+
               {hasActiveFilters && (
                 <Button
                   variant="ghost"
@@ -270,7 +346,8 @@ function RecurringPage() {
                         params: { id: rule.id },
                       })
                     }
-                    onCreateNow={() => handleCreateNow(rule)}
+                    onCreateNow={(skipNext) => handleCreateNow(rule, skipNext)}
+                    onSkipNext={() => handleSkipNext(rule)}
                     onToggle={(value) => handleToggle(rule, value)}
                   />
                 ))}
@@ -307,7 +384,10 @@ function RecurringPage() {
                             params: { id: rule.id },
                           })
                         }
-                        onCreateNow={() => handleCreateNow(rule)}
+                        onCreateNow={(skipNext) =>
+                          handleCreateNow(rule, skipNext)
+                        }
+                        onSkipNext={() => handleSkipNext(rule)}
                         onToggle={(value) => handleToggle(rule, value)}
                       />
                     ))}

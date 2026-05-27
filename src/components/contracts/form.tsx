@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button'
 import { Combobox } from '@/components/ui/combobox'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 import { addContract, contractsQueryKey, updateContract } from './actions'
 
 export type ContractEditData = {
@@ -40,6 +41,7 @@ export type ContractEditData = {
   company?: { id: string; name: string } | null
   companyId?: string | null
   amount: string[]
+  allowNotifications: boolean
 }
 
 const amountItemSchema = z
@@ -62,6 +64,7 @@ const uiFormSchema = z
     counterpartyId: z.string().min(1, 'Выберите контрагента'),
     companyId: z.string(),
     amount: z.array(amountItemSchema).min(1, 'Добавьте хотя бы одну сумму'),
+    allowNotifications: z.boolean(),
   })
   .superRefine((value, ctx) => {
     if (
@@ -145,6 +148,7 @@ export const ContractForm = ({
       counterpartyId: current?.counterparty.id ?? defaultCounterpartyId ?? '',
       companyId: current?.companyId ?? '',
       amount: current?.amount ?? [''],
+      allowNotifications: current?.allowNotifications ?? true,
     },
     validators: { onSubmit: uiFormSchema },
     onSubmit: async ({ value }) => {
@@ -173,6 +177,7 @@ export const ContractForm = ({
               counterpartyId: value.counterpartyId,
               companyId: value.companyId || undefined,
               amount: value.amount,
+              allowNotifications: value.allowNotifications,
             },
           })
           await router.invalidate()
@@ -195,6 +200,7 @@ export const ContractForm = ({
             counterpartyId: value.counterpartyId,
             companyId: value.companyId || undefined,
             amount: value.amount,
+            allowNotifications: value.allowNotifications,
           },
         })
 
@@ -487,6 +493,30 @@ export const ContractForm = ({
               </Field>
             )
           }}
+        </form.Field>
+
+        <form.Field name="allowNotifications">
+          {(field) => (
+            <Field>
+              <div className="flex items-center justify-between gap-2 rounded-md border px-3 py-2">
+                <div className="space-y-0.5">
+                  <FieldLabel htmlFor={field.name} className="cursor-pointer">
+                    Отправлять напоминания об оплате
+                  </FieldLabel>
+                  <p className="text-xs text-muted-foreground">
+                    Если выключено, для этого договора не будут отправляться
+                    напоминания.
+                  </p>
+                </div>
+                <Switch
+                  id={field.name}
+                  checked={field.state.value}
+                  onCheckedChange={field.handleChange}
+                  onBlur={field.handleBlur}
+                />
+              </div>
+            </Field>
+          )}
         </form.Field>
 
         <Button type="submit">{isEdit ? 'Сохранить' : 'Создать'}</Button>

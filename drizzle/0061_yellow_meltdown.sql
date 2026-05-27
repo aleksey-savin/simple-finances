@@ -1,0 +1,1 @@
+ALTER TABLE "contract" ADD COLUMN "allow_notifications" boolean DEFAULT true NOT NULL;

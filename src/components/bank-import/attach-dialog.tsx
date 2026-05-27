@@ -8,9 +8,15 @@ import {
 } from '#/components/ui/dialog'
 import { Field, FieldLabel } from '#/components/ui/field'
 import { Input } from '#/components/ui/input'
-import { Combobox, type ComboboxOption } from '#/components/ui/combobox'
+import {
+  Combobox
+  
+  
+} from '#/components/ui/combobox'
+import type {ComboboxBadgeVariant, ComboboxOption} from '#/components/ui/combobox';
 import type { ImportedBankTransactionView } from '#/components/bank-import/actions'
 import { getBankImportEntityLabel } from '#/components/bank-import/labels'
+import { formatMoney, formatShortDate } from '@/lib/format'
 import { Link2, Loader2, Minus } from 'lucide-react'
 
 export type BankImportAllocationDraft = {
@@ -35,22 +41,46 @@ export function BankImportAttachDialog({
   onAllocationDraftsChange: (value: BankImportAllocationDraft[]) => void
   onSubmit: () => void
 }) {
+  const topCandidate = target?.suggestedInvoices.reduce<
+    ImportedBankTransactionView['suggestedInvoices'][number] | null
+  >((best, current) => {
+    if (current.score <= 0) return best
+    if (!best || current.score > best.score) return current
+    return best
+  }, null)
+
   const candidateOptions: ComboboxOption[] =
-    target?.suggestedInvoices.map((candidate) => ({
-      value: candidate.id,
-      label: candidate.description,
-      description: [
-        [
-          candidate.counterpartyName ?? 'Без контрагента',
-          `Остаток ${formatMoney(candidate.outstandingAmount)} ₽`,
-        ].join(' · '),
-        candidate.reasons.length > 0 ? candidate.reasons.join(', ') : '',
-      ]
-        .filter(Boolean)
-        .join('\n'),
-      badge: candidate.score > 0 ? String(candidate.score) : undefined,
-      keywords: [String(candidate.score)],
-    })) ?? []
+    target?.suggestedInvoices.map((candidate) => {
+      const isTop = topCandidate?.id === candidate.id
+      const sharesCounterpartyWithTop =
+        !isTop &&
+        topCandidate?.counterpartyId !== null &&
+        topCandidate?.counterpartyId !== undefined &&
+        candidate.counterpartyId === topCandidate.counterpartyId
+      const badgeVariant: ComboboxBadgeVariant = isTop
+        ? 'success'
+        : sharesCounterpartyWithTop
+          ? 'warning'
+          : 'default'
+
+      return {
+        value: candidate.id,
+        label: candidate.description,
+        description: [
+          [
+            candidate.counterpartyName ?? 'Без контрагента',
+            `Остаток ${formatMoney(candidate.outstandingAmount)} ₽`,
+            `Создан ${formatShortDate(candidate.createdAt)}`,
+          ].join(' · '),
+          candidate.reasons.length > 0 ? candidate.reasons.join(', ') : '',
+        ]
+          .filter(Boolean)
+          .join('\n'),
+        badge: candidate.score > 0 ? String(candidate.score) : undefined,
+        badgeVariant,
+        keywords: [String(candidate.score)],
+      }
+    }) ?? []
 
   const allocated = allocationDrafts.reduce(
     (sum, d) => sum + (parseFloat(d.amount) || 0),
@@ -229,11 +259,4 @@ export function BankImportAttachDialog({
       </DialogContent>
     </Dialog>
   )
-}
-
-function formatMoney(value: number) {
-  return value.toLocaleString('ru-RU', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
 }
