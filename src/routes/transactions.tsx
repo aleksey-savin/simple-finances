@@ -804,7 +804,7 @@ function App() {
                   На странице
                 </span>
                 <select
-                  className="flex h-9 w-24 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs"
+                  className="flex h-9 w-24 border border-input bg-background px-3 py-1 text-sm shadow-xs"
                   value={String(pageSize)}
                   onChange={(event) => {
                     void router.navigate({

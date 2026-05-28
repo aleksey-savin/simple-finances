@@ -184,7 +184,7 @@ export function RuleTableRow({
                   Расписание не изменится.
                 </AlertDialogDescription>
               </AlertDialogHeader>
-              <label className="flex items-center justify-between gap-3 rounded-md border p-3 text-sm">
+              <label className="flex items-center justify-between gap-3 border p-3 text-sm">
                 <span className="flex flex-col gap-0.5">
                   <span className="font-medium">
                     Пропустить следующий запуск

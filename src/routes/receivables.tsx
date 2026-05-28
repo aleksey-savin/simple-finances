@@ -147,17 +147,17 @@ function ReceivablesSkeleton() {
         {[...Array(2)].map((_, i) => (
           <div
             key={i}
-            className="flex min-w-35 flex-col justify-center gap-2 rounded-lg border p-4"
+            className="flex min-w-35 flex-col justify-center gap-2 border p-4"
           >
-            <Skeleton className="h-4 w-28 rounded" />
-            <Skeleton className="h-6 w-24 rounded" />
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-6 w-24" />
           </div>
         ))}
       </div>
-      <div className="rounded-lg border p-4 flex flex-col gap-3">
-        <Skeleton className="h-9 w-full rounded" />
+      <div className="border p-4 flex flex-col gap-3">
+        <Skeleton className="h-9 w-full" />
         {[...Array(6)].map((_, i) => (
-          <Skeleton key={i} className="h-12 w-full rounded" />
+          <Skeleton key={i} className="h-12 w-full" />
         ))}
       </div>
     </>

@@ -60,7 +60,7 @@ export function CompanyMembers({ companyId }: { companyId: string }) {
     .filter((u) => !memberUserIds.has(u.id))
     .map((u) => ({
       value: u.id,
-      label: u.name ?? u.email,
+      label: u.name,
       description: u.email,
     }))
 
@@ -120,7 +120,7 @@ export function CompanyMembers({ companyId }: { companyId: string }) {
           {members.map((member) => (
             <div
               key={member.userId}
-              className="flex items-center justify-between gap-2 rounded-md border bg-muted/20 px-3 py-2"
+              className="flex items-center justify-between gap-2 border bg-muted/20 px-3 py-2"
             >
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">{member.name}</p>
@@ -147,7 +147,7 @@ export function CompanyMembers({ companyId }: { companyId: string }) {
         </div>
       )}
 
-      <div className="flex flex-col gap-2 rounded-md border p-3">
+      <div className="flex flex-col gap-2 border p-3">
         <p className="text-xs font-medium text-muted-foreground">
           Добавить участника
         </p>

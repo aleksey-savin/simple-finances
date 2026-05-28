@@ -498,7 +498,7 @@ export const ContractForm = ({
         <form.Field name="allowNotifications">
           {(field) => (
             <Field>
-              <div className="flex items-center justify-between gap-2 rounded-md border px-3 py-2">
+              <div className="flex items-center justify-between gap-2 border px-3 py-2">
                 <div className="space-y-0.5">
                   <FieldLabel htmlFor={field.name} className="cursor-pointer">
                     Отправлять напоминания об оплате

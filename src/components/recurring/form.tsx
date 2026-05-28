@@ -40,9 +40,15 @@ export const ruleFormSchema = z.object({
   paymentAccountId: z.string(),
   paymentCategoryId: z.string(),
   contractId: z.string(),
+  selectedAmountIndex: z.string(),
 })
 
 export type RuleFormValues = z.infer<typeof ruleFormSchema>
+
+export function parseDueDays(raw: string): number | null {
+  const n = +raw
+  return raw.trim() !== '' && !isNaN(n) && n > 0 ? n : null
+}
 
 type PaymentAccount = { id: string; name: string }
 
@@ -67,6 +73,12 @@ export const RecurringForm = ({
 }) => {
   const [paymentAccounts, setPaymentAccounts] = useState<PaymentAccount[]>([])
   const [isFetchingPayments, setIsFetchingPayments] = useState(false)
+  // Custom (free-typed) amount instead of picking one of the contract's amounts.
+  const [customSum, setCustomSum] = useState(
+    () =>
+      defaultValues.contractId !== '' &&
+      defaultValues.selectedAmountIndex === '',
+  )
 
   const { data: contracts = [] } = useQuery({
     queryKey: contractsQueryKey,
@@ -76,6 +88,7 @@ export const RecurringForm = ({
         id: c.id,
         name: c.name,
         counterpartyId: c.counterpartyId,
+        amount: c.amount,
       })),
   })
 
@@ -94,7 +107,7 @@ export const RecurringForm = ({
       .then(setPaymentAccounts)
       .catch(() => {})
       .finally(() => setIsFetchingPayments(false))
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleCounterpartyChange = async (
     val: string,
@@ -116,10 +129,10 @@ export const RecurringForm = ({
 
     setIsFetchingPayments(true)
     try {
-      const accounts = await fetchPaymentAccounts({
+      const fetched = await fetchPaymentAccounts({
         data: { linkedUserId: cp.linkedUserId },
       })
-      setPaymentAccounts(accounts)
+      setPaymentAccounts(fetched)
     } catch {
       // silently ignore — no payment section shown
     } finally {
@@ -147,12 +160,11 @@ export const RecurringForm = ({
         form.handleSubmit()
       }}
     >
-      {/* Type */}
       <form.Field name="type">
         {(field) => (
           <Field>
             <FieldLabel>Тип</FieldLabel>
-            <div className="flex rounded-md border overflow-hidden divide-x text-sm">
+            <div className="flex border overflow-hidden divide-x text-sm">
               {(['payable', 'receivable'] as const).map((t) => (
                 <button
                   key={t}
@@ -178,32 +190,246 @@ export const RecurringForm = ({
         )}
       </form.Field>
 
-      {/* Amount */}
-      <form.Field name="amount">
-        {(field) => {
-          const isInvalid =
-            field.state.meta.isTouched && !field.state.meta.isValid
+      {/* Counterparty */}
+      <form.Subscribe selector={(s) => s.values.type}>
+        {(type) => (
+          <form.Field name="counterpartyId">
+            {(field) => (
+              <Field>
+                <FieldLabel>Контрагент</FieldLabel>
+                <Combobox
+                  options={[
+                    { value: '__none__', label: 'Не указан' },
+                    ...counterparties.map((c) => ({
+                      value: c.id,
+                      label: c.name,
+                    })),
+                  ]}
+                  value={field.state.value || '__none__'}
+                  onValueChange={(v) => {
+                    const val = v === '__none__' ? '' : v
+                    form.setFieldValue('selectedAmountIndex', '')
+                    setCustomSum(false)
+                    if (type === 'payable') {
+                      handleCounterpartyChange(
+                        val,
+                        field.handleChange,
+                        () => form.setFieldValue('paymentAccountId', ''),
+                        () => form.setFieldValue('paymentCategoryId', ''),
+                        () => form.setFieldValue('contractId', ''),
+                      )
+                    } else {
+                      field.handleChange(val)
+                      form.setFieldValue('contractId', '')
+                    }
+                  }}
+                  placeholder="Выберите контрагента (необязательно)"
+                />
+              </Field>
+            )}
+          </form.Field>
+        )}
+      </form.Subscribe>
+
+      {/* Contract — shown when the selected counterparty has contracts */}
+      <form.Subscribe selector={(s) => s.values.counterpartyId}>
+        {(counterpartyId) => {
+          const filtered = contracts.filter(
+            (c) => counterpartyId && c.counterpartyId === counterpartyId,
+          )
+          if (!counterpartyId || filtered.length === 0) return null
           return (
-            <Field data-invalid={isInvalid}>
-              <FieldLabel htmlFor={field.name}>Сумма</FieldLabel>
-              <Input
-                id={field.name}
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                onChange={(e) => field.handleChange(e.target.value)}
-                aria-invalid={isInvalid}
-                autoComplete="off"
-              />
-              {isInvalid && <FieldError errors={field.state.meta.errors} />}
-            </Field>
+            <form.Field name="contractId">
+              {(field) => (
+                <Field>
+                  <FieldLabel>Договор</FieldLabel>
+                  <Combobox
+                    options={[
+                      { value: '__none__', label: 'Не указан' },
+                      ...filtered.map((c) => ({ value: c.id, label: c.name })),
+                    ]}
+                    value={field.state.value || '__none__'}
+                    onValueChange={(v) => {
+                      field.handleChange(v === '__none__' ? '' : v)
+                      form.setFieldValue('amount', '')
+                      form.setFieldValue('selectedAmountIndex', '')
+                      setCustomSum(false)
+                    }}
+                    placeholder="Выберите договор (необязательно)"
+                    onBlur={field.handleBlur}
+                  />
+                </Field>
+              )}
+            </form.Field>
           )
         }}
-      </form.Field>
+      </form.Subscribe>
 
-      {/* Description */}
+      {/* Amount — pick one of the contract's amounts, or a custom value */}
+      <form.Subscribe
+        selector={(s) => ({
+          contractId: s.values.contractId,
+          selectedAmountIndex: s.values.selectedAmountIndex,
+        })}
+      >
+        {({ contractId, selectedAmountIndex }) => {
+          const selectedContract = contracts.find((c) => c.id === contractId)
+          const contractAmounts = selectedContract?.amount ?? []
+          const hasContractAmounts = !!contractId && contractAmounts.length > 0
+          const showChooser = hasContractAmounts && !customSum
+          return (
+            <form.Field name="amount">
+              {(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Сумма</FieldLabel>
+                    {showChooser ? (
+                      <div className="flex flex-col gap-2">
+                        <div className="flex flex-wrap gap-2">
+                          {contractAmounts.map((a, i) => {
+                            const active = selectedAmountIndex === String(i)
+                            return (
+                              <button
+                                key={i}
+                                type="button"
+                                onClick={() => {
+                                  form.setFieldValue(
+                                    'selectedAmountIndex',
+                                    String(i),
+                                  )
+                                  field.handleChange(a)
+                                }}
+                                className={`border px-4 py-2 text-sm transition-colors ${
+                                  active
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'hover:bg-muted'
+                                }`}
+                              >
+                                {Number(a).toLocaleString('ru-RU')}
+                              </button>
+                            )
+                          })}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCustomSum(true)
+                            form.setFieldValue('selectedAmountIndex', '')
+                          }}
+                          className="self-start text-xs text-muted-foreground underline-offset-2 hover:underline"
+                        >
+                          Указать свою сумму
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        <Input
+                          id={field.name}
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          aria-invalid={isInvalid}
+                          autoComplete="off"
+                        />
+                        {hasContractAmounts && (
+                          <button
+                            type="button"
+                            onClick={() => setCustomSum(false)}
+                            className="self-start text-xs text-muted-foreground underline-offset-2 hover:underline"
+                          >
+                            Выбрать сумму из договора
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            </form.Field>
+          )
+        }}
+      </form.Subscribe>
+
+      {/* Payment section — payable rules only, shown when counterparty has linked accounts */}
+      <form.Subscribe selector={(s) => s.values.type}>
+        {(type) =>
+          type === 'payable' ? (
+            <>
+              {isFetchingPayments && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
+                  <Loader2 className="size-3 animate-spin" />
+                  Загрузка счетов для оплаты…
+                </div>
+              )}
+
+              {!isFetchingPayments && paymentAccounts.length > 0 && (
+                <div className="flex flex-col gap-3 border border-dashed p-3">
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                    <ArrowRight className="size-3.5" />
+                    Зачислить доход контрагенту
+                  </p>
+
+                  <form.Field name="paymentAccountId">
+                    {(field) => (
+                      <Field>
+                        <FieldLabel htmlFor={field.name}>
+                          Счёт получателя
+                        </FieldLabel>
+                        <Combobox
+                          options={paymentAccounts.map((a) => ({
+                            value: a.id,
+                            label: a.name,
+                          }))}
+                          value={field.state.value}
+                          onValueChange={(val) => field.handleChange(val)}
+                          placeholder="Выберите счёт"
+                          onBlur={field.handleBlur}
+                        />
+                      </Field>
+                    )}
+                  </form.Field>
+
+                  {/* Income category — shown once a payment account is picked */}
+                  <form.Subscribe selector={(s) => s.values.paymentAccountId}>
+                    {(paymentAccountId) =>
+                      paymentAccountId ? (
+                        <form.Field name="paymentCategoryId">
+                          {(field) => (
+                            <Field>
+                              <FieldLabel htmlFor={field.name}>
+                                Категория дохода
+                              </FieldLabel>
+                              <Combobox
+                                options={paymentIncomeCategories.map((c) => ({
+                                  value: c.id,
+                                  label: c.name,
+                                }))}
+                                value={field.state.value}
+                                onValueChange={(val) => field.handleChange(val)}
+                                placeholder="Выберите категорию"
+                                onBlur={field.handleBlur}
+                              />
+                            </Field>
+                          )}
+                        </form.Field>
+                      ) : null
+                    }
+                  </form.Subscribe>
+                </div>
+              )}
+            </>
+          ) : null
+        }
+      </form.Subscribe>
+
       <form.Field name="description">
         {(field) => {
           const isInvalid =
@@ -258,131 +484,6 @@ export const RecurringForm = ({
         )}
       </form.Subscribe>
 
-      {/* Counterparty */}
-      <form.Subscribe selector={(s) => s.values.type}>
-        {(type) => (
-          <form.Field name="counterpartyId">
-            {(field) => (
-              <form.Field name="paymentAccountId">
-                {(paymentAccountField) => (
-                  <form.Field name="paymentCategoryId">
-                    {(paymentCategoryField) => (
-                      <form.Field name="contractId">
-                        {(contractField) => (
-                          <Field>
-                            <FieldLabel>Контрагент</FieldLabel>
-                            <Combobox
-                              options={[
-                                { value: '__none__', label: 'Не указан' },
-                                ...counterparties.map((c) => ({
-                                  value: c.id,
-                                  label: c.name,
-                                })),
-                              ]}
-                              value={field.state.value || '__none__'}
-                              onValueChange={(v) => {
-                                const val = v === '__none__' ? '' : v
-                                if (type === 'payable') {
-                                  handleCounterpartyChange(
-                                    val,
-                                    field.handleChange,
-                                    () => paymentAccountField.handleChange(''),
-                                    () => paymentCategoryField.handleChange(''),
-                                    () => contractField.handleChange(''),
-                                  )
-                                } else {
-                                  field.handleChange(val)
-                                  contractField.handleChange('')
-                                }
-                              }}
-                              placeholder="Выберите контрагента (необязательно)"
-                            />
-                          </Field>
-                        )}
-                      </form.Field>
-                    )}
-                  </form.Field>
-                )}
-              </form.Field>
-            )}
-          </form.Field>
-        )}
-      </form.Subscribe>
-
-      {/* Payment section — payable rules only, shown when counterparty has linked accounts */}
-      <form.Subscribe selector={(s) => s.values.type}>
-        {(type) =>
-          type === 'payable' ? (
-            <>
-              {isFetchingPayments && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
-                  <Loader2 className="size-3 animate-spin" />
-                  Загрузка счетов для оплаты…
-                </div>
-              )}
-
-              {!isFetchingPayments && paymentAccounts.length > 0 && (
-                <div className="flex flex-col gap-3 rounded-md border border-dashed p-3">
-                  <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                    <ArrowRight className="size-3.5" />
-                    Зачислить доход контрагенту
-                  </p>
-
-                  {/* Payment account */}
-                  <form.Field name="paymentAccountId">
-                    {(field) => (
-                      <Field>
-                        <FieldLabel htmlFor={field.name}>
-                          Счёт получателя
-                        </FieldLabel>
-                        <Combobox
-                          options={paymentAccounts.map((a) => ({
-                            value: a.id,
-                            label: a.name,
-                          }))}
-                          value={field.state.value}
-                          onValueChange={(val) => field.handleChange(val)}
-                          placeholder="Выберите счёт"
-                          onBlur={field.handleBlur}
-                        />
-                      </Field>
-                    )}
-                  </form.Field>
-
-                  {/* Income category — shown once a payment account is picked */}
-                  <form.Subscribe selector={(s) => s.values.paymentAccountId}>
-                    {(paymentAccountId) =>
-                      paymentAccountId ? (
-                        <form.Field name="paymentCategoryId">
-                          {(field) => (
-                            <Field>
-                              <FieldLabel htmlFor={field.name}>
-                                Категория дохода
-                              </FieldLabel>
-                              <Combobox
-                                options={paymentIncomeCategories.map((c) => ({
-                                  value: c.id,
-                                  label: c.name,
-                                }))}
-                                value={field.state.value}
-                                onValueChange={(val) => field.handleChange(val)}
-                                placeholder="Выберите категорию"
-                                onBlur={field.handleBlur}
-                              />
-                            </Field>
-                          )}
-                        </form.Field>
-                      ) : null
-                    }
-                  </form.Subscribe>
-                </div>
-              )}
-            </>
-          ) : null
-        }
-      </form.Subscribe>
-
-      {/* Account */}
       <form.Field name="currentAccountId">
         {(field) => {
           const isInvalid =
@@ -406,7 +507,6 @@ export const RecurringForm = ({
         }}
       </form.Field>
 
-      {/* Cron preset */}
       <form.Field name="cronPreset">
         {(field) => (
           <Field>
@@ -468,7 +568,6 @@ export const RecurringForm = ({
         }
       </form.Subscribe>
 
-      {/* Due days from creation */}
       <form.Field name="dueDaysFromCreation">
         {(field) => (
           <Field>
@@ -495,37 +594,6 @@ export const RecurringForm = ({
           </Field>
         )}
       </form.Field>
-
-      {/* Contract */}
-      <form.Subscribe selector={(s) => s.values.counterpartyId}>
-        {(counterpartyId) => {
-          const filtered = contracts.filter(
-            (c) => counterpartyId && c.counterpartyId === counterpartyId,
-          )
-          if (!counterpartyId || filtered.length === 0) return null
-          return (
-            <form.Field name="contractId">
-              {(field) => (
-                <Field>
-                  <FieldLabel>Договор</FieldLabel>
-                  <Combobox
-                    options={[
-                      { value: '__none__', label: 'Не указан' },
-                      ...filtered.map((c) => ({ value: c.id, label: c.name })),
-                    ]}
-                    value={field.state.value || '__none__'}
-                    onValueChange={(v) =>
-                      field.handleChange(v === '__none__' ? '' : v)
-                    }
-                    placeholder="Выберите договор (необязательно)"
-                    onBlur={field.handleBlur}
-                  />
-                </Field>
-              )}
-            </form.Field>
-          )
-        }}
-      </form.Subscribe>
 
       <DialogFooter className="mt-2">
         <Button type="button" variant="outline" onClick={onClose}>

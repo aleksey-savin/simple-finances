@@ -1,12 +1,49 @@
 import '@tanstack/react-start/server-only'
 
-import { and, eq, inArray, lte } from 'drizzle-orm'
+import { and, eq, inArray, isNotNull, lte } from 'drizzle-orm'
 import { Cron } from 'croner'
 import { db } from '#/db/index.server'
 import { invoice, recurringRule } from '#/db/schema'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const MAX_OCCURRENCES_PER_SYNC = 500
+
+type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+/**
+ * Re-sync the `amount` of every recurring rule linked to `contractId` that tracks a
+ * specific contract amount index. Rules whose tracked index is out of range for
+ * `newAmounts` are left unchanged.
+ */
+export async function syncRecurringRuleAmountsForContract(
+  tx: DbTx,
+  contractId: string,
+  newAmounts: string[],
+) {
+  const rules = await tx.query.recurringRule.findMany({
+    where: and(
+      eq(recurringRule.contractId, contractId),
+      isNotNull(recurringRule.selectedAmountIndex),
+    ),
+    columns: { id: true, selectedAmountIndex: true },
+  })
+
+  const byAmount = new Map<string, string[]>()
+  for (const rule of rules) {
+    const idx = rule.selectedAmountIndex
+    if (idx == null || idx < 0 || idx >= newAmounts.length) continue
+    const amount = newAmounts[idx]
+    const ids = byAmount.get(amount) ?? []
+    ids.push(rule.id)
+    byAmount.set(amount, ids)
+  }
+  for (const [amount, ids] of byAmount) {
+    await tx
+      .update(recurringRule)
+      .set({ amount })
+      .where(inArray(recurringRule.id, ids))
+  }
+}
 
 type RecurringExecutionRule = {
   id: string

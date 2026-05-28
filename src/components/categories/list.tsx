@@ -15,8 +15,7 @@ import {
   ItemTitle,
 } from '../ui/item'
 
-import { EditCategoryForm } from '.'
-import { DeleteCategory } from '.'
+import { EditCategoryForm, DeleteCategory  } from '.'
 
 import type { Category } from '#/types'
 
@@ -94,7 +93,7 @@ function CategoryRow({
       </Item>
 
       {isEditing && (
-        <div className="border border-t-0 rounded-b-md px-4 pb-4 -mt-0.5 bg-muted/30">
+        <div className="border border-t-0 px-4 pb-4 -mt-0.5 bg-muted/30">
           <EditCategoryForm
             category={category}
             onDone={() => setEditingId(null)}

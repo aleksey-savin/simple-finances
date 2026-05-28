@@ -472,7 +472,7 @@ export function InvoiceForm({
                 )}
 
                 {!isFetchingPayments && paymentAccounts.length > 0 && (
-                  <div className="flex flex-col gap-3 rounded-md border border-dashed p-3 sm:w-1/2">
+                  <div className="flex flex-col gap-3 border border-dashed p-3 sm:w-1/2">
                     <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                       <ArrowRight className="size-3.5" />
                       Зачислить доход контрагенту

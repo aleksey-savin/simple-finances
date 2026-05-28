@@ -753,6 +753,8 @@ export const recurringRule = pgTable('recurring_rule', {
   contractId: text('contract_id').references(() => contract.id, {
     onDelete: 'set null',
   }),
+  /** Index into the linked contract's amount[] this rule tracks; null = custom/free amount */
+  selectedAmountIndex: integer('selected_amount_index'),
   isActive: boolean('is_active').notNull().default(true),
   /** Timestamp of the last time this rule was fired */
   lastRunAt: timestamp('last_run_at'),

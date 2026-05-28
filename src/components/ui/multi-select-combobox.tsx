@@ -139,7 +139,7 @@ export function MultiSelectCombobox({
                       key={option.value}
                       type="button"
                       className={cn(
-                        'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground',
+                        'flex w-full items-center gap-2 px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground',
                         isSelected && 'bg-accent/60',
                       )}
                       onClick={() => toggleValue(option.value)}

@@ -299,7 +299,7 @@ export function DataTableColumnHeader<TData, TValue>({
       type="button"
       onClick={() => column.toggleSorting(sorted === 'asc')}
       className={cn(
-        'flex items-center gap-1.5 -ml-1 px-1 py-0.5 rounded text-sm font-medium',
+        'flex items-center gap-1.5 -ml-1 px-1 py-0.5 text-sm font-medium',
         'hover:bg-muted/60 transition-colors select-none cursor-pointer',
         sorted && 'text-foreground',
         !sorted && 'text-muted-foreground hover:text-foreground',

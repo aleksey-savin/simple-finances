@@ -221,7 +221,7 @@ function TotpAppSection({
             Отсканируйте QR-код в приложении-аутентификаторе (Google
             Authenticator, Authy и т.п.), затем введите 6-значный код.
           </p>
-          <div className="rounded-md border p-3 w-fit bg-white">
+          <div className="border p-3 w-fit bg-white">
             <QRCodeSVG value={totpUri} size={160} />
           </div>
           <div className="flex flex-col gap-3">

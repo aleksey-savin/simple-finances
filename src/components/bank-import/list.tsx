@@ -104,7 +104,7 @@ export function BankImportList({
                   {row.settlements.map((settlement) => (
                     <div
                       key={settlement.id}
-                      className="flex flex-col gap-1 rounded-md bg-background p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
+                      className="flex flex-col gap-1 bg-background p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
                     >
                       <div>
                         <p className="font-medium">

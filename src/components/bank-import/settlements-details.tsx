@@ -106,7 +106,7 @@ export function BankTransactionSettlementsDetails({
             {row.settlements.map((settlement) => (
               <div
                 key={settlement.id}
-                className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-start sm:justify-between"
+                className="flex flex-col gap-3 border p-4 sm:flex-row sm:items-start sm:justify-between"
               >
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2">

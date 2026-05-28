@@ -42,7 +42,7 @@ export function TagSummaryPanel({ totals, className }: TagSummaryPanelProps) {
         onClick={() => setHidden(false)}
         className={cn(
           'fixed bottom-6 right-6 z-50',
-          'flex items-center gap-2 rounded-full shadow-lg border',
+          'flex items-center gap-2 shadow-lg border',
           'bg-background/95 backdrop-blur-sm px-4 py-2 text-sm font-medium',
           'hover:bg-muted transition-colors',
           className,
@@ -72,7 +72,7 @@ export function TagSummaryPanel({ totals, className }: TagSummaryPanelProps) {
         <button
           type="button"
           onClick={() => setCollapsed((c) => !c)}
-          className="text-muted-foreground hover:text-foreground transition-colors p-0.5 rounded"
+          className="text-muted-foreground hover:text-foreground transition-colors p-0.5"
           title={collapsed ? 'Развернуть' : 'Свернуть'}
         >
           {collapsed ? (
@@ -85,7 +85,7 @@ export function TagSummaryPanel({ totals, className }: TagSummaryPanelProps) {
         <button
           type="button"
           onClick={() => setHidden(true)}
-          className="text-muted-foreground hover:text-foreground transition-colors p-0.5 rounded"
+          className="text-muted-foreground hover:text-foreground transition-colors p-0.5"
           title="Скрыть"
         >
           <X className="size-4" />

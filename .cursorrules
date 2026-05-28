@@ -25,6 +25,10 @@ Composed types that extend or pick from DB types (e.g. with extra fields like `r
 
 1. If adding Delete component, use `entityId` prop instead of `entity` prop, do not pass the whole entity object.
 
+# UI styling
+
+- Do not use rounded corners. Avoid `rounded`, `rounded-*`, or any `border-radius` classes/styles on UI elements.
+
 # file uploads
 
 Use `<DocumentUploader>` from `src/components/ui/document-uploader.tsx` whenever an entity needs file attachments.

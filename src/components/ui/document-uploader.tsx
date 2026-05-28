@@ -77,7 +77,7 @@ export function DocumentUploader({
           {documents.map((doc) => (
             <li
               key={doc.id}
-              className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm"
+              className="flex items-center gap-2 border px-3 py-2 text-sm"
             >
               <Paperclip className="size-3.5 shrink-0 text-muted-foreground" />
               <span className="min-w-0 flex-1 truncate">{doc.name}</span>
@@ -101,7 +101,7 @@ export function DocumentUploader({
         </ul>
       )}
 
-      <div className="rounded-md border border-dashed p-3">
+      <div className="border border-dashed p-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <Input
             key={inputKey}

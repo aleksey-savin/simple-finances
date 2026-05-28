@@ -129,7 +129,7 @@ export function TagPicker({
             {assignedTags.map((t) => (
               <span
                 key={t.id}
-                className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium text-white"
+                className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium text-white"
                 style={{ backgroundColor: t.color }}
               >
                 {t.name}
@@ -169,7 +169,7 @@ export function TagPicker({
                 disabled={isPending}
                 onClick={() => (isAssigned ? handleRemove(t) : handleAdd(t))}
                 className={cn(
-                  'flex items-center gap-2 rounded px-2 py-1 text-sm text-left transition-colors',
+                  'flex items-center gap-2 px-2 py-1 text-sm text-left transition-colors',
                   'hover:bg-muted',
                   isAssigned && 'font-medium',
                 )}

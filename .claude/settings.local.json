@@ -32,7 +32,8 @@
       "Bash(pnpm run *)",
       "Bash(pnpm tsc *)",
       "Bash(npx eslint *)",
-      "Bash(grep -v \"^$\")"
+      "Bash(grep -v \"^$\")",
+      "Bash(npm run *)"
     ]
   }
 }

@@ -386,7 +386,7 @@ export function InvoiceListItem({
           {item.contract && (
             <button
               type="button"
-              className="flex items-start gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted"
+              className="flex items-start gap-2 px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted"
               onClick={() => setContractDetailOpen(true)}
             >
               <FileText className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
@@ -401,7 +401,7 @@ export function InvoiceListItem({
             <button
               key={settlement.bankTransaction.id}
               type="button"
-              className="flex items-start gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted"
+              className="flex items-start gap-2 px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted"
               onClick={() =>
                 setActiveLinkedDocumentId(settlement.bankTransaction.id)
               }
@@ -577,7 +577,7 @@ export function InvoiceListItem({
                       key={doc.id}
                       type="button"
                       disabled={openingDocId === doc.id}
-                      className="flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-primary transition-colors hover:bg-muted hover:underline disabled:opacity-50"
+                      className="flex items-center gap-2 px-2 py-1.5 text-left text-sm text-primary transition-colors hover:bg-muted hover:underline disabled:opacity-50"
                       onClick={async () => {
                         const popup = window.open('about:blank', '_blank')
                         if (!popup) {

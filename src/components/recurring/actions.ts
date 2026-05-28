@@ -163,6 +163,7 @@ const createRuleSchema = z.object({
   paymentAccountId: z.string().optional(),
   paymentCategoryId: z.string().optional(),
   contractId: z.string().optional(),
+  selectedAmountIndex: z.number().int().min(0).nullable(),
 })
 
 export const createRecurringRule = createServerFn({ method: 'POST' })
@@ -184,6 +185,7 @@ export const createRecurringRule = createServerFn({ method: 'POST' })
       paymentAccountId: data.paymentAccountId || null,
       paymentCategoryId: data.paymentCategoryId || null,
       contractId: data.contractId || null,
+      selectedAmountIndex: data.selectedAmountIndex,
       nextRunAt,
       createdBy: session.user.id,
       updatedBy: session.user.id,
@@ -192,20 +194,7 @@ export const createRecurringRule = createServerFn({ method: 'POST' })
 
 // ─── Update ───────────────────────────────────────────────────────────────────
 
-const updateRuleSchema = z.object({
-  id: z.string(),
-  type: z.enum(['payable', 'receivable']),
-  amount: z.number().min(0.01, 'Минимум 0.01'),
-  description: z.string().min(2, 'Минимум 2 символа'),
-  categoryId: z.string().min(1, 'Выберите категорию'),
-  counterpartyId: z.string().optional(),
-  currentAccountId: z.string().min(1, 'Выберите счёт'),
-  cronExpression: z.string().min(1, 'Введите расписание'),
-  dueDaysFromCreation: z.number().nullable(),
-  paymentAccountId: z.string().optional(),
-  paymentCategoryId: z.string().optional(),
-  contractId: z.string().optional(),
-})
+const updateRuleSchema = createRuleSchema.extend({ id: z.string() })
 
 export const updateRecurringRule = createServerFn({ method: 'POST' })
   .inputValidator(updateRuleSchema)
@@ -228,6 +217,7 @@ export const updateRecurringRule = createServerFn({ method: 'POST' })
         paymentAccountId: data.paymentAccountId || null,
         paymentCategoryId: data.paymentCategoryId || null,
         contractId: data.contractId || null,
+        selectedAmountIndex: data.selectedAmountIndex,
         nextRunAt,
         updatedBy: session.user.id,
       })

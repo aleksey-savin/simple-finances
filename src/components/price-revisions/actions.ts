@@ -24,6 +24,7 @@ import type {
 } from '@/types'
 import { getRequest, requireSession } from '#/utils/session.server'
 import { resolveSelectedScope } from '#/lib/company-scope'
+import { syncRecurringRuleAmountsForContract } from '#/lib/recurring'
 
 // Throws if the revision has been marked completed
 async function assertRevisionOpen(revisionId: string) {
@@ -732,6 +733,12 @@ export const advanceRevisionItemStatus = createServerFn({ method: 'POST' })
             .update(contract)
             .set({ amount: item.proposedAmounts })
             .where(eq(contract.id, item.contractId))
+
+          await syncRecurringRuleAmountsForContract(
+            tx,
+            item.contractId,
+            item.proposedAmounts,
+          )
         }
       }
     })
@@ -792,6 +799,11 @@ export const revertRevisionItemStatus = createServerFn({ method: 'POST' })
             .update(contract)
             .set({ amount: historyRecord.previousAmounts })
             .where(eq(contract.id, item.contractId))
+          await syncRecurringRuleAmountsForContract(
+            tx,
+            item.contractId,
+            historyRecord.previousAmounts,
+          )
           await tx
             .delete(contractAmountHistory)
             .where(eq(contractAmountHistory.id, historyRecord.id))

@@ -110,7 +110,7 @@ export function AddCounterpartyForm({ onDone }: { onDone?: () => void }) {
             results.map((r) => (
               <div
                 key={r.id}
-                className="flex items-center justify-between gap-3 rounded-md border bg-muted/20 px-3 py-2"
+                className="flex items-center justify-between gap-3 border bg-muted/20 px-3 py-2"
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">{r.name}</p>
@@ -260,7 +260,6 @@ function CreateCounterpartyFields({
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [emailInput])
 
   return (
@@ -453,7 +452,7 @@ export function EditCounterpartyForm({
     defaultValues: {
       name: cp.name,
       fullName: cp.fullName ?? '',
-      type: (cp.type ?? '') as CounterpartyType | '',
+      type: (cp.type ?? ''),
       tin: cp.tin ?? '',
       linkedUserId: cp.linkedUserId ?? '',
     },
@@ -521,7 +520,6 @@ export function EditCounterpartyForm({
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [emailInput])
 
   return (

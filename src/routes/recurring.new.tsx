@@ -3,7 +3,7 @@ import { Cron } from 'croner'
 import { toast } from 'sonner'
 
 import { ResponsiveDialog } from '#/components/ui/responsive-dialog'
-import { RecurringForm } from '#/components/recurring/form'
+import { RecurringForm, parseDueDays } from '#/components/recurring/form'
 import type { RuleFormValues } from '#/components/recurring/form'
 import { createRecurringRule } from '#/components/recurring/actions'
 
@@ -37,6 +37,7 @@ function NewRulePage() {
     paymentAccountId: '',
     paymentCategoryId: '',
     contractId: '',
+    selectedAmountIndex: '',
   }
 
   const handleSubmit = async (value: RuleFormValues) => {
@@ -51,18 +52,17 @@ function NewRulePage() {
         amount: +value.amount,
         description: value.description,
         categoryId: value.categoryId,
-        counterpartyId: value.counterpartyId ?? '',
+        counterpartyId: value.counterpartyId,
         currentAccountId: value.currentAccountId,
         cronExpression,
-        dueDaysFromCreation:
-          value.dueDaysFromCreation.trim() !== '' &&
-          !isNaN(+value.dueDaysFromCreation) &&
-          +value.dueDaysFromCreation > 0
-            ? +value.dueDaysFromCreation
-            : null,
+        dueDaysFromCreation: parseDueDays(value.dueDaysFromCreation),
         paymentAccountId: value.paymentAccountId || undefined,
         paymentCategoryId: value.paymentCategoryId || undefined,
         contractId: value.contractId || undefined,
+        selectedAmountIndex:
+          value.selectedAmountIndex !== ''
+            ? Number(value.selectedAmountIndex)
+            : null,
       },
     })
     toast.success('Правило создано')

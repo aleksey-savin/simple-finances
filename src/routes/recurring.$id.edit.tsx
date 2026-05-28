@@ -2,7 +2,7 @@ import { createFileRoute, getRouteApi, useRouter } from '@tanstack/react-router'
 import { Cron } from 'croner'
 import { toast } from 'sonner'
 import { ResponsiveDialog } from '#/components/ui/responsive-dialog'
-import { RecurringForm } from '#/components/recurring/form'
+import { RecurringForm, parseDueDays } from '#/components/recurring/form'
 import type { RuleFormValues } from '#/components/recurring/form'
 import { CRON_PRESETS } from '#/components/recurring/constants'
 import {
@@ -51,6 +51,8 @@ function EditRulePage() {
     paymentAccountId: rule.paymentAccountId ?? '',
     paymentCategoryId: rule.paymentCategoryId ?? '',
     contractId: rule.contractId ?? '',
+    selectedAmountIndex:
+      rule.selectedAmountIndex != null ? String(rule.selectedAmountIndex) : '',
   }
 
   const handleSubmit = async (value: RuleFormValues) => {
@@ -66,18 +68,17 @@ function EditRulePage() {
         amount: +value.amount,
         description: value.description,
         categoryId: value.categoryId,
-        counterpartyId: value.counterpartyId ?? '',
+        counterpartyId: value.counterpartyId,
         currentAccountId: value.currentAccountId,
         cronExpression,
-        dueDaysFromCreation:
-          value.dueDaysFromCreation.trim() !== '' &&
-          !isNaN(+value.dueDaysFromCreation) &&
-          +value.dueDaysFromCreation > 0
-            ? +value.dueDaysFromCreation
-            : null,
+        dueDaysFromCreation: parseDueDays(value.dueDaysFromCreation),
         paymentAccountId: value.paymentAccountId || undefined,
         paymentCategoryId: value.paymentCategoryId || undefined,
         contractId: value.contractId || undefined,
+        selectedAmountIndex:
+          value.selectedAmountIndex !== ''
+            ? Number(value.selectedAmountIndex)
+            : null,
       },
     })
     toast.success('Правило обновлено')

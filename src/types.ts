@@ -580,6 +580,7 @@ export type RuleWithRelations = Pick<
   | 'currentAccountId'
   | 'cronExpression'
   | 'dueDaysFromCreation'
+  | 'selectedAmountIndex'
   | 'isActive'
   | 'lastRunAt'
   | 'nextRunAt'

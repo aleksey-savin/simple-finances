@@ -1,0 +1,1 @@
+ALTER TABLE "recurring_rule" ADD COLUMN "selected_amount_index" integer;

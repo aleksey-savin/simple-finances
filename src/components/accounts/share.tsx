@@ -17,7 +17,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Combobox, type ComboboxOption } from '@/components/ui/combobox'
+import { Combobox  } from '@/components/ui/combobox'
+import type {ComboboxOption} from '@/components/ui/combobox';
 import { Separator } from '@/components/ui/separator'
 import type { Member } from '#/types'
 
@@ -105,7 +106,7 @@ export function ShareAccount({
           {members.map((m) => (
             <div
               key={m.id}
-              className="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 hover:bg-muted/50"
+              className="flex items-center justify-between gap-2 px-2 py-1.5 hover:bg-muted/50"
             >
               <div className="flex flex-col min-w-0">
                 <span className="text-sm font-medium truncate">

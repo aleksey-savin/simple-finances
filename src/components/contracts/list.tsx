@@ -153,7 +153,7 @@ function ContractRow({
       </Item>
 
       {isEditing && (
-        <div className="-mt-0.5 rounded-b-md border border-t-0 bg-muted/30 px-4 pb-4">
+        <div className="-mt-0.5 border border-t-0 bg-muted/30 px-4 pb-4">
           <EditContractForm
             contract={contract}
             onDone={() => setEditingId(null)}
@@ -162,7 +162,7 @@ function ContractRow({
       )}
 
       {isIntegrationsOpen && (
-        <div className="-mt-0.5 rounded-b-md border border-t-0 bg-muted/30 px-4 pb-3">
+        <div className="-mt-0.5 border border-t-0 bg-muted/30 px-4 pb-3">
           <ContractIntegrationsSection contractId={contract.id} />
         </div>
       )}

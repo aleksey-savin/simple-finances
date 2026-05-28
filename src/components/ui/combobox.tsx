@@ -118,7 +118,7 @@ export function Combobox({
             {selectedOption?.badge && (
               <span
                 className={cn(
-                  'shrink-0 rounded px-1.5 py-0.5 text-xs font-bold',
+                  'shrink-0 px-1.5 py-0.5 text-xs font-bold',
                   BADGE_VARIANT_CLASSES[
                     selectedOption.badgeVariant ?? 'default'
                   ],
@@ -166,7 +166,7 @@ export function Combobox({
                       key={option.value}
                       type="button"
                       className={cn(
-                        'flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground',
+                        'flex w-full items-start gap-2 px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground',
                         isSelected && 'bg-accent/60',
                       )}
                       onClick={() => {
@@ -197,7 +197,7 @@ export function Combobox({
                         {option.badge && (
                           <span
                             className={cn(
-                              'mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-xs font-bold',
+                              'mt-0.5 shrink-0 px-1.5 py-0.5 text-xs font-bold',
                               BADGE_VARIANT_CLASSES[
                                 option.badgeVariant ?? 'default'
                               ],

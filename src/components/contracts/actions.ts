@@ -10,6 +10,7 @@ import {
   contractTypeEnum,
   document,
 } from '@/db/schema'
+import { syncRecurringRuleAmountsForContract } from '#/lib/recurring'
 import { normalizeBase64Payload } from '#/lib/file-upload'
 import { resolveSelectedScope } from '#/lib/company-scope'
 import {
@@ -329,20 +330,24 @@ export const updateContract = createServerFn({ method: 'POST' })
     const businessLineId =
       data.contractType === 'supplier' ? null : (data.businessLineId ?? null)
 
-    await db
-      .update(contract)
-      .set({
-        name: data.name,
-        number: data.number,
-        signedAt: data.signedAt,
-        contractType: data.contractType,
-        businessLineId,
-        counterpartyId: data.counterpartyId,
-        companyId: data.companyId ?? null,
-        amount: data.amount,
-        allowNotifications: data.allowNotifications ?? true,
-      })
-      .where(eq(contract.id, data.id))
+    await db.transaction(async (tx) => {
+      await tx
+        .update(contract)
+        .set({
+          name: data.name,
+          number: data.number,
+          signedAt: data.signedAt,
+          contractType: data.contractType,
+          businessLineId,
+          counterpartyId: data.counterpartyId,
+          companyId: data.companyId ?? null,
+          amount: data.amount,
+          allowNotifications: data.allowNotifications ?? true,
+        })
+        .where(eq(contract.id, data.id))
+
+      await syncRecurringRuleAmountsForContract(tx, data.id, data.amount)
+    })
   })
 
 const deleteContractSchema = z.object({ id: z.string() })

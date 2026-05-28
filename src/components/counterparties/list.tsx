@@ -65,7 +65,7 @@ function CounterpartyRow({
       </Item>
 
       {isEditing && (
-        <div className="border border-t-0 rounded-b-md px-4 pb-4 -mt-0.5 bg-muted/30">
+        <div className="border border-t-0 px-4 pb-4 -mt-0.5 bg-muted/30">
           <EditCounterpartyForm
             counterparty={counterparty}
             onDone={() => setEditingId(null)}

@@ -13,9 +13,7 @@ import {
   ItemTitle,
 } from '../ui/item'
 
-import { EditAccountForm } from '.'
-import { DeleteAccount } from '.'
-import { BalanceCorrection } from '.'
+import { EditAccountForm, DeleteAccount , BalanceCorrection  } from '.'
 import { ShareAccount } from './share'
 import type { Account } from '#/types'
 import { decodeHtmlEntities } from '#/lib/html-entities'
@@ -73,7 +71,7 @@ function AccountRow({
       </Item>
 
       {isEditing && (
-        <div className="border border-t-0 rounded-b-md px-4 pb-4 -mt-0.5 bg-muted/30">
+        <div className="border border-t-0 px-4 pb-4 -mt-0.5 bg-muted/30">
           <EditAccountForm
             account={account}
             onDone={() => setEditingId(null)}

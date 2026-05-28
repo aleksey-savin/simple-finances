@@ -30,7 +30,6 @@ const notificationStyleOptions = [
   { value: 'soft', label: 'Мягко' },
 ]
 
- 
 function NumberFormField(props: {
   field: any
   label: string
@@ -78,7 +77,7 @@ export const BusinessLineForm = ({
       allowNotifications: current?.allowNotifications ?? true,
       reminderDaysBefore: current?.reminderDaysBefore ?? 5,
       reminderFrequencyDays: current?.reminderFrequencyDays ?? 7,
-      notificationStyle: (current?.notificationStyle ?? 'strict'),
+      notificationStyle: current?.notificationStyle ?? 'strict',
     },
     validators: { onSubmit: uiFormSchema },
     onSubmit: async ({ value }) => {
@@ -177,7 +176,7 @@ export const BusinessLineForm = ({
         <form.Field name="allowServerBindings">
           {(field) => (
             <Field>
-              <div className="flex items-center justify-between gap-2 rounded-md border px-3 py-2">
+              <div className="flex items-center justify-between gap-2 border px-3 py-2">
                 <div className="space-y-0.5">
                   <FieldLabel htmlFor={field.name} className="cursor-pointer">
                     Разрешить привязку серверов
@@ -200,7 +199,7 @@ export const BusinessLineForm = ({
         <form.Field name="allowNotifications">
           {(field) => (
             <Field>
-              <div className="flex items-center justify-between gap-2 rounded-md border px-3 py-2">
+              <div className="flex items-center justify-between gap-2 border px-3 py-2">
                 <div className="space-y-0.5">
                   <FieldLabel htmlFor={field.name} className="cursor-pointer">
                     Отправлять уведомления об оплате
