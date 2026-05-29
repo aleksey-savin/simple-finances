@@ -921,6 +921,33 @@ export const settlement = pgTable(
   ],
 )
 
+export const settlementScoring = pgTable(
+  'settlement_scoring',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    settlementId: text('settlement_id')
+      .notNull()
+      .references(() => settlement.id, { onDelete: 'cascade' }),
+    bankTransactionId: text('bank_transaction_id')
+      .notNull()
+      .references(() => bankTransaction.id, { onDelete: 'cascade' }),
+    invoiceId: text('invoice_id')
+      .notNull()
+      .references(() => invoice.id, { onDelete: 'cascade' }),
+    matchScore: integer('match_score').notNull(),
+    topMatchScore: integer('top_match_score').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    unique('settlement_scoring_settlement_unique').on(table.settlementId),
+    index('settlement_scoring_bank_transaction_idx').on(
+      table.bankTransactionId,
+    ),
+  ],
+)
+
 // ─── Relations ────────────────────────────────────────────────────────────────
 
 export const tagRelations = relations(tag, ({ many }) => ({
@@ -1123,6 +1150,24 @@ export const settlementRelations = relations(settlement, ({ one }) => ({
     references: [bankTransaction.id],
   }),
 }))
+
+export const settlementScoringRelations = relations(
+  settlementScoring,
+  ({ one }) => ({
+    settlement: one(settlement, {
+      fields: [settlementScoring.settlementId],
+      references: [settlement.id],
+    }),
+    bankTransaction: one(bankTransaction, {
+      fields: [settlementScoring.bankTransactionId],
+      references: [bankTransaction.id],
+    }),
+    invoice: one(invoice, {
+      fields: [settlementScoring.invoiceId],
+      references: [invoice.id],
+    }),
+  }),
+)
 
 export const counterpartyRelations = relations(
   counterparty,

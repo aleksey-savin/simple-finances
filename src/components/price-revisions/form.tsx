@@ -12,12 +12,40 @@ import { Button } from '#/components/ui/button'
 import { Combobox } from '#/components/ui/combobox'
 import { Field, FieldError, FieldLabel } from '#/components/ui/field'
 import { Input } from '#/components/ui/input'
-import { createPriceRevision, priceRevisionsQueryKey } from './actions'
+import { Switch } from '#/components/ui/switch'
+import {
+  countRecentlyChangedContracts,
+  createPriceRevision,
+  priceRevisionsQueryKey,
+} from './actions'
 
 const formSchema = z.object({
   name: z.string().min(2, 'Минимум 2 символа'),
   businessLineId: z.string().min(1, 'Выберите направление'),
+  skipRecentlyChanged: z.boolean(),
 })
+
+function SkippedContractsNotice({
+  businessLineId,
+  active,
+}: {
+  businessLineId: string
+  active: boolean
+}) {
+  const { data } = useQuery({
+    queryKey: ['price-revisions', 'recently-changed-count', businessLineId],
+    queryFn: () => countRecentlyChangedContracts({ data: { businessLineId } }),
+    enabled: !!businessLineId,
+  })
+
+  if (!businessLineId || !active || !data) return null
+
+  return (
+    <p className="text-xs text-muted-foreground">
+      Будет пропущено договоров: {data.skipped} из {data.total}
+    </p>
+  )
+}
 
 export function PriceRevisionForm({ onDone }: { onDone?: () => void }) {
   const router = useRouter()
@@ -29,7 +57,7 @@ export function PriceRevisionForm({ onDone }: { onDone?: () => void }) {
   })
 
   const form = useForm({
-    defaultValues: { name: '', businessLineId: '' },
+    defaultValues: { name: '', businessLineId: '', skipRecentlyChanged: true },
     validators: { onSubmit: formSchema },
     onSubmit: async ({ value }) => {
       try {
@@ -99,6 +127,45 @@ export function PriceRevisionForm({ onDone }: { onDone?: () => void }) {
           )
         }}
       </form.Field>
+
+      <form.Field name="skipRecentlyChanged">
+        {(field) => (
+          <Field>
+            <div className="flex items-center justify-between gap-2 border px-3 py-2">
+              <div className="space-y-0.5">
+                <FieldLabel htmlFor={field.name} className="cursor-pointer">
+                  Пропустить договоры с изменёнными менее 12 месяцев назад
+                  ценами
+                </FieldLabel>
+                <p className="text-xs text-muted-foreground">
+                  Договоры, цена которых менялась в последние 12 месяцев, не
+                  будут добавлены в ревизию.
+                </p>
+              </div>
+              <Switch
+                id={field.name}
+                checked={field.state.value}
+                onCheckedChange={field.handleChange}
+                onBlur={field.handleBlur}
+              />
+            </div>
+          </Field>
+        )}
+      </form.Field>
+
+      <form.Subscribe
+        selector={(s) => ({
+          businessLineId: s.values.businessLineId,
+          skip: s.values.skipRecentlyChanged,
+        })}
+      >
+        {({ businessLineId, skip }) => (
+          <SkippedContractsNotice
+            businessLineId={businessLineId}
+            active={skip}
+          />
+        )}
+      </form.Subscribe>
 
       <form.Subscribe selector={(s) => s.isSubmitting}>
         {(isSubmitting) => (

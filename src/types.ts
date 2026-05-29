@@ -327,6 +327,7 @@ export type AvailableContractForRevision = {
   name: string
   number: string | null
   counterpartyName: string
+  recentlyChanged: boolean
 }
 
 export type PriceRevisionItemRow = Pick<

@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 
-import { and, eq, inArray, isNull, notInArray } from 'drizzle-orm'
+import { and, eq, gte, inArray, isNull, notInArray } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { db } from '#/db/index.server'
@@ -364,46 +364,101 @@ export const reopenRevision = createServerFn({ method: 'POST' })
       .where(eq(contractPriceRevision.id, data.id))
   })
 
+export const revertRevisionToDraft = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ id: z.string() }))
+  .handler(async ({ data }) => {
+    await requireSession()
+
+    const revision = await db.query.contractPriceRevision.findFirst({
+      where: eq(contractPriceRevision.id, data.id),
+      columns: { startedAt: true, completedAt: true },
+    })
+    if (!revision) throw new Error('Ревизия не найдена')
+    if (revision.completedAt)
+      throw new Error('Сначала откройте ревизию повторно')
+
+    await db
+      .update(contractPriceRevision)
+      .set({ startedAt: null })
+      .where(eq(contractPriceRevision.id, data.id))
+  })
+
 // ─── Create revision ──────────────────────────────────────────────────────────
+
+// Scope a `contract` query to a businessLine + the caller's selected scope
+// (company OR personal createdBy). Enforces auth via requireSession.
+async function resolveBusinessLineContractScope(businessLineId: string) {
+  const session = await requireSession()
+  const request = await getRequest()
+  const { selectedScope } = await resolveSelectedScope(
+    session.user.id,
+    request.headers,
+  )
+
+  const where =
+    selectedScope.kind === 'company'
+      ? and(
+          eq(contract.businessLineId, businessLineId),
+          eq(contract.companyId, selectedScope.id),
+        )
+      : and(
+          eq(contract.businessLineId, businessLineId),
+          isNull(contract.companyId),
+          eq(contract.createdBy, session.user.id),
+        )
+
+  return { where, selectedScope, session }
+}
+
+// Contract IDs whose price changed within the last 12 months (recorded in
+// contractAmountHistory when a revision item reaches success).
+async function findRecentlyChangedContractIds(
+  contractIds: string[],
+): Promise<Set<string>> {
+  if (contractIds.length === 0) return new Set()
+  const cutoff = new Date()
+  cutoff.setFullYear(cutoff.getFullYear() - 1)
+  const rows = await db
+    .select({ contractId: contractAmountHistory.contractId })
+    .from(contractAmountHistory)
+    .where(
+      and(
+        inArray(contractAmountHistory.contractId, contractIds),
+        gte(contractAmountHistory.changedAt, cutoff),
+      ),
+    )
+  return new Set(rows.map((r) => r.contractId))
+}
 
 const createPriceRevisionSchema = z.object({
   name: z.string().min(2, 'Минимум 2 символа'),
   businessLineId: z.string().min(1, 'Выберите направление'),
   companyId: z.string().optional(),
+  skipRecentlyChanged: z.boolean().optional(),
 })
 
 export const createPriceRevision = createServerFn({ method: 'POST' })
   .inputValidator(createPriceRevisionSchema)
   .handler(async ({ data }) => {
-    const session = await requireSession()
-    const request = await getRequest()
-
-    const { selectedScope } = await resolveSelectedScope(
-      session.user.id,
-      request.headers,
-    )
+    const { where, selectedScope, session } =
+      await resolveBusinessLineContractScope(data.businessLineId)
 
     const companyId =
       data.companyId ??
       (selectedScope.kind === 'company' ? selectedScope.id : null)
 
-    // Fetch all contracts for the selected business line + scope
-    const whereClause =
-      selectedScope.kind === 'company'
-        ? and(
-            eq(contract.businessLineId, data.businessLineId),
-            eq(contract.companyId, selectedScope.id),
-          )
-        : and(
-            eq(contract.businessLineId, data.businessLineId),
-            isNull(contract.companyId),
-            eq(contract.createdBy, session.user.id),
-          )
-
     const contracts = await db.query.contract.findMany({
-      where: whereClause,
+      where,
       columns: { id: true, amount: true },
     })
+
+    let eligible = contracts
+    if (data.skipRecentlyChanged) {
+      const recentlyChanged = await findRecentlyChangedContractIds(
+        contracts.map((c) => c.id),
+      )
+      eligible = contracts.filter((c) => !recentlyChanged.has(c.id))
+    }
 
     const [revision] = await db
       .insert(contractPriceRevision)
@@ -415,9 +470,9 @@ export const createPriceRevision = createServerFn({ method: 'POST' })
       })
       .returning({ id: contractPriceRevision.id })
 
-    if (contracts.length > 0) {
+    if (eligible.length > 0) {
       await db.insert(contractPriceRevisionItem).values(
-        contracts.map((c) => ({
+        eligible.map((c) => ({
           revisionId: revision.id,
           contractId: c.id,
           currentAmounts: c.amount,
@@ -427,6 +482,23 @@ export const createPriceRevision = createServerFn({ method: 'POST' })
     }
 
     return revision
+  })
+
+export const countRecentlyChangedContracts = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ businessLineId: z.string().min(1) }))
+  .handler(async ({ data }): Promise<{ total: number; skipped: number }> => {
+    const { where } = await resolveBusinessLineContractScope(
+      data.businessLineId,
+    )
+    const contracts = await db.query.contract.findMany({
+      where,
+      columns: { id: true },
+    })
+    const recentlyChanged = await findRecentlyChangedContractIds(
+      contracts.map((c) => c.id),
+    )
+    const skipped = contracts.filter((c) => recentlyChanged.has(c.id)).length
+    return { total: contracts.length, skipped }
   })
 
 // ─── Delete revision ──────────────────────────────────────────────────────────
@@ -481,6 +553,25 @@ export const updateRevisionItem = createServerFn({ method: 'POST' })
     await db
       .update(contractPriceRevisionItem)
       .set(updates)
+      .where(eq(contractPriceRevisionItem.id, data.id))
+  })
+
+// ─── Remove revision item ─────────────────────────────────────────────────────
+
+export const removeRevisionItem = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ id: z.string() }))
+  .handler(async ({ data }) => {
+    await requireSession()
+
+    const item = await db.query.contractPriceRevisionItem.findFirst({
+      where: eq(contractPriceRevisionItem.id, data.id),
+      columns: { revisionId: true },
+    })
+    if (!item) return
+    await assertRevisionOpen(item.revisionId)
+
+    await db
+      .delete(contractPriceRevisionItem)
       .where(eq(contractPriceRevisionItem.id, data.id))
   })
 
@@ -624,7 +715,14 @@ export const fetchAvailableContractsForRevision = createServerFn()
       )
       .orderBy(contract.name)
 
-    return rows
+    const recentlyChanged = await findRecentlyChangedContractIds(
+      rows.map((r) => r.id),
+    )
+
+    return rows.map((r) => ({
+      ...r,
+      recentlyChanged: recentlyChanged.has(r.id),
+    }))
   })
 
 export const addContractsToRevision = createServerFn({ method: 'POST' })

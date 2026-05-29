@@ -38,6 +38,7 @@ import type {
   recurringRule,
   session,
   settlement,
+  settlementScoring,
   tag,
   user,
   verification,
@@ -192,6 +193,12 @@ export type BankTransactionUpdate = Partial<BankTransactionInsert> & {
 export type Settlement = typeof settlement.$inferSelect
 export type SettlementInsert = typeof settlement.$inferInsert
 export type SettlementUpdate = Partial<SettlementInsert> & { id: string }
+
+export type SettlementScoring = typeof settlementScoring.$inferSelect
+export type SettlementScoringInsert = typeof settlementScoring.$inferInsert
+export type SettlementScoringUpdate = Partial<SettlementScoringInsert> & {
+  id: string
+}
 
 // ─── Recurring Rule ───────────────────────────────────────────────────────────
 

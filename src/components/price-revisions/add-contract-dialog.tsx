@@ -135,7 +135,9 @@ export function AddContractDialog({
                       onClick={() => toggle(c.id)}
                       className={cn(
                         'flex w-full items-start gap-2 px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground',
-                        isSelected && 'bg-accent/60',
+                        c.recentlyChanged
+                          ? 'bg-destructive/10'
+                          : isSelected && 'bg-accent/60',
                       )}
                     >
                       <Check
@@ -152,6 +154,11 @@ export function AddContractDialog({
                         <span className="truncate text-xs text-muted-foreground">
                           {c.counterpartyName}
                         </span>
+                        {c.recentlyChanged && (
+                          <span className="truncate text-xs text-destructive">
+                            Цена менялась менее 12 месяцев назад
+                          </span>
+                        )}
                       </span>
                     </button>
                   )

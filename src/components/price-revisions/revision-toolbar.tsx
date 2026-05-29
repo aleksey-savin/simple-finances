@@ -47,8 +47,6 @@ export function RevisionFilters({
   onFilterStatus,
   filterManagerId,
   onFilterManagerId,
-  hideDisabled,
-  onHideDisabledChange,
 }: {
   globalFilter: string
   onGlobalFilterChange: (v: string) => void
@@ -57,8 +55,6 @@ export function RevisionFilters({
   onFilterStatus: (v: PriceRevisionItemStatus | 'all') => void
   filterManagerId: string
   onFilterManagerId: (v: string) => void
-  hideDisabled: boolean
-  onHideDisabledChange: (v: boolean) => void
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -105,16 +101,6 @@ export function RevisionFilters({
           </SelectContent>
         </Select>
       )}
-
-      <Button
-        type="button"
-        variant={hideDisabled ? 'default' : 'outline'}
-        size="sm"
-        aria-pressed={hideDisabled}
-        onClick={() => onHideDisabledChange(!hideDisabled)}
-      >
-        Скрыть отключённые
-      </Button>
     </div>
   )
 }

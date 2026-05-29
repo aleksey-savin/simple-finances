@@ -41,6 +41,7 @@ import { Route as TransactionsNewRouteImport } from './routes/transactions.new'
 import { Route as RecurringNewRouteImport } from './routes/recurring.new'
 import { Route as PriceRevisionsNewRouteImport } from './routes/price-revisions.new'
 import { Route as PriceRevisionsIdRouteImport } from './routes/price-revisions.$id'
+import { Route as MetricsScoringRouteImport } from './routes/metrics.scoring'
 import { Route as CurrentAccountsNewRouteImport } from './routes/current-accounts.new'
 import { Route as CounterpartiesNewRouteImport } from './routes/counterparties.new'
 import { Route as ContractsNewRouteImport } from './routes/contracts.new'
@@ -216,6 +217,11 @@ const PriceRevisionsIdRoute = PriceRevisionsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => PriceRevisionsRoute,
 } as any)
+const MetricsScoringRoute = MetricsScoringRouteImport.update({
+  id: '/metrics/scoring',
+  path: '/metrics/scoring',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CurrentAccountsNewRoute = CurrentAccountsNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -321,6 +327,7 @@ export interface FileRoutesByFullPath {
   '/contracts/new': typeof ContractsNewRoute
   '/counterparties/new': typeof CounterpartiesNewRoute
   '/current-accounts/new': typeof CurrentAccountsNewRoute
+  '/metrics/scoring': typeof MetricsScoringRoute
   '/price-revisions/$id': typeof PriceRevisionsIdRoute
   '/price-revisions/new': typeof PriceRevisionsNewRoute
   '/recurring/new': typeof RecurringNewRoute
@@ -367,6 +374,7 @@ export interface FileRoutesByTo {
   '/contracts/new': typeof ContractsNewRoute
   '/counterparties/new': typeof CounterpartiesNewRoute
   '/current-accounts/new': typeof CurrentAccountsNewRoute
+  '/metrics/scoring': typeof MetricsScoringRoute
   '/price-revisions/$id': typeof PriceRevisionsIdRoute
   '/price-revisions/new': typeof PriceRevisionsNewRoute
   '/recurring/new': typeof RecurringNewRoute
@@ -416,6 +424,7 @@ export interface FileRoutesById {
   '/contracts/new': typeof ContractsNewRoute
   '/counterparties/new': typeof CounterpartiesNewRoute
   '/current-accounts/new': typeof CurrentAccountsNewRoute
+  '/metrics/scoring': typeof MetricsScoringRoute
   '/price-revisions/$id': typeof PriceRevisionsIdRoute
   '/price-revisions/new': typeof PriceRevisionsNewRoute
   '/recurring/new': typeof RecurringNewRoute
@@ -466,6 +475,7 @@ export interface FileRouteTypes {
     | '/contracts/new'
     | '/counterparties/new'
     | '/current-accounts/new'
+    | '/metrics/scoring'
     | '/price-revisions/$id'
     | '/price-revisions/new'
     | '/recurring/new'
@@ -512,6 +522,7 @@ export interface FileRouteTypes {
     | '/contracts/new'
     | '/counterparties/new'
     | '/current-accounts/new'
+    | '/metrics/scoring'
     | '/price-revisions/$id'
     | '/price-revisions/new'
     | '/recurring/new'
@@ -560,6 +571,7 @@ export interface FileRouteTypes {
     | '/contracts/new'
     | '/counterparties/new'
     | '/current-accounts/new'
+    | '/metrics/scoring'
     | '/price-revisions/$id'
     | '/price-revisions/new'
     | '/recurring/new'
@@ -601,6 +613,7 @@ export interface RootRouteChildren {
   TwoFactorRoute: typeof TwoFactorRoute
   UsersRoute: typeof UsersRouteWithChildren
   VerifyEmailRoute: typeof VerifyEmailRoute
+  MetricsScoringRoute: typeof MetricsScoringRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
@@ -829,6 +842,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/price-revisions/$id'
       preLoaderRoute: typeof PriceRevisionsIdRouteImport
       parentRoute: typeof PriceRevisionsRoute
+    }
+    '/metrics/scoring': {
+      id: '/metrics/scoring'
+      path: '/metrics/scoring'
+      fullPath: '/metrics/scoring'
+      preLoaderRoute: typeof MetricsScoringRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/current-accounts/new': {
       id: '/current-accounts/new'
@@ -1104,6 +1124,7 @@ const rootRouteChildren: RootRouteChildren = {
   TwoFactorRoute: TwoFactorRoute,
   UsersRoute: UsersRouteWithChildren,
   VerifyEmailRoute: VerifyEmailRoute,
+  MetricsScoringRoute: MetricsScoringRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport

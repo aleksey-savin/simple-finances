@@ -38,6 +38,7 @@ import {
   ChevronsUpDown,
   FileSpreadsheet,
   Folder,
+  Gauge,
   LayoutDashboard,
   List,
   ReceiptRussianRuble,
@@ -113,6 +114,16 @@ const navMain = [
         icon: <TrendingUp className="size-5" />,
         url: '/price-revisions',
         hideForPersonal: true,
+      },
+    ],
+  },
+  {
+    title: 'Метрики',
+    items: [
+      {
+        title: 'Скоринг банковских выписок',
+        icon: <Gauge className="size-5" />,
+        url: '/metrics/scoring',
       },
     ],
   },

@@ -1,120 +1,18 @@
-import { useState } from 'react'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { PriceRevisionItemRow } from '@/types'
-import { ExternalLink, Loader2, Mail, Phone } from 'lucide-react'
-import { toast } from 'sonner'
-import { useQueryClient } from '@tanstack/react-query'
-import { Switch } from '#/components/ui/switch'
-import { resolveDocumentUrl } from '@/components/contracts/actions'
+import { Mail, Phone } from 'lucide-react'
 import { formatCurrency } from './utils'
 import { ProposedAmountsCell } from './proposed-amount-cell'
 import { RevisionItemNotesCell } from './notes-cell'
 import { RevisionItemStatusActionButton } from './status-action-button'
-import { updateRevisionItem, priceRevisionQueryKey } from './actions'
-
-type DocumentLink = { id: string; name: string }
-
-function ContractDocumentLinks({ documents }: { documents: DocumentLink[] }) {
-  const [openingId, setOpeningId] = useState<string | null>(null)
-
-  if (documents.length === 0) return null
-
-  const handleOpen = async (documentId: string) => {
-    const popup = window.open('about:blank', '_blank')
-    if (!popup) {
-      toast.error('Браузер заблокировал всплывающее окно')
-      return
-    }
-    try {
-      setOpeningId(documentId)
-      const { url } = await resolveDocumentUrl({ data: { documentId } })
-      popup.location.replace(url)
-    } catch (error) {
-      popup.close()
-      toast.error(
-        error instanceof Error ? error.message : 'Не удалось открыть документ',
-      )
-    } finally {
-      setOpeningId((prev) => (prev === documentId ? null : prev))
-    }
-  }
-
-  return (
-    <div className="mt-1 flex flex-col gap-0.5">
-      {documents.map((doc) => (
-        <button
-          key={doc.id}
-          type="button"
-          className="flex items-center gap-1 text-xs text-primary hover:underline disabled:opacity-50"
-          disabled={openingId === doc.id}
-          onClick={() => void handleOpen(doc.id)}
-        >
-          {openingId === doc.id ? (
-            <Loader2 className="size-3 animate-spin" />
-          ) : (
-            <ExternalLink className="size-3" />
-          )}
-          {doc.name}
-        </button>
-      ))}
-    </div>
-  )
-}
-
-function formatDate(date: Date | null): string {
-  if (!date) return '—'
-  return new Intl.DateTimeFormat('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: '2-digit',
-  }).format(new Date(date))
-}
-
-function IncludedSwitch({
-  itemId,
-  revisionId,
-  included,
-}: {
-  itemId: string
-  revisionId: string
-  included: boolean
-}) {
-  const queryClient = useQueryClient()
-
-  async function handleChange(checked: boolean) {
-    try {
-      await updateRevisionItem({ data: { id: itemId, included: checked } })
-      queryClient.invalidateQueries({
-        queryKey: priceRevisionQueryKey(revisionId),
-      })
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Ошибка')
-    }
-  }
-
-  return <Switch checked={included} onCheckedChange={handleChange} />
-}
+import { RevisionItemDetailsCell } from './item-details-sheet'
+import { DeleteRevisionItem } from './item-delete'
 
 export function buildRevisionColumns(
   revisionId: string,
   isCompleted = false,
 ): ColumnDef<PriceRevisionItemRow>[] {
   return [
-    ...(!isCompleted
-      ? [
-          {
-            accessorKey: 'included',
-            header: '',
-            cell: ({ row }: any) => (
-              <IncludedSwitch
-                itemId={row.original.id}
-                revisionId={revisionId}
-                included={row.original.included}
-              />
-            ),
-          } satisfies ColumnDef<PriceRevisionItemRow>,
-        ]
-      : []),
     {
       id: 'client',
       header: 'Клиент',
@@ -172,41 +70,6 @@ export function buildRevisionColumns(
       },
     },
     {
-      accessorKey: 'contract.name',
-      header: 'Договор',
-      cell: ({ row }) => (
-        <div className={row.original.included ? '' : 'opacity-40'}>
-          <div className="font-medium">{row.original.contract.name}</div>
-          {row.original.contract.number && (
-            <div className="text-xs text-muted-foreground">
-              №{row.original.contract.number}
-            </div>
-          )}
-          <ContractDocumentLinks documents={row.original.contract.documents} />
-        </div>
-      ),
-    },
-    {
-      id: 'contractSignedAt',
-      header: 'От',
-      cell: ({ row }) => (
-        <span
-          className={`text-sm tabular-nums ${row.original.included ? '' : 'opacity-40'}`}
-        >
-          {row.original.contract.signedAt ? (
-            new Intl.DateTimeFormat('ru-RU', {
-              day: '2-digit',
-              month: '2-digit',
-              year: '2-digit',
-            }).format(new Date(row.original.contract.signedAt))
-          ) : (
-            <span className="text-muted-foreground">—</span>
-          )}
-        </span>
-      ),
-    },
-
-    {
       accessorKey: 'currentAmounts',
       header: 'Текущая',
       cell: ({ row }) => (
@@ -259,43 +122,6 @@ export function buildRevisionColumns(
       },
     },
     {
-      accessorKey: 'timestamps',
-      header: 'Хронология',
-      cell: ({ row }) => {
-        const status = row.original.status
-        const hasAgreed = ['agreed', 'notified', 'signed', 'success'].includes(
-          status,
-        )
-        const hasSent = ['notified', 'signed', 'success'].includes(status)
-        const hasSigned = ['signed', 'success'].includes(status)
-
-        return (
-          <div className="flex flex-col">
-            {hasAgreed && row.original.agreedAt && (
-              <span className="text-xs text-muted-foreground tabular-nums">
-                Согласовано: {formatDate(row.original.agreedAt)}
-              </span>
-            )}
-            {hasSent && row.original.notifiedAt && (
-              <span className="text-xs text-muted-foreground tabular-nums">
-                Документы отправлены: {formatDate(row.original.notifiedAt)}
-              </span>
-            )}
-            {hasSigned && row.original.signedAt && (
-              <span className="text-xs text-muted-foreground tabular-nums">
-                Документы подписаны: {formatDate(row.original.signedAt)}
-              </span>
-            )}
-            {status === 'success' && row.original.completedAt && (
-              <span className="text-xs text-muted-foreground tabular-nums">
-                Завершён: {formatDate(row.original.completedAt)}
-              </span>
-            )}
-          </div>
-        )
-      },
-    },
-    {
       accessorKey: 'notes',
       header: 'Заметки',
       cell: ({ row }) => (
@@ -328,21 +154,27 @@ export function buildRevisionColumns(
         )
       },
     },
-    ...(!isCompleted
-      ? [
-          {
-            id: 'action',
-            header: '',
-            cell: ({ row }: any) =>
-              row.original.included ? (
-                <RevisionItemStatusActionButton
-                  itemId={row.original.id}
-                  status={row.original.status}
-                  revisionId={revisionId}
-                />
-              ) : null,
-          } satisfies ColumnDef<PriceRevisionItemRow>,
-        ]
-      : []),
+    {
+      id: 'actions',
+      header: '',
+      cell: ({ row }) => (
+        <div className="flex items-center justify-end gap-1">
+          {!isCompleted && (
+            <RevisionItemStatusActionButton
+              itemId={row.original.id}
+              status={row.original.status}
+              revisionId={revisionId}
+            />
+          )}
+          <RevisionItemDetailsCell item={row.original} />
+          {!isCompleted && (
+            <DeleteRevisionItem
+              entityId={row.original.id}
+              revisionId={revisionId}
+            />
+          )}
+        </div>
+      ),
+    },
   ]
 }

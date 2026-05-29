@@ -18,6 +18,7 @@ import {
   applyBulkAdjustment,
   completeRevision,
   reopenRevision,
+  revertRevisionToDraft,
   startRevision,
   undoBulkAdjustment,
   priceRevisionQueryKey,
@@ -42,7 +43,6 @@ export function PriceRevisionDetailPage({
     PriceRevisionItemStatus | 'all'
   >('all')
   const [filterManagerId, setFilterManagerId] = useState<string>('all')
-  const [hideDisabled, setHideDisabled] = useState<boolean>(true)
 
   const status = getRevisionStatus(revision)
   const isEditable = status !== 'completed'
@@ -69,7 +69,6 @@ export function PriceRevisionDetailPage({
         !item.managers.some((m) => m.userId === filterManagerId)
       )
         return false
-      if (hideDisabled && !item.included) return false
       if (q) {
         const haystack = [
           item.contract.name,
@@ -83,13 +82,7 @@ export function PriceRevisionDetailPage({
       }
       return true
     })
-  }, [
-    revision.items,
-    globalFilter,
-    filterStatus,
-    filterManagerId,
-    hideDisabled,
-  ])
+  }, [revision.items, globalFilter, filterStatus, filterManagerId])
 
   async function handleApplyAdjustment(
     mode: 'percent' | 'fixed' | 'reset',
@@ -122,6 +115,20 @@ export function PriceRevisionDetailPage({
     setIsPending(true)
     try {
       await startRevision({ data: { id: revision.id } })
+      queryClient.invalidateQueries({
+        queryKey: priceRevisionQueryKey(revision.id),
+      })
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Ошибка')
+    } finally {
+      setIsPending(false)
+    }
+  }
+
+  async function handleRevertToDraft() {
+    setIsPending(true)
+    try {
+      await revertRevisionToDraft({ data: { id: revision.id } })
       queryClient.invalidateQueries({
         queryKey: priceRevisionQueryKey(revision.id),
       })
@@ -193,14 +200,24 @@ export function PriceRevisionDetailPage({
           )}
 
           {status === 'in_progress' && (
-            <Button
-              variant="success"
-              size="sm"
-              disabled={isPending || !canComplete}
-              onClick={handleToggleComplete}
-            >
-              Завершить ревизию
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isPending}
+                onClick={handleRevertToDraft}
+              >
+                Вернуть в черновик
+              </Button>
+              <Button
+                variant="success"
+                size="sm"
+                disabled={isPending || !canComplete}
+                onClick={handleToggleComplete}
+              >
+                Завершить ревизию
+              </Button>
+            </>
           )}
 
           {status === 'completed' && (
@@ -225,8 +242,6 @@ export function PriceRevisionDetailPage({
           onFilterStatus={setFilterStatus}
           filterManagerId={filterManagerId}
           onFilterManagerId={setFilterManagerId}
-          hideDisabled={hideDisabled}
-          onHideDisabledChange={setHideDisabled}
         />
       </Card>
 

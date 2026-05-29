@@ -21,6 +21,7 @@ import {
   currentAccountUser,
   invoice,
   settlement,
+  settlementScoring,
 } from '#/db/schema'
 import {
   buildBankTransactionImportKey,
@@ -425,14 +426,36 @@ export const attachBankTransaction = createServerFn({ method: 'POST' })
         }
       }
 
+      // Snapshot the matching scores at the moment of linking so we can later
+      // measure how often the top-scored candidate was the one actually chosen.
+      const candidates = await findMatchingInvoices(
+        bankRow.id,
+        parseStoredBankTransactionPayload(bankRow.rawPayload),
+      )
+      const scoreByInvoiceId = new Map(
+        candidates.map((candidate) => [candidate.id, candidate.score]),
+      )
+      const topMatchScore = candidates[0]?.score ?? 0
+
       for (const allocation of data.allocations) {
         const invoiceRow = invoiceById.get(allocation.invoiceId)!
 
-        await tx.insert(settlement).values({
-          invoiceId: invoiceRow.id,
+        const [insertedSettlement] = await tx
+          .insert(settlement)
+          .values({
+            invoiceId: invoiceRow.id,
+            bankTransactionId: bankRow.id,
+            amount: allocation.amount.toFixed(2),
+            settledAt: bankRow.bookedAt,
+          })
+          .returning({ id: settlement.id })
+
+        await tx.insert(settlementScoring).values({
+          settlementId: insertedSettlement.id,
           bankTransactionId: bankRow.id,
-          amount: allocation.amount.toFixed(2),
-          settledAt: bankRow.bookedAt,
+          invoiceId: invoiceRow.id,
+          matchScore: scoreByInvoiceId.get(invoiceRow.id) ?? 0,
+          topMatchScore,
         })
 
         const refreshedSettlements = [
