@@ -61,7 +61,13 @@ function startOfCurrentMonth(): Date {
 function RecurringPage() {
   const router = useRouter()
   const navigate = useNavigate()
-  const { rules, categories, accounts, counterparties } = Route.useLoaderData()
+  const {
+    rules,
+    categories,
+    accounts,
+    counterparties,
+    createdOccurrencesByRule,
+  } = Route.useLoaderData()
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<
     'all' | 'payable' | 'receivable'
@@ -82,12 +88,12 @@ function RecurringPage() {
   )
 
   const currentTotals = useMemo(
-    () => computeMonthTotals(rules, selectedMonth),
-    [rules, selectedMonth],
+    () => computeMonthTotals(rules, selectedMonth, createdOccurrencesByRule),
+    [rules, selectedMonth, createdOccurrencesByRule],
   )
   const nextTotals = useMemo(
-    () => computeMonthTotals(rules, nextMonth),
-    [rules, nextMonth],
+    () => computeMonthTotals(rules, nextMonth, createdOccurrencesByRule),
+    [rules, nextMonth, createdOccurrencesByRule],
   )
 
   const categoryOptions: MultiSelectOption[] = categories.map((category) => ({

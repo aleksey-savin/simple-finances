@@ -1,6 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
 
-import { Cron } from 'croner'
 import { and, eq, gte, inArray, isNull, lt, lte, or } from 'drizzle-orm'
 
 import type {
@@ -22,7 +21,7 @@ import {
   resolveScopedAccountIds,
 } from '#/lib/company-scope'
 import { getPaymentState } from '#/lib/invoice-payment'
-import { recurringProjectionCursor } from '#/components/recurring/utils'
+import { ruleOccurrencesInMonth } from '#/components/recurring/utils'
 import { getRequest, requireSession } from '#/utils/session.server'
 
 const UNCATEGORIZED = { id: '__uncategorized__', name: 'Без категории' }
@@ -157,51 +156,45 @@ export const fetchPayables = createServerFn().handler(async () => {
   const projected: ExpenseRow[] = []
 
   for (const rule of activeRules) {
-    try {
-      const job = new Cron(rule.cronExpression, { paused: true })
-      const base = now > monthStart ? now : monthStart
-      let after = recurringProjectionCursor(base, rule.nextRunAt)
+    const occurrences = ruleOccurrencesInMonth(
+      rule.cronExpression,
+      rule.nextRunAt,
+      monthStart,
+      monthEnd,
+    )
 
-      for (let guard = 0; guard < 200; guard++) {
-        const next = job.nextRun(after)
-        if (!next || next > monthEnd) break
+    for (const occ of occurrences) {
+      const dueDate =
+        rule.dueDaysFromCreation && rule.dueDaysFromCreation > 0
+          ? new Date(
+              occ.getTime() + rule.dueDaysFromCreation * 24 * 60 * 60 * 1000,
+            )
+          : null
 
-        const dueDate =
-          rule.dueDaysFromCreation && rule.dueDaysFromCreation > 0
-            ? new Date(
-                next.getTime() + rule.dueDaysFromCreation * 24 * 60 * 60 * 1000,
-              )
-            : null
-
-        projected.push({
-          id: `projected::${rule.id}::${next.getTime()}`,
-          periodGroup: 'current-month',
-          amount: rule.amount,
-          description: rule.description,
-          categoryId: rule.categoryId,
-          currentAccountId: rule.currentAccountId,
-          createdAt: next.toISOString(),
-          dueDate: dueDate?.toISOString() ?? null,
-          paidAt: null,
-          archivedAt: null,
-          createdBy: rule.createdBy,
-          linkedInvoiceId: null,
-          contractId: rule.contractId ?? null,
-          manualPaid: false,
-          settledAmount: 0,
-          outstandingAmount: Number(rule.amount),
-          paymentStatus: 'unpaid',
-          category: rule.category,
-          currentAccount: rule.currentAccount,
-          counterpartyId: rule.counterpartyId ?? null,
-          counterparty: rule.counterparty ?? null,
-          isProjected: true,
-        })
-
-        after = new Date(next.getTime() + 1)
-      }
-    } catch {
-      // Skip rules with invalid cron expressions.
+      projected.push({
+        id: `projected::${rule.id}::${occ.getTime()}`,
+        periodGroup: 'current-month',
+        amount: rule.amount,
+        description: rule.description,
+        categoryId: rule.categoryId,
+        currentAccountId: rule.currentAccountId,
+        createdAt: occ.toISOString(),
+        dueDate: dueDate?.toISOString() ?? null,
+        paidAt: null,
+        archivedAt: null,
+        createdBy: rule.createdBy,
+        linkedInvoiceId: null,
+        contractId: rule.contractId ?? null,
+        manualPaid: false,
+        settledAmount: 0,
+        outstandingAmount: Number(rule.amount),
+        paymentStatus: 'unpaid',
+        category: rule.category,
+        currentAccount: rule.currentAccount,
+        counterpartyId: rule.counterpartyId ?? null,
+        counterparty: rule.counterparty ?? null,
+        isProjected: true,
+      })
     }
   }
 

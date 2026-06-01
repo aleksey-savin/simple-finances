@@ -1,6 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
 
-import { Cron } from 'croner'
 import {
   and,
   desc,
@@ -29,7 +28,7 @@ import {
 } from '#/lib/blocked-services'
 import { getPaymentState } from '#/lib/invoice-payment'
 import { getDueMeta } from '#/components/payables/utils'
-import { recurringProjectionCursor } from '#/components/recurring/utils'
+import { ruleOccurrencesInMonth } from '#/components/recurring/utils'
 import type { AppScope } from '#/lib/company-scope'
 import { resolveScopedAccountIds } from '#/lib/company-scope'
 import type { DashboardLoaderData, DashboardTask } from '#/types'
@@ -573,8 +572,6 @@ async function buildProjectedReceivablesSummary(
 ) {
   if (accountIds.length === 0) return { amount: 0, count: 0 }
 
-  const now = new Date()
-
   const rules = await db.query.recurringRule.findMany({
     where: (table, { and: andWhere }) =>
       andWhere(
@@ -595,31 +592,25 @@ async function buildProjectedReceivablesSummary(
   let count = 0
 
   for (const rule of rules) {
-    try {
-      const job = new Cron(rule.cronExpression, { paused: true })
-      const base = now > monthStart ? now : monthStart
-      let after = recurringProjectionCursor(base, rule.nextRunAt)
+    const occurrences = ruleOccurrencesInMonth(
+      rule.cronExpression,
+      rule.nextRunAt,
+      monthStart,
+      monthEnd,
+    )
 
-      for (let guard = 0; guard < 200; guard++) {
-        const next = job.nextRun(after)
-        if (!next || next > monthEnd) break
+    for (const occ of occurrences) {
+      const dueDate =
+        rule.dueDaysFromCreation && rule.dueDaysFromCreation > 0
+          ? new Date(
+              occ.getTime() + rule.dueDaysFromCreation * 24 * 60 * 60 * 1000,
+            )
+          : null
 
-        const dueDate =
-          rule.dueDaysFromCreation && rule.dueDaysFromCreation > 0
-            ? new Date(
-                next.getTime() + rule.dueDaysFromCreation * 24 * 60 * 60 * 1000,
-              )
-            : null
-
-        if (!dueDate || (dueDate >= monthStart && dueDate <= monthEnd)) {
-          amount += Number(rule.amount)
-          count += 1
-        }
-
-        after = new Date(next.getTime() + 1)
+      if (!dueDate || (dueDate >= monthStart && dueDate <= monthEnd)) {
+        amount += Number(rule.amount)
+        count += 1
       }
-    } catch {
-      // skip rules with invalid cron expressions
     }
   }
 
@@ -632,8 +623,6 @@ async function buildProjectedPayablesSummary(
   monthEnd: Date,
 ) {
   if (accountIds.length === 0) return { amount: 0, count: 0 }
-
-  const now = new Date()
 
   const rules = await db.query.recurringRule.findMany({
     where: (table, { and: andWhere }) =>
@@ -654,22 +643,15 @@ async function buildProjectedPayablesSummary(
   let count = 0
 
   for (const rule of rules) {
-    try {
-      const job = new Cron(rule.cronExpression, { paused: true })
-      const base = now > monthStart ? now : monthStart
-      let after = recurringProjectionCursor(base, rule.nextRunAt)
+    const occurrences = ruleOccurrencesInMonth(
+      rule.cronExpression,
+      rule.nextRunAt,
+      monthStart,
+      monthEnd,
+    )
 
-      for (let guard = 0; guard < 200; guard++) {
-        const next = job.nextRun(after)
-        if (!next || next > monthEnd) break
-
-        amount += Number(rule.amount)
-        count += 1
-        after = new Date(next.getTime() + 1)
-      }
-    } catch {
-      // skip rules with invalid cron expressions
-    }
+    amount += Number(rule.amount) * occurrences.length
+    count += occurrences.length
   }
 
   return { amount, count }

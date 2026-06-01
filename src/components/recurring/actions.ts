@@ -8,16 +8,17 @@ import {
   counterparty,
   currentAccount,
   currentAccountUser,
+  invoice,
   recurringRule,
 } from '@/db/schema'
-import { eq, inArray, or } from 'drizzle-orm'
+import { and, eq, inArray, isNull, or } from 'drizzle-orm'
 import { getRequest, requireSession } from '#/utils/session.server'
 import { createRecurringEntry } from '#/lib/recurring'
 import {
   getScopedCounterpartyIds,
   resolveScopedAccountIds,
 } from '#/lib/company-scope'
-import type { RecurringLoaderData } from '@/types'
+import type { CreatedOccurrence, RecurringLoaderData } from '@/types'
 
 function cronNextRun(expression: string): Date | null {
   return new Cron(expression, { paused: true }).nextRun() ?? null
@@ -60,6 +61,7 @@ export const fetchRecurringData = createServerFn().handler(async () => {
       categories,
       accounts: [],
       counterparties,
+      createdOccurrencesByRule: {},
     } satisfies RecurringLoaderData
   }
 
@@ -92,11 +94,50 @@ export const fetchRecurringData = createServerFn().handler(async () => {
     ),
   ])
 
+  // Occurrences already created this/past months as real invoices, linked back
+  // to their rule. We keep only the invoice matching the rule's own kind (a
+  // payable rule also mirrors a receivable into the counterparty's account) so
+  // each fired occurrence is counted exactly once.
+  const ruleTypeById = new Map(rules.map((rule) => [rule.id, rule.type]))
+  const createdOccurrencesByRule: Record<string, CreatedOccurrence[]> = {}
+
+  if (rules.length > 0) {
+    const createdInvoices = await db.query.invoice.findMany({
+      where: and(
+        inArray(
+          invoice.recurringRuleId,
+          rules.map((rule) => rule.id),
+        ),
+        inArray(invoice.currentAccountId, accountIds),
+        isNull(invoice.archivedAt),
+      ),
+      columns: {
+        recurringRuleId: true,
+        recurringOccurrenceAt: true,
+        createdAt: true,
+        amount: true,
+        kind: true,
+      },
+    })
+
+    for (const entry of createdInvoices) {
+      const ruleId = entry.recurringRuleId
+      if (!ruleId || entry.kind !== ruleTypeById.get(ruleId)) continue
+
+      const occurrenceAt = entry.recurringOccurrenceAt ?? entry.createdAt
+      ;(createdOccurrencesByRule[ruleId] ??= []).push({
+        occurrenceAt: occurrenceAt.toISOString(),
+        amount: entry.amount,
+      })
+    }
+  }
+
   return {
     rules,
     categories,
     accounts,
     counterparties,
+    createdOccurrencesByRule,
   } satisfies RecurringLoaderData
 })
 

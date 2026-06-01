@@ -121,7 +121,7 @@ const navMain = [
     title: 'Метрики',
     items: [
       {
-        title: 'Скоринг банковских выписок',
+        title: 'Скоринг',
         icon: <Gauge className="size-5" />,
         url: '/metrics/scoring',
       },

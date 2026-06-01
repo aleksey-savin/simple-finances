@@ -1,8 +1,9 @@
 import { Cron } from 'croner'
 import { CRON_PRESETS } from '@/components/recurring/constants'
-import type { RecurringMonthTotals } from '@/types'
+import type { CreatedOccurrence, RecurringMonthTotals } from '@/types'
 
 type RuleForMonthCalc = {
+  id: string
   type: string
   amount: string
   cronExpression: string
@@ -11,24 +12,52 @@ type RuleForMonthCalc = {
 }
 
 /**
- * Exclusive lower-bound cursor for `Cron.nextRun()` when projecting a rule's
- * occurrences, honoring skips. A skip advances the rule's `nextRunAt` past the
- * skipped occurrence, so occurrences before `nextRunAt` were already created or
- * skipped and must not be projected. Returns the later of `base` and
- * `nextRunAt - 1ms` (so an occurrence landing exactly on `nextRunAt` is kept).
+ * Occurrences of a recurring rule that fall within [monthStart, monthEnd],
+ * honoring skips.
+ *
+ * We ANCHOR on `nextRunAt` (the authoritative next firing — already advanced
+ * past any created or skipped occurrence) and only STEP forward with croner.
+ * We never ask croner to *reproduce* `nextRunAt`, so this is robust to the
+ * timezone offset between the stored `nextRunAt` and croner's cron evaluation
+ * (the stored value need not align with `new Cron(expr).nextRun()`).
+ *
+ * Occurrences before `nextRunAt` (already created or skipped) are never emitted.
+ * When `nextRunAt` is null or earlier than this month, we fall back to
+ * projecting from `monthStart` (the old behavior — there is no skip within this
+ * month to honor).
  */
-export function recurringProjectionCursor(
-  base: Date,
+export function ruleOccurrencesInMonth(
+  cronExpression: string,
   nextRunAt: Date | string | null | undefined,
-): Date {
-  if (!nextRunAt) return base
-  const threshold = new Date(nextRunAt).getTime() - 1
-  return threshold > base.getTime() ? new Date(threshold) : base
+  monthStart: Date,
+  monthEnd: Date,
+): Date[] {
+  const occurrences: Date[] = []
+
+  try {
+    const job = new Cron(cronExpression, { paused: true })
+    const anchor = nextRunAt != null ? new Date(nextRunAt) : null
+    let occ: Date | null =
+      anchor && anchor >= monthStart
+        ? anchor
+        : job.nextRun(new Date(monthStart.getTime() - 1))
+
+    for (let guard = 0; guard < 500 && occ; guard++) {
+      if (occ > monthEnd) break
+      if (occ >= monthStart) occurrences.push(occ)
+      occ = job.nextRun(occ)
+    }
+  } catch {
+    // Invalid cron expression → no occurrences.
+  }
+
+  return occurrences
 }
 
 export function computeMonthTotals(
   rules: RuleForMonthCalc[],
   monthStart: Date,
+  createdOccurrencesByRule: Record<string, CreatedOccurrence[]> = {},
 ): RecurringMonthTotals {
   const monthEnd = new Date(
     monthStart.getFullYear(),
@@ -46,31 +75,37 @@ export function computeMonthTotals(
   let expensesCount = 0
 
   for (const rule of rules) {
-    if (!rule.isActive) continue
+    let amount = 0
+    let count = 0
 
-    try {
-      const schedule = new Cron(rule.cronExpression, { paused: true })
-      let cursor = recurringProjectionCursor(
-        new Date(monthStart.getTime() - 1),
-        rule.nextRunAt,
-      )
-
-      for (let guard = 0; guard < 500; guard++) {
-        const next = schedule.nextRun(cursor)
-        if (!next || next > monthEnd) break
-
-        if (rule.type === 'receivable') {
-          income += Number(rule.amount)
-          incomeCount += 1
-        } else if (rule.type === 'payable') {
-          expenses += Number(rule.amount)
-          expensesCount += 1
-        }
-
-        cursor = new Date(next.getTime() + 1)
+    // Occurrences already created this month (real invoices, actual amounts).
+    // Counted regardless of the rule's active state — the payment happened.
+    for (const created of createdOccurrencesByRule[rule.id] ?? []) {
+      const occurrenceAt = new Date(created.occurrenceAt)
+      if (occurrenceAt >= monthStart && occurrenceAt <= monthEnd) {
+        amount += Number(created.amount)
+        count += 1
       }
-    } catch {
-      // Skip rules with invalid cron expressions.
+    }
+
+    // Occurrences still pending this month (only active rules will fire).
+    if (rule.isActive) {
+      const projected = ruleOccurrencesInMonth(
+        rule.cronExpression,
+        rule.nextRunAt,
+        monthStart,
+        monthEnd,
+      ).length
+      amount += Number(rule.amount) * projected
+      count += projected
+    }
+
+    if (rule.type === 'receivable') {
+      income += amount
+      incomeCount += count
+    } else if (rule.type === 'payable') {
+      expenses += amount
+      expensesCount += count
     }
   }
 
@@ -97,18 +132,14 @@ export function ruleHasOccurrenceInMonth(
     999,
   )
 
-  try {
-    const schedule = new Cron(rule.cronExpression, { paused: true })
-    const next = schedule.nextRun(
-      recurringProjectionCursor(
-        new Date(monthStart.getTime() - 1),
-        rule.nextRunAt,
-      ),
-    )
-    return Boolean(next && next <= monthEnd)
-  } catch {
-    return false
-  }
+  return (
+    ruleOccurrencesInMonth(
+      rule.cronExpression,
+      rule.nextRunAt,
+      monthStart,
+      monthEnd,
+    ).length > 0
+  )
 }
 
 export function formatMonthLabel(date: Date): string {

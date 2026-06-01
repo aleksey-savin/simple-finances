@@ -607,9 +607,13 @@ export type RecurringMonthTotals = {
   expensesCount: number
 }
 
+/** Recurring occurrences that have already been created (real invoices), keyed by rule id. */
+export type CreatedOccurrence = { occurrenceAt: string; amount: string }
+
 export type RecurringLoaderData = {
   rules: RuleWithRelations[]
   categories: NamedEntity[]
   accounts: NamedEntity[]
   counterparties: NamedEntity[]
+  createdOccurrencesByRule: Record<string, CreatedOccurrence[]>
 }
