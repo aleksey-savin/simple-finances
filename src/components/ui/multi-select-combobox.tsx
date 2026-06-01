@@ -95,7 +95,7 @@ export function MultiSelectCombobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-[--radix-popover-trigger-width] p-2"
+        className="w-[var(--radix-popover-trigger-width)] p-2"
         align="start"
       >
         <div className="flex flex-col gap-2">

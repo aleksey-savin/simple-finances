@@ -248,7 +248,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent
-                className="w-[--radix-popper-anchor-width]"
+                className="`w-(--radix-popper-anchor-width)"
                 align="start"
               >
                 {scopes.map((scope) => (

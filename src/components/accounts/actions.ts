@@ -2,10 +2,11 @@ import { db } from '#/db/index.server'
 import { currentAccount, currentAccountUser, user } from '@/db/schema'
 import { createServerFn } from '@tanstack/react-start'
 import { and, eq, inArray } from 'drizzle-orm'
-import { requireSession } from '#/utils/session.server'
+import { getRequest, requireSession } from '#/utils/session.server'
 import z from 'zod'
 
 import { decodeHtmlEntities } from '#/lib/html-entities'
+import { resolveScopedAccountIds } from '#/lib/company-scope'
 
 // ─── Query key ────────────────────────────────────────────────────────────────
 
@@ -29,6 +30,54 @@ export const fetchAccounts = createServerFn().handler(async () => {
   if (memberships.length === 0) return []
 
   const accountIds = memberships.map((m) => m.currentAccountId)
+  const roleByAccountId = new Map(
+    memberships.map((m) => [m.currentAccountId, m.role]),
+  )
+
+  const accountsData = await db.query.currentAccount.findMany({
+    where: inArray(currentAccount.id, accountIds),
+    orderBy: (table, { asc }) => asc(table.name),
+    with: {
+      members: {
+        with: {
+          user: { columns: { id: true, name: true, email: true } },
+        },
+      },
+    },
+  })
+
+  return accountsData.map((a) => ({
+    ...a,
+    role: roleByAccountId.get(a.id) ?? 'viewer',
+  }))
+})
+
+// Like fetchAccounts, but restricted to the accounts of the active scope
+// (a specific company, or personal accounts not linked to any company).
+export const fetchScopedAccounts = createServerFn().handler(async () => {
+  const session = await requireSession()
+  const request = await getRequest()
+
+  const { accountIds } = await resolveScopedAccountIds(
+    session.user.id,
+    request.headers,
+  )
+
+  if (accountIds.length === 0) return []
+
+  const memberships = await db
+    .select({
+      currentAccountId: currentAccountUser.currentAccountId,
+      role: currentAccountUser.role,
+    })
+    .from(currentAccountUser)
+    .where(
+      and(
+        eq(currentAccountUser.userId, session.user.id),
+        inArray(currentAccountUser.currentAccountId, accountIds),
+      ),
+    )
+
   const roleByAccountId = new Map(
     memberships.map((m) => [m.currentAccountId, m.role]),
   )
@@ -200,7 +249,13 @@ async function fetchBankDetailsByBik(bik: string) {
 
   const result = Array.isArray(payload) ? payload[0] : payload
 
-  if (!result?.bik || !result?.name || !result?.namemini || !result?.ks) {
+  if (
+    !result ||
+    !result.bik ||
+    !result.name ||
+    !result.namemini ||
+    !result.ks
+  ) {
     throw new Error('Банк с таким БИК не найден')
   }
 

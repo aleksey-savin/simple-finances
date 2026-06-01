@@ -5,6 +5,7 @@ import {
   eq,
   ilike,
   inArray,
+  isNotNull,
   isNull,
   or,
   sql,
@@ -57,8 +58,13 @@ const fetchImportedBankTransactionsSchema = z.object({
     })
     .default(25),
   search: z.string().trim().default(''),
+  counterparty: z.string().trim().default(''),
   direction: z.enum(['all', 'credit', 'debit']).default('all'),
   status: z.enum(['all', 'matched', 'partial', 'unmatched']).default('all'),
+})
+
+const fetchImportedCounterpartiesSchema = z.object({
+  currentAccountId: z.string().min(1),
 })
 
 const refreshImportedTransactionSchema = z.object({
@@ -331,9 +337,32 @@ export const fetchImportedBankTransactions = createServerFn({ method: 'POST' })
       data.page,
       data.pageSize,
       data.search,
+      data.counterparty,
       data.direction,
       data.status,
     )
+  })
+
+export const fetchImportedCounterparties = createServerFn({ method: 'POST' })
+  .inputValidator(fetchImportedCounterpartiesSchema)
+  .handler(async ({ data }) => {
+    const { userId } = await requireSessionUser()
+    await assertAccountAccess(data.currentAccountId, userId)
+
+    const rows = await db
+      .selectDistinct({ name: bankTransaction.counterpartyNameRaw })
+      .from(bankTransaction)
+      .where(
+        and(
+          eq(bankTransaction.currentAccountId, data.currentAccountId),
+          isNotNull(bankTransaction.counterpartyNameRaw),
+        ),
+      )
+      .orderBy(asc(bankTransaction.counterpartyNameRaw))
+
+    return rows
+      .map((row) => row.name)
+      .filter((name): name is string => Boolean(name))
   })
 
 export const refreshImportedTransaction = createServerFn({ method: 'POST' })
@@ -749,10 +778,12 @@ async function listImportedBankTransactions(
   page: number,
   pageSize: number,
   search: string,
+  counterpartyName: string,
   direction: 'all' | 'credit' | 'debit',
   status: 'all' | 'matched' | 'partial' | 'unmatched',
 ) {
   const normalizedSearch = search.trim()
+  const normalizedCounterparty = counterpartyName.trim()
   const settledAmountSql = sql`
     coalesce(
       (
@@ -767,6 +798,12 @@ async function listImportedBankTransactions(
 
   if (direction !== 'all') {
     conditions.push(eq(bankTransaction.direction, direction))
+  }
+
+  if (normalizedCounterparty) {
+    conditions.push(
+      eq(bankTransaction.counterpartyNameRaw, normalizedCounterparty),
+    )
   }
 
   if (normalizedSearch) {

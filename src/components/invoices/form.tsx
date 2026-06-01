@@ -8,6 +8,8 @@ import z from 'zod'
 
 import type { Invoice } from '@/db/types'
 
+import { decodeHtmlEntities } from '@/lib/html-entities'
+
 import { addInvoice, fetchPaymentAccounts, updateInvoice } from './actions'
 import {
   contractsQueryKey,
@@ -21,11 +23,13 @@ import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Item, ItemContent, ItemHeader } from '@/components/ui/item'
 import { Switch } from '@/components/ui/switch'
+import { normalizeAmountInput } from '@/lib/amount'
 
 const uiFormSchema = z.object({
-  amount: z
-    .string()
-    .refine((value) => !isNaN(+value) && +value >= 0.01, 'Минимум 0.01'),
+  amount: z.string().refine((value) => {
+    const parsed = Number(normalizeAmountInput(value))
+    return Number.isFinite(parsed) && parsed >= 0.01
+  }, 'Минимум 0.01'),
   description: z.string().min(2, 'Минимум 2 символа'),
   categoryId: z.string(),
   currentAccountId: z.string().min(1, 'Выберите счёт'),
@@ -57,7 +61,12 @@ type InvoiceFormProps = {
     useForIncome: boolean
     isShared: boolean
   }[]
-  accounts: { id: string; name: string }[]
+  accounts: {
+    id: string
+    name: string
+    bankName?: string | null
+    bankNameInitials?: string | null
+  }[]
   counterparties?: CounterpartyOption[]
   asDialog?: boolean
   entryMode?: 'full' | 'quick'
@@ -106,6 +115,14 @@ export function InvoiceForm({
   const sharedReceivableCategories = categories.filter(
     (category) => category.useForIncome && category.isShared,
   )
+
+  const accountOptions = accounts.map((account) => ({
+    value: account.id,
+    label: account.name,
+    badge:
+      decodeHtmlEntities(account.bankNameInitials ?? account.bankName) ??
+      undefined,
+  }))
 
   const handleCounterpartyChange = async (
     value: string,
@@ -161,7 +178,7 @@ export function InvoiceForm({
         const includeDetails = !isQuickCreate
         const serverData = {
           kind,
-          amount: +value.amount,
+          amount: Number(normalizeAmountInput(value.amount)),
           description: value.description,
           categoryId: includeDetails
             ? value.categoryId || undefined
@@ -257,7 +274,8 @@ export function InvoiceForm({
               <Input
                 id={field.name}
                 name={field.name}
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(event) => field.handleChange(event.target.value)}
@@ -310,10 +328,7 @@ export function InvoiceForm({
                   <Field data-invalid={isInvalid}>
                     <FieldLabel htmlFor={field.name}>Расчётный счёт</FieldLabel>
                     <Combobox
-                      options={accounts.map((account) => ({
-                        value: account.id,
-                        label: account.name,
-                      }))}
+                      options={accountOptions}
                       value={field.state.value}
                       onValueChange={(value) => field.handleChange(value)}
                       placeholder="Выберите счёт"
@@ -396,10 +411,7 @@ export function InvoiceForm({
                   <Field data-invalid={isInvalid}>
                     <FieldLabel htmlFor={field.name}>Счёт</FieldLabel>
                     <Combobox
-                      options={accounts.map((account) => ({
-                        value: account.id,
-                        label: account.name,
-                      }))}
+                      options={accountOptions}
                       value={field.state.value}
                       onValueChange={(value) => field.handleChange(value)}
                       placeholder="Выберите счёт"

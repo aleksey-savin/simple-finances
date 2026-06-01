@@ -5,27 +5,24 @@ import { toast } from 'sonner'
 import { z } from 'zod'
 
 import { BankImportList } from '#/components/bank-import/list'
-import {
-  BankImportAttachDialog,
-  type BankImportAllocationDraft,
-} from '#/components/bank-import/attach-dialog'
-import {
-  BankImportCreateDialog,
-  type BankImportCreateDraft,
-} from '#/components/bank-import/create-dialog'
+import type { BankImportAllocationDraft } from '#/components/bank-import/attach-dialog'
+import { BankImportAttachDialog } from '#/components/bank-import/attach-dialog'
+import type { BankImportCreateDraft } from '#/components/bank-import/create-dialog'
+import { BankImportCreateDialog } from '#/components/bank-import/create-dialog'
 import { BankImportDeleteDialog } from '#/components/bank-import/delete-dialog'
 import { Card } from '#/components/ui/card'
 import { BankImportFilters } from '#/components/bank-import/filters-card'
 import { BankImport } from '#/components/bank-import/import-card'
 import { BankImportPagination } from '#/components/bank-import/pagination'
+import type { ImportedBankTransactionView } from '#/components/bank-import/actions'
 import {
   attachBankTransaction,
   createInvoiceFromBankTransaction,
   deleteBankTransaction,
   fetchBankImportContext,
   fetchImportedBankTransactions,
+  fetchImportedCounterparties,
   importBankStatement,
-  type ImportedBankTransactionView,
 } from '#/components/bank-import/actions'
 import { normalizeCounterpartyName } from '#/lib/bank-statement'
 import { AccountSelection } from '#/components/bank-import/account-card'
@@ -48,6 +45,7 @@ const bankImportSearchSchema = z.object({
     })
     .default(25),
   search: z.string().default(''),
+  counterparty: z.string().default(''),
   direction: z.enum(['all', 'credit', 'debit']).default('all'),
   status: z.enum(['all', 'matched', 'partial', 'unmatched']).default('all'),
 })
@@ -59,6 +57,7 @@ export const Route = createFileRoute('/bank-import')({
     page: search.page,
     pageSize: search.pageSize,
     search: search.search,
+    counterparty: search.counterparty,
     direction: search.direction,
     status: search.status,
   }),
@@ -70,40 +69,56 @@ export const Route = createFileRoute('/bank-import')({
         ? deps.accountId
         : ''
 
-    const rowsPage = selectedAccountId
-      ? await fetchImportedBankTransactions({
-          data: {
-            currentAccountId: selectedAccountId,
+    const [rowsPage, counterpartyOptions] = selectedAccountId
+      ? await Promise.all([
+          fetchImportedBankTransactions({
+            data: {
+              currentAccountId: selectedAccountId,
+              page: deps.page,
+              pageSize: deps.pageSize,
+              search: deps.search,
+              counterparty: deps.counterparty,
+              direction: deps.direction,
+              status: deps.status,
+            },
+          }),
+          fetchImportedCounterparties({
+            data: { currentAccountId: selectedAccountId },
+          }),
+        ])
+      : [
+          {
+            rows: [],
+            total: 0,
             page: deps.page,
             pageSize: deps.pageSize,
-            search: deps.search,
-            direction: deps.direction,
-            status: deps.status,
+            totalPages: 1,
           },
-        })
-      : {
-          rows: [],
-          total: 0,
-          page: deps.page,
-          pageSize: deps.pageSize,
-          totalPages: 1,
-        }
+          [] as string[],
+        ]
 
-    return { ...context, rowsPage, selectedAccountId }
+    return { ...context, rowsPage, counterpartyOptions, selectedAccountId }
   },
   component: BankImportPage,
 })
 
 function BankImportPage() {
   const router = useRouter()
-  const { accounts, categories, counterparties, rowsPage, selectedAccountId } =
-    Route.useLoaderData()
+  const {
+    accounts,
+    categories,
+    counterparties,
+    counterpartyOptions,
+    rowsPage,
+    selectedAccountId,
+  } = Route.useLoaderData()
   const searchParams = Route.useSearch()
   const rows = rowsPage.rows
   const currentPage = rowsPage.page
   const pageSize = rowsPage.pageSize
   const totalPages = rowsPage.totalPages
   const search = searchParams.search
+  const counterpartyFilter = searchParams.counterparty
   const directionFilter = searchParams.direction
   const statusFilter = searchParams.status
 
@@ -133,7 +148,7 @@ function BankImportPage() {
       },
       replace: true,
     })
-  }, [debouncedSearch]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [debouncedSearch])
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isImporting, setIsImporting] = useState(false)
@@ -155,7 +170,10 @@ function BankImportPage() {
   const [isSubmittingDelete, setIsSubmittingDelete] = useState(false)
 
   const hasActiveFilters =
-    search.trim() !== '' || directionFilter !== 'all' || statusFilter !== 'all'
+    search.trim() !== '' ||
+    counterpartyFilter !== '' ||
+    directionFilter !== 'all' ||
+    statusFilter !== 'all'
 
   const clearFilters = () => {
     void router.navigate({
@@ -164,6 +182,7 @@ function BankImportPage() {
         ...searchParams,
         page: 1,
         search: '',
+        counterparty: '',
         direction: 'all',
         status: 'all',
       },
@@ -364,6 +383,7 @@ function BankImportPage() {
                 page: 1,
                 pageSize,
                 search,
+                counterparty: '',
                 direction: directionFilter,
                 status: statusFilter,
               },
@@ -383,6 +403,21 @@ function BankImportPage() {
           <BankImportFilters
             search={inputSearch}
             onSearchChange={setInputSearch}
+            counterpartyFilter={counterpartyFilter}
+            counterpartyOptions={counterpartyOptions}
+            onCounterpartyFilterChange={(value) => {
+              void router.navigate({
+                to: '/bank-import',
+                search: {
+                  ...searchParams,
+                  accountId: selectedAccountId || undefined,
+                  page: 1,
+                  pageSize,
+                  counterparty: value,
+                },
+                replace: true,
+              })
+            }}
             directionFilter={directionFilter}
             onDirectionFilterChange={(value) => {
               void router.navigate({
@@ -526,10 +561,11 @@ async function readBankStatementFile(file: File) {
 function buildAllocationDrafts(
   target: ImportedBankTransactionView,
 ): BankImportAllocationDraft[] {
-  const firstCandidate = target.suggestedInvoices[0]
-  if (!firstCandidate || target.remainingAmount <= 0) {
+  if (target.suggestedInvoices.length === 0 || target.remainingAmount <= 0) {
     return [{ invoiceId: '', amount: '' }]
   }
+
+  const firstCandidate = target.suggestedInvoices[0]
 
   return [
     {

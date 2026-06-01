@@ -15,6 +15,7 @@ import { Combobox } from '@/components/ui/combobox'
 import { DialogFooter } from '@/components/ui/dialog'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { decodeHtmlEntities } from '@/lib/html-entities'
 import type { CurrentAccount } from '#/db/types'
 
 type FormCategory = {
@@ -495,6 +496,9 @@ export const RecurringForm = ({
                 options={accounts.map((a) => ({
                   value: a.id,
                   label: a.name,
+                  badge:
+                    decodeHtmlEntities(a.bankNameInitials ?? a.bankName) ??
+                    undefined,
                 }))}
                 value={field.state.value}
                 onValueChange={field.handleChange}

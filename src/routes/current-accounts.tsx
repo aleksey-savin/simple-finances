@@ -8,9 +8,10 @@ import { BalanceCorrection } from '@/components/accounts/balance-correction'
 import { EditAccountForm } from '@/components/accounts/form-edit'
 import { DeleteAccount } from '@/components/accounts/delete'
 import { ShareAccount } from '@/components/accounts/share'
-import { fetchAccounts } from '@/components/accounts/actions'
+import { fetchScopedAccounts } from '@/components/accounts/actions'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { Combobox } from '@/components/ui/combobox'
 import {
   Dialog,
   DialogContent,
@@ -30,14 +31,14 @@ import {
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { decodeHtmlEntities } from '@/lib/html-entities'
 
-const roleLabel: Record<string, string> = {
+const roleLabel: Partial<Record<string, string>> = {
   owner: 'Владелец',
   editor: 'Редактор',
   viewer: 'Читатель',
 }
 
 export const Route = createFileRoute('/current-accounts')({
-  loader: () => fetchAccounts(),
+  loader: () => fetchScopedAccounts(),
   component: CurrentAccountsPage,
 })
 
@@ -49,10 +50,24 @@ function CurrentAccountsPage() {
   const [acceptPaymentsFilter, setAcceptPaymentsFilter] = useState<
     'all' | 'accept' | 'reject'
   >('all')
+  const [bankFilter, setBankFilter] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
 
   const editingAccount =
     accounts.find((account) => account.id === editingId) ?? null
+
+  const bankOptions = Array.from(
+    new Set(
+      accounts
+        .map((account) => account.bankNameInitials)
+        .filter((bank): bank is string => Boolean(bank)),
+    ),
+  )
+    .sort((a, b) => a.localeCompare(b, 'ru'))
+    .map((bank) => ({
+      value: bank,
+      label: decodeHtmlEntities(bank) ?? bank,
+    }))
 
   const query = search.trim().toLowerCase()
   const filteredAccounts = accounts.filter((account) => {
@@ -69,6 +84,10 @@ function CurrentAccountsPage() {
       if (!haystack.includes(query)) return false
     }
 
+    if (bankFilter && account.bankNameInitials !== bankFilter) {
+      return false
+    }
+
     if (acceptPaymentsFilter === 'accept' && !account.acceptPayments) {
       return false
     }
@@ -81,7 +100,7 @@ function CurrentAccountsPage() {
   })
 
   const hasActiveFilters =
-    search.trim() !== '' || acceptPaymentsFilter !== 'all'
+    search.trim() !== '' || acceptPaymentsFilter !== 'all' || bankFilter !== ''
 
   return (
     <>
@@ -113,6 +132,19 @@ function CurrentAccountsPage() {
               <ToggleGroupItem value="reject">Не принимают</ToggleGroupItem>
             </ToggleGroup>
 
+            {bankOptions.length > 0 && (
+              <Combobox
+                options={bankOptions}
+                value={bankFilter}
+                onValueChange={setBankFilter}
+                placeholder="Все банки"
+                searchPlaceholder="Поиск банка"
+                className="w-full sm:w-64"
+                allowClear
+                clearLabel="Все банки"
+              />
+            )}
+
             {hasActiveFilters && (
               <Button
                 variant="ghost"
@@ -120,6 +152,7 @@ function CurrentAccountsPage() {
                 onClick={() => {
                   setSearch('')
                   setAcceptPaymentsFilter('all')
+                  setBankFilter('')
                 }}
                 className="gap-1.5"
               >

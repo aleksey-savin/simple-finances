@@ -2,6 +2,7 @@ import { Search, X } from 'lucide-react'
 
 import { Button } from '#/components/ui/button'
 import { Card } from '#/components/ui/card'
+import { Combobox } from '#/components/ui/combobox'
 import { Input } from '#/components/ui/input'
 import { ToggleGroup, ToggleGroupItem } from '#/components/ui/toggle-group'
 
@@ -11,6 +12,9 @@ export type BankImportStatusFilter = 'all' | 'matched' | 'partial' | 'unmatched'
 export function BankImportFilters({
   search,
   onSearchChange,
+  counterpartyFilter,
+  counterpartyOptions,
+  onCounterpartyFilterChange,
   directionFilter,
   onDirectionFilterChange,
   statusFilter,
@@ -20,6 +24,9 @@ export function BankImportFilters({
 }: {
   search: string
   onSearchChange: (value: string) => void
+  counterpartyFilter: string
+  counterpartyOptions: string[]
+  onCounterpartyFilterChange: (value: string) => void
   directionFilter: BankImportDirectionFilter
   onDirectionFilterChange: (value: BankImportDirectionFilter) => void
   statusFilter: BankImportStatusFilter
@@ -39,6 +46,22 @@ export function BankImportFilters({
           onChange={(event) => onSearchChange(event.target.value)}
         />
       </div>
+
+      {counterpartyOptions.length > 0 && (
+        <Combobox
+          options={counterpartyOptions.map((name) => ({
+            value: name,
+            label: name,
+          }))}
+          value={counterpartyFilter}
+          onValueChange={onCounterpartyFilterChange}
+          placeholder="Все контрагенты"
+          searchPlaceholder="Поиск контрагента"
+          className="w-full sm:w-80"
+          allowClear
+          clearLabel="Все контрагенты"
+        />
+      )}
 
       <div className="flex flex-wrap items-center gap-4 lg:justify-between">
         <ToggleGroup

@@ -41,7 +41,12 @@ type EditInvoiceProps = {
     useForIncome: boolean
     isShared: boolean
   }[]
-  accounts: { id: string; name: string }[]
+  accounts: {
+    id: string
+    name: string
+    bankName?: string | null
+    bankNameInitials?: string | null
+  }[]
   counterparties?: { id: string; name: string; linkedUserId?: string | null }[]
   open?: boolean
   onOpenChange?: (open: boolean) => void

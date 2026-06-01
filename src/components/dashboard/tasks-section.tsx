@@ -57,6 +57,7 @@ function TaskRow({ task }: { task: DashboardLoaderData['tasks'][number] }) {
               page: 1,
               pageSize: 25,
               search: '',
+              counterparty: '',
               direction: 'all',
               status: 'all',
             }}

@@ -131,106 +131,112 @@ export function Combobox({
           <ChevronsUpDown className="ml-1 size-4 shrink-0 opacity-60" />
         </Button>
       </PopoverTrigger>
-      <PopoverPrimitive.Content
-        ref={contentRef}
-        align="start"
-        sideOffset={4}
-        className={cn(
-          'z-50 w-[--radix-popover-trigger-width] overflow-hidden border bg-popover p-2 text-popover-foreground shadow-md outline-hidden',
-          contentClassName,
-        )}
-      >
-        <div className="flex flex-col gap-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={searchPlaceholder}
-              className="h-8 w-full min-w-0 border border-input bg-input px-3 py-1 pl-8 text-sm shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-            />
-          </div>
+      <PopoverPrimitive.Portal>
+        <PopoverPrimitive.Content
+          ref={contentRef}
+          align="start"
+          sideOffset={4}
+          className={cn(
+            'z-50 w-[var(--radix-popover-trigger-width)] overflow-hidden border bg-popover p-2 text-popover-foreground shadow-md outline-hidden',
+            contentClassName,
+          )}
+        >
+          <div className="flex flex-col gap-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={searchPlaceholder}
+                className="h-8 w-full min-w-0 border border-input bg-input px-3 py-1 pl-8 text-sm shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              />
+            </div>
 
-          <div className="max-h-64 overflow-y-auto overscroll-contain">
-            {filteredOptions.length === 0 ? (
-              <div className="px-2 py-4 text-center text-sm text-muted-foreground">
-                {emptyText}
-              </div>
-            ) : (
-              <div className="flex flex-col gap-1">
-                {filteredOptions.map((option) => {
-                  const isSelected = option.value === value
+            <div className="max-h-64 overflow-y-auto overscroll-contain">
+              {filteredOptions.length === 0 ? (
+                <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                  {emptyText}
+                </div>
+              ) : (
+                <div className="flex flex-col gap-1">
+                  {filteredOptions.map((option) => {
+                    const isSelected = option.value === value
 
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      className={cn(
-                        'flex w-full items-start gap-2 px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground',
-                        isSelected && 'bg-accent/60',
-                      )}
-                      onClick={() => {
-                        onValueChange(option.value)
-                        setOpen(false)
-                      }}
-                    >
-                      <Check
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
                         className={cn(
-                          'mt-0.5 size-4 shrink-0',
-                          isSelected ? 'opacity-100' : 'opacity-0',
+                          'flex w-full items-start gap-2 px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground',
+                          isSelected && 'bg-accent/60',
                         )}
-                      />
-                      <span className="flex min-w-0 flex-1 items-start justify-between gap-2 overflow-hidden">
-                        <span className="min-w-0 overflow-hidden">
-                          <span className="block truncate">{option.label}</span>
-                          {option.description
-                            ? option.description.split('\n').map((line, i) => (
-                                <span
-                                  key={i}
-                                  className="block overflow-hidden break-words text-xs text-muted-foreground"
-                                >
-                                  {line}
-                                </span>
-                              ))
-                            : null}
-                        </span>
-                        {option.badge && (
-                          <span
-                            className={cn(
-                              'mt-0.5 shrink-0 px-1.5 py-0.5 text-xs font-bold',
-                              BADGE_VARIANT_CLASSES[
-                                option.badgeVariant ?? 'default'
-                              ],
-                            )}
-                          >
-                            {option.badge}
+                        onClick={() => {
+                          onValueChange(option.value)
+                          setOpen(false)
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            'mt-0.5 size-4 shrink-0',
+                            isSelected ? 'opacity-100' : 'opacity-0',
+                          )}
+                        />
+                        <span className="flex min-w-0 flex-1 items-start justify-between gap-2 overflow-hidden">
+                          <span className="min-w-0 overflow-hidden">
+                            <span className="block truncate">
+                              {option.label}
+                            </span>
+                            {option.description
+                              ? option.description
+                                  .split('\n')
+                                  .map((line, i) => (
+                                    <span
+                                      key={i}
+                                      className="block overflow-hidden break-words text-xs text-muted-foreground"
+                                    >
+                                      {line}
+                                    </span>
+                                  ))
+                              : null}
                           </span>
-                        )}
-                      </span>
-                    </button>
-                  )
-                })}
-              </div>
-            )}
-          </div>
+                          {option.badge && (
+                            <span
+                              className={cn(
+                                'mt-0.5 shrink-0 px-1.5 py-0.5 text-xs font-bold',
+                                BADGE_VARIANT_CLASSES[
+                                  option.badgeVariant ?? 'default'
+                                ],
+                              )}
+                            >
+                              {option.badge}
+                            </span>
+                          )}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
 
-          {allowClear && value ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-8 justify-start gap-1.5 text-sm"
-              onClick={() => {
-                onValueChange('')
-                setOpen(false)
-              }}
-            >
-              <X className="size-3.5" />
-              {clearLabel}
-            </Button>
-          ) : null}
-        </div>
-      </PopoverPrimitive.Content>
+            {allowClear && value ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 justify-start gap-1.5 text-sm"
+                onClick={() => {
+                  onValueChange('')
+                  setOpen(false)
+                }}
+              >
+                <X className="size-3.5" />
+                {clearLabel}
+              </Button>
+            ) : null}
+          </div>
+        </PopoverPrimitive.Content>
+      </PopoverPrimitive.Portal>
     </Popover>
   )
 }
