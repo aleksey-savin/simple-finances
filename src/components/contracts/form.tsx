@@ -146,7 +146,7 @@ export const ContractForm = ({
       contractType: current?.contractType ?? 'customer',
       businessLineId: current?.businessLine?.id ?? '',
       counterpartyId: current?.counterparty.id ?? defaultCounterpartyId ?? '',
-      companyId: current?.companyId ?? '',
+      companyId: current?.companyId ?? current?.company?.id ?? '',
       amount: current?.amount ?? [''],
       allowNotifications: current?.allowNotifications ?? true,
     },

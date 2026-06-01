@@ -506,12 +506,14 @@ export const fetchClientDetail = createServerFn()
               allowNotifications: true,
               businessLineId: true,
               counterpartyId: true,
+              companyId: true,
             },
             with: {
               businessLine: {
                 columns: { id: true, name: true, allowServerBindings: true },
               },
               counterparty: { columns: { id: true, name: true } },
+              company: { columns: { id: true, name: true } },
               contractDocuments: {
                 with: {
                   document: { columns: { id: true, name: true, url: true } },
@@ -725,6 +727,8 @@ export const fetchClientDetail = createServerFn()
         allowNotifications: c.allowNotifications,
         businessLine: c.businessLine ?? null,
         counterparty: c.counterparty,
+        companyId: c.companyId ?? null,
+        company: c.company ?? null,
         documents: c.contractDocuments.map((cd) => cd.document),
       })),
       pendingPayments: paymentRows.map((p) => ({

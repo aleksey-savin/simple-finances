@@ -22,6 +22,7 @@ import {
   resolveScopedAccountIds,
 } from '#/lib/company-scope'
 import { getPaymentState } from '#/lib/invoice-payment'
+import { recurringProjectionCursor } from '#/components/recurring/utils'
 import { getRequest, requireSession } from '#/utils/session.server'
 
 const UNCATEGORIZED = { id: '__uncategorized__', name: 'Без категории' }
@@ -158,7 +159,8 @@ export const fetchPayables = createServerFn().handler(async () => {
   for (const rule of activeRules) {
     try {
       const job = new Cron(rule.cronExpression, { paused: true })
-      let after = now > monthStart ? now : monthStart
+      const base = now > monthStart ? now : monthStart
+      let after = recurringProjectionCursor(base, rule.nextRunAt)
 
       for (let guard = 0; guard < 200; guard++) {
         const next = job.nextRun(after)

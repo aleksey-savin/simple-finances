@@ -7,6 +7,23 @@ type RuleForMonthCalc = {
   amount: string
   cronExpression: string
   isActive: boolean
+  nextRunAt?: Date | string | null
+}
+
+/**
+ * Exclusive lower-bound cursor for `Cron.nextRun()` when projecting a rule's
+ * occurrences, honoring skips. A skip advances the rule's `nextRunAt` past the
+ * skipped occurrence, so occurrences before `nextRunAt` were already created or
+ * skipped and must not be projected. Returns the later of `base` and
+ * `nextRunAt - 1ms` (so an occurrence landing exactly on `nextRunAt` is kept).
+ */
+export function recurringProjectionCursor(
+  base: Date,
+  nextRunAt: Date | string | null | undefined,
+): Date {
+  if (!nextRunAt) return base
+  const threshold = new Date(nextRunAt).getTime() - 1
+  return threshold > base.getTime() ? new Date(threshold) : base
 }
 
 export function computeMonthTotals(
@@ -33,7 +50,10 @@ export function computeMonthTotals(
 
     try {
       const schedule = new Cron(rule.cronExpression, { paused: true })
-      let cursor = new Date(monthStart.getTime() - 1)
+      let cursor = recurringProjectionCursor(
+        new Date(monthStart.getTime() - 1),
+        rule.nextRunAt,
+      )
 
       for (let guard = 0; guard < 500; guard++) {
         const next = schedule.nextRun(cursor)
@@ -58,7 +78,11 @@ export function computeMonthTotals(
 }
 
 export function ruleHasOccurrenceInMonth(
-  rule: { cronExpression: string; isActive: boolean },
+  rule: {
+    cronExpression: string
+    isActive: boolean
+    nextRunAt?: Date | string | null
+  },
   monthStart: Date,
 ): boolean {
   if (!rule.isActive) return false
@@ -75,7 +99,12 @@ export function ruleHasOccurrenceInMonth(
 
   try {
     const schedule = new Cron(rule.cronExpression, { paused: true })
-    const next = schedule.nextRun(new Date(monthStart.getTime() - 1))
+    const next = schedule.nextRun(
+      recurringProjectionCursor(
+        new Date(monthStart.getTime() - 1),
+        rule.nextRunAt,
+      ),
+    )
     return Boolean(next && next <= monthEnd)
   } catch {
     return false

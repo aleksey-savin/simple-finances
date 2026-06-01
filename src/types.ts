@@ -206,6 +206,8 @@ export type ClientDetail = {
       allowServerBindings: boolean
     } | null
     counterparty: { id: string; name: string }
+    company: { id: string; name: string } | null
+    companyId: string | null
     documents: { id: string; name: string; url: string }[]
   }[]
   pendingPayments: {

@@ -29,6 +29,7 @@ import {
 } from '#/lib/blocked-services'
 import { getPaymentState } from '#/lib/invoice-payment'
 import { getDueMeta } from '#/components/payables/utils'
+import { recurringProjectionCursor } from '#/components/recurring/utils'
 import type { AppScope } from '#/lib/company-scope'
 import { resolveScopedAccountIds } from '#/lib/company-scope'
 import type { DashboardLoaderData, DashboardTask } from '#/types'
@@ -586,6 +587,7 @@ async function buildProjectedReceivablesSummary(
       amount: true,
       cronExpression: true,
       dueDaysFromCreation: true,
+      nextRunAt: true,
     },
   })
 
@@ -595,7 +597,8 @@ async function buildProjectedReceivablesSummary(
   for (const rule of rules) {
     try {
       const job = new Cron(rule.cronExpression, { paused: true })
-      let after = now > monthStart ? now : monthStart
+      const base = now > monthStart ? now : monthStart
+      let after = recurringProjectionCursor(base, rule.nextRunAt)
 
       for (let guard = 0; guard < 200; guard++) {
         const next = job.nextRun(after)
@@ -643,6 +646,7 @@ async function buildProjectedPayablesSummary(
       id: true,
       amount: true,
       cronExpression: true,
+      nextRunAt: true,
     },
   })
 
@@ -652,7 +656,8 @@ async function buildProjectedPayablesSummary(
   for (const rule of rules) {
     try {
       const job = new Cron(rule.cronExpression, { paused: true })
-      let after = now > monthStart ? now : monthStart
+      const base = now > monthStart ? now : monthStart
+      let after = recurringProjectionCursor(base, rule.nextRunAt)
 
       for (let guard = 0; guard < 200; guard++) {
         const next = job.nextRun(after)
