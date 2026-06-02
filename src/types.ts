@@ -633,8 +633,9 @@ export type ProfitabilityMonthPoint = {
   incomeCash: number
   expenseCash: number
   netCash: number
-  // Reconstructed real account balance at the 1st of the month
-  balanceAtStart: number
+  // Outstanding payable obligations as of the 1st of the month (carried debt),
+  // reconstructed historically from settlement / payment dates.
+  debt: number
   // Forecast portion — populated only for the current (incomplete) month, 0 otherwise.
   // Accrual: recurring occurrences still to be created this month.
   // Cash: outstanding amounts expected by their due date this month
@@ -648,6 +649,5 @@ export type ProfitabilityMonthPoint = {
 
 export type ProfitabilityReportData = {
   points: ProfitabilityMonthPoint[]
-  currentBalance: number
   hasAccounts: boolean
 }

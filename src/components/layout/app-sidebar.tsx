@@ -101,9 +101,9 @@ const navMain = [
     title: 'Отчёты',
     items: [
       {
-        title: 'Доходность',
+        title: 'Динамика',
         icon: <LineChart className="size-5" />,
-        url: '/reports/profitability',
+        url: '/reports/dynamics',
       },
     ],
   },

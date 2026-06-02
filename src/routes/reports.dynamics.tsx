@@ -45,7 +45,7 @@ function StatCard({
 }
 
 function ProfitabilityPage() {
-  const { points, currentBalance, hasAccounts } = Route.useLoaderData()
+  const { points, hasAccounts } = Route.useLoaderData()
   const { months } = Route.useSearch()
   const router = useRouter()
 
@@ -66,7 +66,7 @@ function ProfitabilityPage() {
 
   const changeMonths = (next: ProfitabilityMonths) => {
     void router.navigate({
-      to: '/reports/profitability',
+      to: '/reports/dynamics',
       search: { months: next },
       replace: true,
     })
@@ -75,12 +75,12 @@ function ProfitabilityPage() {
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">Доходность</h1>
+        <h1 className="text-2xl font-semibold">Динамика</h1>
         <p className="text-sm text-muted-foreground">
-          Ретроспектива доходов, расходов и остатка по месяцам. Точки — на
-          первое число месяца. «Факт» — по дате оплаты, «Начисления» — по дате
-          создания документа. Текущий месяц — прогноз: к фактическим суммам
-          добавлены запланированные платежи (по расписанию и срокам оплаты).
+          Ретроспектива доходов, расходов и сальдо по месяцам. «Факт» — по дате
+          оплаты, «Начисления» — по дате создания документа. Текущий месяц —
+          прогноз: к фактическим суммам добавлены запланированные платежи (по
+          расписанию и срокам оплаты).
         </p>
       </div>
 
@@ -130,10 +130,6 @@ function ProfitabilityPage() {
         <>
           <div className="flex flex-wrap gap-3">
             <StatCard
-              label="Текущий остаток"
-              value={formatMoney(currentBalance)}
-            />
-            <StatCard
               label={`Доход за период (${basis === 'cash' ? 'факт' : 'начисл.'})`}
               value={formatMoney(totals.income)}
               className="text-success"
@@ -144,7 +140,7 @@ function ProfitabilityPage() {
               className="text-warning"
             />
             <StatCard
-              label="Нетто за период"
+              label="Сальдо за период"
               value={formatMoney(totals.net)}
               className={
                 totals.net > 0
@@ -164,8 +160,7 @@ function ProfitabilityPage() {
             columns={columns}
             data={points}
             initialSorting={[{ id: 'month', desc: true }]}
-            defaultPageSize={24}
-            pageSizes={[12, 24, 50]}
+            pagination={false}
           />
         </>
       )}
@@ -181,7 +176,7 @@ function ProfitabilitySkeleton() {
         <Skeleton className="h-4 w-96" />
       </div>
       <div className="flex flex-wrap gap-3">
-        {[...Array(4)].map((_, i) => (
+        {[...Array(3)].map((_, i) => (
           <div
             key={i}
             className="flex min-w-44 flex-col justify-center gap-2 border p-4"
@@ -198,7 +193,7 @@ function ProfitabilitySkeleton() {
   )
 }
 
-export const Route = createFileRoute('/reports/profitability')({
+export const Route = createFileRoute('/reports/dynamics')({
   validateSearch: (search) => searchSchema.parse(search),
   loaderDeps: ({ search }) => ({ months: search.months }),
   loader: ({ deps }) =>

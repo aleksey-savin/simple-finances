@@ -13,11 +13,12 @@ function Money({ value, className }: { value: number; className?: string }) {
   )
 }
 
-type Variant = 'income' | 'expense' | 'net' | 'plain'
+type Variant = 'income' | 'expense' | 'net' | 'debt' | 'plain'
 
 function variantClass(variant: Variant, value: number) {
   if (variant === 'income') return 'text-success'
   if (variant === 'expense') return 'text-warning'
+  if (variant === 'debt') return value > 0 ? 'text-destructive' : undefined
   if (variant === 'net') {
     return value > 0 ? 'text-success' : value < 0 ? 'text-warning' : undefined
   }
@@ -91,7 +92,7 @@ export function buildProfitabilityColumns(): ColumnDef<
     },
     moneyColumn('incomeCash', 'Доход (факт)', cash.income, 'income'),
     moneyColumn('expenseCash', 'Расход (факт)', cash.expense, 'expense'),
-    moneyColumn('netCash', 'Нетто (факт)', cash.net, 'net'),
+    moneyColumn('netCash', 'Сальдо (факт)', cash.net, 'net'),
     moneyColumn('incomeAccrual', 'Доход (начисл.)', accrual.income, 'income'),
     moneyColumn(
       'expenseAccrual',
@@ -99,7 +100,7 @@ export function buildProfitabilityColumns(): ColumnDef<
       accrual.expense,
       'expense',
     ),
-    moneyColumn('netAccrual', 'Нетто (начисл.)', accrual.net, 'net'),
-    moneyColumn('balanceAtStart', 'Остаток на 1-е', (p) => p.balanceAtStart),
+    moneyColumn('netAccrual', 'Сальдо (начисл.)', accrual.net, 'net'),
+    moneyColumn('debt', 'Долг на 1-е', (p) => p.debt, 'debt'),
   ]
 }

@@ -12,8 +12,8 @@ export type { ProfitabilityBasis } from '#/components/reports/utils'
 const chartConfig = {
   income: { label: 'Доход', color: 'var(--success)' },
   expense: { label: 'Расход', color: 'var(--warning)' },
-  net: { label: 'Нетто за месяц', color: 'var(--primary)' },
-  balance: { label: 'Остаток на 1-е', color: 'var(--muted-foreground)' },
+  net: { label: 'Сальдо за месяц', color: 'var(--primary)' },
+  debt: { label: 'Долг на 1-е', color: 'var(--destructive)' },
 } satisfies ChartConfig
 
 type ChartDatum = {
@@ -23,7 +23,7 @@ type ChartDatum = {
   expenseActual: number
   expensePlanned: number
   net: number
-  balance: number
+  debt: number
   isForecast: boolean
 }
 
@@ -95,8 +95,12 @@ function ReportTooltip({
           className="text-warning"
         />
       ) : null}
-      <TooltipRow label="Нетто за месяц" value={d.net} />
-      <TooltipRow label="Остаток на 1-е" value={d.balance} />
+      <TooltipRow label="Сальдо за месяц" value={d.net} />
+      <TooltipRow
+        label="Долг на 1-е"
+        value={d.debt}
+        className="text-destructive"
+      />
     </div>
   )
 }
@@ -117,7 +121,7 @@ export function ProfitabilityChart({
       expenseActual: v.expenseActual,
       expensePlanned: v.expensePlanned,
       net: v.net,
-      balance: point.balanceAtStart,
+      debt: point.debt,
       isForecast: point.isForecast,
     }
   })
@@ -179,9 +183,9 @@ export function ProfitabilityChart({
           dot={false}
         />
         <Line
-          dataKey="balance"
+          dataKey="debt"
           type="monotone"
-          stroke="var(--color-balance)"
+          stroke="var(--color-debt)"
           strokeWidth={2}
           strokeDasharray="4 4"
           dot={false}

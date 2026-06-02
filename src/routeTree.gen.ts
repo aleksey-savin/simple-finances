@@ -38,7 +38,7 @@ import { Route as PriceRevisionsIndexRouteImport } from './routes/price-revision
 import { Route as ClientsIndexRouteImport } from './routes/clients.index'
 import { Route as UsersNewRouteImport } from './routes/users.new'
 import { Route as TransactionsNewRouteImport } from './routes/transactions.new'
-import { Route as ReportsProfitabilityRouteImport } from './routes/reports.profitability'
+import { Route as ReportsDynamicsRouteImport } from './routes/reports.dynamics'
 import { Route as RecurringNewRouteImport } from './routes/recurring.new'
 import { Route as PriceRevisionsNewRouteImport } from './routes/price-revisions.new'
 import { Route as PriceRevisionsIdRouteImport } from './routes/price-revisions.$id'
@@ -203,9 +203,9 @@ const TransactionsNewRoute = TransactionsNewRouteImport.update({
   path: '/new',
   getParentRoute: () => TransactionsRoute,
 } as any)
-const ReportsProfitabilityRoute = ReportsProfitabilityRouteImport.update({
-  id: '/reports/profitability',
-  path: '/reports/profitability',
+const ReportsDynamicsRoute = ReportsDynamicsRouteImport.update({
+  id: '/reports/dynamics',
+  path: '/reports/dynamics',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RecurringNewRoute = RecurringNewRouteImport.update({
@@ -337,7 +337,7 @@ export interface FileRoutesByFullPath {
   '/price-revisions/$id': typeof PriceRevisionsIdRoute
   '/price-revisions/new': typeof PriceRevisionsNewRoute
   '/recurring/new': typeof RecurringNewRoute
-  '/reports/profitability': typeof ReportsProfitabilityRoute
+  '/reports/dynamics': typeof ReportsDynamicsRoute
   '/transactions/new': typeof TransactionsNewRoute
   '/users/new': typeof UsersNewRoute
   '/clients/': typeof ClientsIndexRoute
@@ -385,7 +385,7 @@ export interface FileRoutesByTo {
   '/price-revisions/$id': typeof PriceRevisionsIdRoute
   '/price-revisions/new': typeof PriceRevisionsNewRoute
   '/recurring/new': typeof RecurringNewRoute
-  '/reports/profitability': typeof ReportsProfitabilityRoute
+  '/reports/dynamics': typeof ReportsDynamicsRoute
   '/transactions/new': typeof TransactionsNewRoute
   '/users/new': typeof UsersNewRoute
   '/clients': typeof ClientsIndexRoute
@@ -436,7 +436,7 @@ export interface FileRoutesById {
   '/price-revisions/$id': typeof PriceRevisionsIdRoute
   '/price-revisions/new': typeof PriceRevisionsNewRoute
   '/recurring/new': typeof RecurringNewRoute
-  '/reports/profitability': typeof ReportsProfitabilityRoute
+  '/reports/dynamics': typeof ReportsDynamicsRoute
   '/transactions/new': typeof TransactionsNewRoute
   '/users/new': typeof UsersNewRoute
   '/clients/': typeof ClientsIndexRoute
@@ -488,7 +488,7 @@ export interface FileRouteTypes {
     | '/price-revisions/$id'
     | '/price-revisions/new'
     | '/recurring/new'
-    | '/reports/profitability'
+    | '/reports/dynamics'
     | '/transactions/new'
     | '/users/new'
     | '/clients/'
@@ -536,7 +536,7 @@ export interface FileRouteTypes {
     | '/price-revisions/$id'
     | '/price-revisions/new'
     | '/recurring/new'
-    | '/reports/profitability'
+    | '/reports/dynamics'
     | '/transactions/new'
     | '/users/new'
     | '/clients'
@@ -586,7 +586,7 @@ export interface FileRouteTypes {
     | '/price-revisions/$id'
     | '/price-revisions/new'
     | '/recurring/new'
-    | '/reports/profitability'
+    | '/reports/dynamics'
     | '/transactions/new'
     | '/users/new'
     | '/clients/'
@@ -626,7 +626,7 @@ export interface RootRouteChildren {
   UsersRoute: typeof UsersRouteWithChildren
   VerifyEmailRoute: typeof VerifyEmailRoute
   MetricsScoringRoute: typeof MetricsScoringRoute
-  ReportsProfitabilityRoute: typeof ReportsProfitabilityRoute
+  ReportsDynamicsRoute: typeof ReportsDynamicsRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
@@ -835,11 +835,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TransactionsNewRouteImport
       parentRoute: typeof TransactionsRoute
     }
-    '/reports/profitability': {
-      id: '/reports/profitability'
-      path: '/reports/profitability'
-      fullPath: '/reports/profitability'
-      preLoaderRoute: typeof ReportsProfitabilityRouteImport
+    '/reports/dynamics': {
+      id: '/reports/dynamics'
+      path: '/reports/dynamics'
+      fullPath: '/reports/dynamics'
+      preLoaderRoute: typeof ReportsDynamicsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/recurring/new': {
@@ -1145,7 +1145,7 @@ const rootRouteChildren: RootRouteChildren = {
   UsersRoute: UsersRouteWithChildren,
   VerifyEmailRoute: VerifyEmailRoute,
   MetricsScoringRoute: MetricsScoringRoute,
-  ReportsProfitabilityRoute: ReportsProfitabilityRoute,
+  ReportsDynamicsRoute: ReportsDynamicsRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport

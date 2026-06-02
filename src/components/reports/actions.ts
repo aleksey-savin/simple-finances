@@ -6,12 +6,7 @@ import { ru } from 'date-fns/locale'
 import { z } from 'zod'
 
 import { db } from '#/db/index.server'
-import {
-  bankTransaction,
-  currentAccount,
-  invoice,
-  recurringRule,
-} from '#/db/schema'
+import { invoice, recurringRule } from '#/db/schema'
 import {
   fromMoneyCents,
   getPaymentState,
@@ -55,7 +50,6 @@ type MonthBucket = {
   expenseAccrualCents: number
   incomeCashCents: number
   expenseCashCents: number
-  bankNetCents: number
 }
 
 export const fetchProfitabilityReport = createServerFn()
@@ -76,7 +70,6 @@ export const fetchProfitabilityReport = createServerFn()
     if (accountIds.length === 0) {
       return {
         points: [],
-        currentBalance: 0,
         hasAccounts: false,
       } satisfies ProfitabilityReportData
     }
@@ -85,72 +78,53 @@ export const fetchProfitabilityReport = createServerFn()
     const currentMonthEnd = endOfMonth(currentMonthStart)
     const currentKey = monthKey(currentMonthStart)
 
-    const [accountRows, accrualInvoices, cashInvoices, bankRows, activeRules] =
-      await Promise.all([
-        db.query.currentAccount.findMany({
-          where: inArray(currentAccount.id, accountIds),
-          columns: { balance: true },
-        }),
+    const [accrualInvoices, cashInvoices, activeRules] = await Promise.all([
+      // Accrual basis: invoices created within the window.
+      db.query.invoice.findMany({
+        where: and(
+          inArray(invoice.currentAccountId, accountIds),
+          isNull(invoice.archivedAt),
+          gte(invoice.createdAt, windowStart),
+        ),
+        columns: { kind: true, amount: true, createdAt: true },
+      }),
 
-        // Accrual basis: invoices created within the window.
-        db.query.invoice.findMany({
-          where: and(
-            inArray(invoice.currentAccountId, accountIds),
-            isNull(invoice.archivedAt),
-            gte(invoice.createdAt, windowStart),
-          ),
-          columns: { kind: true, amount: true, createdAt: true },
-        }),
+      // Cash basis: any non-archived invoice — payment may fall in the window
+      // even when the invoice was created earlier. Also used for the cash
+      // forecast (outstanding amounts due by the end of the current month).
+      db.query.invoice.findMany({
+        where: and(
+          inArray(invoice.currentAccountId, accountIds),
+          isNull(invoice.archivedAt),
+        ),
+        columns: {
+          kind: true,
+          amount: true,
+          paidAt: true,
+          dueDate: true,
+          createdAt: true,
+        },
+        with: {
+          settlements: { columns: { amount: true, settledAt: true } },
+        },
+      }),
 
-        // Cash basis: any non-archived invoice — payment may fall in the window
-        // even when the invoice was created earlier. Also used for the cash
-        // forecast (outstanding amounts due by the end of the current month).
-        db.query.invoice.findMany({
-          where: and(
-            inArray(invoice.currentAccountId, accountIds),
-            isNull(invoice.archivedAt),
-          ),
-          columns: {
-            kind: true,
-            amount: true,
-            paidAt: true,
-            dueDate: true,
-          },
-          with: {
-            settlements: { columns: { amount: true, settledAt: true } },
-          },
-        }),
-
-        // Real cash movement for balance reconstruction.
-        db.query.bankTransaction.findMany({
-          where: and(
-            inArray(bankTransaction.currentAccountId, accountIds),
-            gte(bankTransaction.bookedAt, windowStart),
-          ),
-          columns: { direction: true, amount: true, bookedAt: true },
-        }),
-
-        // Active recurring rules — projected (not-yet-created) occurrences feed
-        // the current-month forecast.
-        db.query.recurringRule.findMany({
-          where: and(
-            inArray(recurringRule.currentAccountId, accountIds),
-            eq(recurringRule.isActive, true),
-          ),
-          columns: {
-            type: true,
-            amount: true,
-            cronExpression: true,
-            dueDaysFromCreation: true,
-            nextRunAt: true,
-          },
-        }),
-      ])
-
-    const currentBalance = accountRows.reduce(
-      (sum, account) => sum + Number(account.balance),
-      0,
-    )
+      // Active recurring rules — projected (not-yet-created) occurrences feed
+      // the current-month forecast.
+      db.query.recurringRule.findMany({
+        where: and(
+          inArray(recurringRule.currentAccountId, accountIds),
+          eq(recurringRule.isActive, true),
+        ),
+        columns: {
+          type: true,
+          amount: true,
+          cronExpression: true,
+          dueDaysFromCreation: true,
+          nextRunAt: true,
+        },
+      }),
+    ])
 
     // ── Build ordered month buckets (oldest → current) ───────────────────────
 
@@ -166,7 +140,6 @@ export const fetchProfitabilityReport = createServerFn()
         expenseAccrualCents: 0,
         incomeCashCents: 0,
         expenseCashCents: 0,
-        bankNetCents: 0,
       })
     }
 
@@ -208,14 +181,6 @@ export const fetchProfitabilityReport = createServerFn()
         if (remainder > 0)
           addTo(monthKey(new Date(inv.paidAt)), field, remainder)
       }
-    }
-
-    // ── Bank net flow ──────────────────────────────────────────────────────────
-
-    for (const tx of bankRows) {
-      const cents = toMoneyCents(tx.amount)
-      const signed = tx.direction === 'credit' ? cents : -cents
-      addTo(monthKey(new Date(tx.bookedAt)), 'bankNetCents', signed)
     }
 
     // ── Current-month forecast ───────────────────────────────────────────────
@@ -279,18 +244,27 @@ export const fetchProfitabilityReport = createServerFn()
       else plannedExpenseCashCents += outstandingCents
     }
 
-    // ── Reconstruct balance at the 1st of each month ─────────────────────────
-    // balanceAtStart(m) = currentBalance − Σ(bank net flow from m onward)
+    // ── Carried debt at the 1st of each month ────────────────────────────────
+    // Outstanding payable obligations as of `at`, reconstructed from when each
+    // settlement / manual payment actually happened.
 
-    const balanceStartByKey = new Map<string, number>()
-    let suffixCents = 0
-    for (let i = order.length - 1; i >= 0; i--) {
-      const bucket = buckets.get(order[i].key)!
-      suffixCents += bucket.bankNetCents
-      balanceStartByKey.set(
-        order[i].key,
-        currentBalance - fromMoneyCents(suffixCents),
-      )
+    const payableInvoices = cashInvoices.filter((inv) => inv.kind === 'payable')
+
+    const debtAt = (at: Date) => {
+      let cents = 0
+      for (const inv of payableInvoices) {
+        if (new Date(inv.createdAt) >= at) continue
+        if (inv.paidAt && new Date(inv.paidAt) < at) continue
+
+        let settledBefore = 0
+        for (const s of inv.settlements) {
+          if (new Date(s.settledAt) < at)
+            settledBefore += toMoneyCents(s.amount)
+        }
+        const outstanding = toMoneyCents(inv.amount) - settledBefore
+        if (outstanding > 0) cents += outstanding
+      }
+      return fromMoneyCents(cents)
     }
 
     const points: ProfitabilityMonthPoint[] = order.map(({ key, date }) => {
@@ -307,7 +281,7 @@ export const fetchProfitabilityReport = createServerFn()
         incomeCash: fromMoneyCents(b.incomeCashCents),
         expenseCash: fromMoneyCents(b.expenseCashCents),
         netCash: fromMoneyCents(b.incomeCashCents - b.expenseCashCents),
-        balanceAtStart: balanceStartByKey.get(key) ?? 0,
+        debt: debtAt(date),
         isForecast,
         plannedIncomeAccrual: isForecast
           ? fromMoneyCents(plannedIncomeAccrualCents)
@@ -326,7 +300,6 @@ export const fetchProfitabilityReport = createServerFn()
 
     return {
       points,
-      currentBalance,
       hasAccounts: true,
     } satisfies ProfitabilityReportData
   })
