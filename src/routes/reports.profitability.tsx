@@ -6,7 +6,8 @@ import { fetchProfitabilityReport } from '#/components/reports/actions'
 import type { ProfitabilityMonths } from '#/components/reports/actions'
 import { buildProfitabilityColumns } from '#/components/reports/columns'
 import { ProfitabilityChart } from '#/components/reports/profitability-chart'
-import type { ProfitabilityBasis } from '#/components/reports/profitability-chart'
+import { basisValues } from '#/components/reports/utils'
+import type { ProfitabilityBasis } from '#/components/reports/utils'
 import { Card } from '#/components/ui/card'
 import { DataTable } from '#/components/ui/data-table'
 import { Skeleton } from '#/components/ui/skeleton'
@@ -14,7 +15,7 @@ import { ToggleGroup, ToggleGroupItem } from '#/components/ui/toggle-group'
 import { formatMoney } from '#/lib/format'
 
 const searchSchema = z.object({
-  months: z.union([z.literal(6), z.literal(12), z.literal(24)]).default(12),
+  months: z.union([z.literal(6), z.literal(12), z.literal(24)]).default(6),
 })
 
 function StatCard({
@@ -54,9 +55,10 @@ function ProfitabilityPage() {
 
   const totals = points.reduce(
     (acc, p) => {
-      acc.income += basis === 'cash' ? p.incomeCash : p.incomeAccrual
-      acc.expense += basis === 'cash' ? p.expenseCash : p.expenseAccrual
-      acc.net += basis === 'cash' ? p.netCash : p.netAccrual
+      const v = basisValues(p, basis)
+      acc.income += v.income
+      acc.expense += v.expense
+      acc.net += v.net
       return acc
     },
     { income: 0, expense: 0, net: 0 },
@@ -77,7 +79,8 @@ function ProfitabilityPage() {
         <p className="text-sm text-muted-foreground">
           Ретроспектива доходов, расходов и остатка по месяцам. Точки — на
           первое число месяца. «Факт» — по дате оплаты, «Начисления» — по дате
-          создания документа.
+          создания документа. Текущий месяц — прогноз: к фактическим суммам
+          добавлены запланированные платежи (по расписанию и срокам оплаты).
         </p>
       </div>
 

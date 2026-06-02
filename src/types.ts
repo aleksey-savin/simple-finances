@@ -624,6 +624,7 @@ export type RecurringLoaderData = {
 export type ProfitabilityMonthPoint = {
   month: string // 'YYYY-MM'
   label: string // 'Янв 2026'
+  // Realized (actual) figures.
   // Accrual basis — by invoice.createdAt
   incomeAccrual: number
   expenseAccrual: number
@@ -634,6 +635,15 @@ export type ProfitabilityMonthPoint = {
   netCash: number
   // Reconstructed real account balance at the 1st of the month
   balanceAtStart: number
+  // Forecast portion — populated only for the current (incomplete) month, 0 otherwise.
+  // Accrual: recurring occurrences still to be created this month.
+  // Cash: outstanding amounts expected by their due date this month
+  //       (existing unpaid invoices + projected recurring occurrences).
+  isForecast: boolean
+  plannedIncomeAccrual: number
+  plannedExpenseAccrual: number
+  plannedIncomeCash: number
+  plannedExpenseCash: number
 }
 
 export type ProfitabilityReportData = {

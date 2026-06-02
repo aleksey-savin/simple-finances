@@ -13,52 +13,56 @@ function Money({ value, className }: { value: number; className?: string }) {
   )
 }
 
-function NetCell({ value }: { value: number }) {
-  return (
-    <Money
-      value={value}
-      className={
-        value > 0 ? 'text-success' : value < 0 ? 'text-warning' : undefined
-      }
-    />
-  )
+type Variant = 'income' | 'expense' | 'net' | 'plain'
+
+function variantClass(variant: Variant, value: number) {
+  if (variant === 'income') return 'text-success'
+  if (variant === 'expense') return 'text-warning'
+  if (variant === 'net') {
+    return value > 0 ? 'text-success' : value < 0 ? 'text-warning' : undefined
+  }
+  return undefined
+}
+
+// Displayed value folds the current-month forecast into the realized totals.
+const cash = {
+  income: (p: ProfitabilityMonthPoint) => p.incomeCash + p.plannedIncomeCash,
+  expense: (p: ProfitabilityMonthPoint) => p.expenseCash + p.plannedExpenseCash,
+  net: (p: ProfitabilityMonthPoint) =>
+    p.incomeCash + p.plannedIncomeCash - (p.expenseCash + p.plannedExpenseCash),
+}
+const accrual = {
+  income: (p: ProfitabilityMonthPoint) =>
+    p.incomeAccrual + p.plannedIncomeAccrual,
+  expense: (p: ProfitabilityMonthPoint) =>
+    p.expenseAccrual + p.plannedExpenseAccrual,
+  net: (p: ProfitabilityMonthPoint) =>
+    p.incomeAccrual +
+    p.plannedIncomeAccrual -
+    (p.expenseAccrual + p.plannedExpenseAccrual),
 }
 
 function moneyColumn(
-  id: keyof ProfitabilityMonthPoint,
+  id: string,
   title: string,
-  variant: 'income' | 'expense' | 'net' | 'plain' = 'plain',
+  accessor: (p: ProfitabilityMonthPoint) => number,
+  variant: Variant = 'plain',
 ): ColumnDef<ProfitabilityMonthPoint, unknown> {
   return {
     id,
-    accessorFn: (row) => row[id],
+    accessorFn: accessor,
     header: ({ column }) => (
       <DataTableColumnHeader
         column={column}
         title={title}
-        className="justify-end"
+        className="w-full justify-end"
       />
     ),
     cell: ({ row }) => {
-      const value = row.original[id] as number
-      if (variant === 'net')
-        return (
-          <div className="text-right">
-            <NetCell value={value} />
-          </div>
-        )
+      const value = accessor(row.original)
       return (
         <div className="text-right">
-          <Money
-            value={value}
-            className={
-              variant === 'income'
-                ? 'text-success'
-                : variant === 'expense'
-                  ? 'text-warning'
-                  : undefined
-            }
-          />
+          <Money value={value} className={variantClass(variant, value)} />
         </div>
       )
     },
@@ -77,17 +81,25 @@ export function buildProfitabilityColumns(): ColumnDef<
         <DataTableColumnHeader column={column} title="Месяц" />
       ),
       cell: ({ row }) => (
-        <span className="font-medium whitespace-nowrap">
+        <span className="whitespace-nowrap font-medium">
           {row.original.label}
+          {row.original.isForecast ? (
+            <span className="text-muted-foreground"> · прогноз</span>
+          ) : null}
         </span>
       ),
     },
-    moneyColumn('incomeCash', 'Доход (факт)', 'income'),
-    moneyColumn('expenseCash', 'Расход (факт)', 'expense'),
-    moneyColumn('netCash', 'Нетто (факт)', 'net'),
-    moneyColumn('incomeAccrual', 'Доход (начисл.)', 'income'),
-    moneyColumn('expenseAccrual', 'Расход (начисл.)', 'expense'),
-    moneyColumn('netAccrual', 'Нетто (начисл.)', 'net'),
-    moneyColumn('balanceAtStart', 'Остаток на 1-е'),
+    moneyColumn('incomeCash', 'Доход (факт)', cash.income, 'income'),
+    moneyColumn('expenseCash', 'Расход (факт)', cash.expense, 'expense'),
+    moneyColumn('netCash', 'Нетто (факт)', cash.net, 'net'),
+    moneyColumn('incomeAccrual', 'Доход (начисл.)', accrual.income, 'income'),
+    moneyColumn(
+      'expenseAccrual',
+      'Расход (начисл.)',
+      accrual.expense,
+      'expense',
+    ),
+    moneyColumn('netAccrual', 'Нетто (начисл.)', accrual.net, 'net'),
+    moneyColumn('balanceAtStart', 'Остаток на 1-е', (p) => p.balanceAtStart),
   ]
 }
