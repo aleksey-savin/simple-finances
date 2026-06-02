@@ -14,11 +14,9 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 
-import { AddAccountForm } from '.'
+import { AddAccountForm, AccountsList } from '.'
 
 import { Separator } from '../ui/separator'
-
-import { AccountsList } from '.'
 
 const Accounts = () => {
   const [open, setOpen] = useState(false)

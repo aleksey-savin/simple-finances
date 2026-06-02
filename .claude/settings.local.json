@@ -33,7 +33,10 @@
       "Bash(pnpm tsc *)",
       "Bash(npx eslint *)",
       "Bash(grep -v \"^$\")",
-      "Bash(npm run *)"
-    ]
+      "Bash(npm run *)",
+      "Bash(pnpm eslint *)",
+      "Bash(echo \"exit: $?\")"
+    ],
+    "deny": ["Bash(**/.env)", "Read(**/.env)", "Write(**/.env)"]
   }
 }

@@ -452,7 +452,7 @@ export function EditCounterpartyForm({
     defaultValues: {
       name: cp.name,
       fullName: cp.fullName ?? '',
-      type: (cp.type ?? ''),
+      type: cp.type ?? '',
       tin: cp.tin ?? '',
       linkedUserId: cp.linkedUserId ?? '',
     },

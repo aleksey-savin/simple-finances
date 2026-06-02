@@ -8,12 +8,11 @@ import {
 } from '#/components/ui/dialog'
 import { Field, FieldLabel } from '#/components/ui/field'
 import { Input } from '#/components/ui/input'
-import {
-  Combobox
-  
-  
+import { Combobox } from '#/components/ui/combobox'
+import type {
+  ComboboxBadgeVariant,
+  ComboboxOption,
 } from '#/components/ui/combobox'
-import type {ComboboxBadgeVariant, ComboboxOption} from '#/components/ui/combobox';
 import type { ImportedBankTransactionView } from '#/components/bank-import/actions'
 import { getBankImportEntityLabel } from '#/components/bank-import/labels'
 import { formatMoney, formatShortDate } from '@/lib/format'

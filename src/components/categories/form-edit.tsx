@@ -1,6 +1,6 @@
 import { useRouter } from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,7 +9,6 @@ import { Field, FieldError, FieldLabel } from '../ui/field'
 import { Switch } from '../ui/switch'
 import { Combobox } from '../ui/combobox'
 
-import { useQueryClient } from '@tanstack/react-query'
 import type { Category } from '#/types'
 import {
   updateCategory,

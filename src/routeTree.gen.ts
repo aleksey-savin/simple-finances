@@ -38,6 +38,7 @@ import { Route as PriceRevisionsIndexRouteImport } from './routes/price-revision
 import { Route as ClientsIndexRouteImport } from './routes/clients.index'
 import { Route as UsersNewRouteImport } from './routes/users.new'
 import { Route as TransactionsNewRouteImport } from './routes/transactions.new'
+import { Route as ReportsProfitabilityRouteImport } from './routes/reports.profitability'
 import { Route as RecurringNewRouteImport } from './routes/recurring.new'
 import { Route as PriceRevisionsNewRouteImport } from './routes/price-revisions.new'
 import { Route as PriceRevisionsIdRouteImport } from './routes/price-revisions.$id'
@@ -202,6 +203,11 @@ const TransactionsNewRoute = TransactionsNewRouteImport.update({
   path: '/new',
   getParentRoute: () => TransactionsRoute,
 } as any)
+const ReportsProfitabilityRoute = ReportsProfitabilityRouteImport.update({
+  id: '/reports/profitability',
+  path: '/reports/profitability',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RecurringNewRoute = RecurringNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -331,6 +337,7 @@ export interface FileRoutesByFullPath {
   '/price-revisions/$id': typeof PriceRevisionsIdRoute
   '/price-revisions/new': typeof PriceRevisionsNewRoute
   '/recurring/new': typeof RecurringNewRoute
+  '/reports/profitability': typeof ReportsProfitabilityRoute
   '/transactions/new': typeof TransactionsNewRoute
   '/users/new': typeof UsersNewRoute
   '/clients/': typeof ClientsIndexRoute
@@ -378,6 +385,7 @@ export interface FileRoutesByTo {
   '/price-revisions/$id': typeof PriceRevisionsIdRoute
   '/price-revisions/new': typeof PriceRevisionsNewRoute
   '/recurring/new': typeof RecurringNewRoute
+  '/reports/profitability': typeof ReportsProfitabilityRoute
   '/transactions/new': typeof TransactionsNewRoute
   '/users/new': typeof UsersNewRoute
   '/clients': typeof ClientsIndexRoute
@@ -428,6 +436,7 @@ export interface FileRoutesById {
   '/price-revisions/$id': typeof PriceRevisionsIdRoute
   '/price-revisions/new': typeof PriceRevisionsNewRoute
   '/recurring/new': typeof RecurringNewRoute
+  '/reports/profitability': typeof ReportsProfitabilityRoute
   '/transactions/new': typeof TransactionsNewRoute
   '/users/new': typeof UsersNewRoute
   '/clients/': typeof ClientsIndexRoute
@@ -479,6 +488,7 @@ export interface FileRouteTypes {
     | '/price-revisions/$id'
     | '/price-revisions/new'
     | '/recurring/new'
+    | '/reports/profitability'
     | '/transactions/new'
     | '/users/new'
     | '/clients/'
@@ -526,6 +536,7 @@ export interface FileRouteTypes {
     | '/price-revisions/$id'
     | '/price-revisions/new'
     | '/recurring/new'
+    | '/reports/profitability'
     | '/transactions/new'
     | '/users/new'
     | '/clients'
@@ -575,6 +586,7 @@ export interface FileRouteTypes {
     | '/price-revisions/$id'
     | '/price-revisions/new'
     | '/recurring/new'
+    | '/reports/profitability'
     | '/transactions/new'
     | '/users/new'
     | '/clients/'
@@ -614,6 +626,7 @@ export interface RootRouteChildren {
   UsersRoute: typeof UsersRouteWithChildren
   VerifyEmailRoute: typeof VerifyEmailRoute
   MetricsScoringRoute: typeof MetricsScoringRoute
+  ReportsProfitabilityRoute: typeof ReportsProfitabilityRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
@@ -821,6 +834,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/transactions/new'
       preLoaderRoute: typeof TransactionsNewRouteImport
       parentRoute: typeof TransactionsRoute
+    }
+    '/reports/profitability': {
+      id: '/reports/profitability'
+      path: '/reports/profitability'
+      fullPath: '/reports/profitability'
+      preLoaderRoute: typeof ReportsProfitabilityRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/recurring/new': {
       id: '/recurring/new'
@@ -1125,6 +1145,7 @@ const rootRouteChildren: RootRouteChildren = {
   UsersRoute: UsersRouteWithChildren,
   VerifyEmailRoute: VerifyEmailRoute,
   MetricsScoringRoute: MetricsScoringRoute,
+  ReportsProfitabilityRoute: ReportsProfitabilityRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport

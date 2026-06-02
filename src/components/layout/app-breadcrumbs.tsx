@@ -82,7 +82,7 @@ export function AppBreadCrumbs() {
       segments.push(seg)
     } else {
       const parent = segments[segments.length - 1]
-      if (parent && CHILD_LABELS[parent]?.[seg] !== undefined) {
+      if (parent && parent in CHILD_LABELS && seg in CHILD_LABELS[parent]) {
         segments.push(seg)
         break // nothing navigable can come after a terminal child segment
       }
@@ -104,7 +104,7 @@ export function AppBreadCrumbs() {
 
   // Get loader data from the current active route match
   const activeMatch = matches[matches.length - 1]
-  const loaderData = activeMatch?.loaderData as any
+  const loaderData = activeMatch.loaderData as any
 
   // Get entity name for view pages or detail pages
   let entityName = ''
@@ -124,8 +124,8 @@ export function AppBreadCrumbs() {
       return ROUTE_LABELS[segment].label
     }
     const parent = segments[index - 1]
-    if (parent) {
-      return CHILD_LABELS[parent]?.[segment] ?? segment
+    if (parent && parent in CHILD_LABELS && segment in CHILD_LABELS[parent]) {
+      return CHILD_LABELS[parent][segment]
     }
     return segment
   }
@@ -137,7 +137,7 @@ export function AppBreadCrumbs() {
     !isDetailPage &&
     segments.length > 0 &&
     lastSegment in ROUTE_LABELS &&
-    (ROUTE_LABELS[lastSegment]?.showAddButton ?? false)
+    ROUTE_LABELS[lastSegment].showAddButton
 
   return (
     <div className="flex items-center">

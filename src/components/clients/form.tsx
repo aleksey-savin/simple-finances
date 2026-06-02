@@ -21,10 +21,8 @@ import { Button } from '@/components/ui/button'
 import { Combobox } from '@/components/ui/combobox'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import {
-  MultiSelectCombobox,
-  type MultiSelectOption,
-} from '@/components/ui/multi-select-combobox'
+import { MultiSelectCombobox } from '@/components/ui/multi-select-combobox'
+import type { MultiSelectOption } from '@/components/ui/multi-select-combobox'
 import { addClient, clientsQueryKey, updateClient } from './actions'
 
 const uiFormSchema = z.object({

@@ -9,10 +9,8 @@ import { fetchAccounts, accountsQueryKey } from '@/components/accounts/actions'
 import { Button } from '@/components/ui/button'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import {
-  MultiSelectCombobox,
-  type MultiSelectOption,
-} from '@/components/ui/multi-select-combobox'
+import { MultiSelectCombobox } from '@/components/ui/multi-select-combobox'
+import type { MultiSelectOption } from '@/components/ui/multi-select-combobox'
 import {
   addCompany,
   companiesQueryKey,

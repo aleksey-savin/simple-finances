@@ -617,3 +617,27 @@ export type RecurringLoaderData = {
   counterparties: NamedEntity[]
   createdOccurrencesByRule: Record<string, CreatedOccurrence[]>
 }
+
+// ── Profitability report (retrospective) ─────────────────────────────────────
+
+/** A single month data point in the profitability report (anchored on the 1st). */
+export type ProfitabilityMonthPoint = {
+  month: string // 'YYYY-MM'
+  label: string // 'Янв 2026'
+  // Accrual basis — by invoice.createdAt
+  incomeAccrual: number
+  expenseAccrual: number
+  netAccrual: number
+  // Cash basis — by actual payment date (settledAt / manual paidAt)
+  incomeCash: number
+  expenseCash: number
+  netCash: number
+  // Reconstructed real account balance at the 1st of the month
+  balanceAtStart: number
+}
+
+export type ProfitabilityReportData = {
+  points: ProfitabilityMonthPoint[]
+  currentBalance: number
+  hasAccounts: boolean
+}

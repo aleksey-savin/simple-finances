@@ -14,11 +14,9 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 
-import { AddCategoryForm } from '.'
+import { AddCategoryForm, CategoriesList } from '.'
 
 import { Separator } from '../ui/separator'
-
-import { CategoriesList } from '.'
 
 const Categories = () => {
   const [open, setOpen] = useState(false)

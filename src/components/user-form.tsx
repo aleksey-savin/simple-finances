@@ -65,7 +65,7 @@ const UserForm = ({
         // --- CREATE ---
         const { error } = await authClient.admin.createUser({
           email: value.email,
-          password: value.password!,
+          password: value.password,
           name: value.name,
           role: value.role,
         })
@@ -174,7 +174,7 @@ const UserForm = ({
                 <Combobox
                   options={roles.map((role) => ({
                     value: role,
-                    label: roleLabels[role ?? 'user'],
+                    label: roleLabels[role],
                   }))}
                   value={field.state.value}
                   onValueChange={field.handleChange}
@@ -199,7 +199,7 @@ const UserForm = ({
                   <Input
                     id={field.name}
                     name={field.name}
-                    value={field.state.value ?? ''}
+                    value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
                     aria-invalid={isInvalid}

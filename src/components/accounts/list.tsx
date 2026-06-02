@@ -13,7 +13,7 @@ import {
   ItemTitle,
 } from '../ui/item'
 
-import { EditAccountForm, DeleteAccount , BalanceCorrection  } from '.'
+import { EditAccountForm, DeleteAccount, BalanceCorrection } from '.'
 import { ShareAccount } from './share'
 import type { Account } from '#/types'
 import { decodeHtmlEntities } from '#/lib/html-entities'

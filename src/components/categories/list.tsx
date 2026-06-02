@@ -15,7 +15,7 @@ import {
   ItemTitle,
 } from '../ui/item'
 
-import { EditCategoryForm, DeleteCategory  } from '.'
+import { EditCategoryForm, DeleteCategory } from '.'
 
 import type { Category } from '#/types'
 

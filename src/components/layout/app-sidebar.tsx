@@ -40,6 +40,7 @@ import {
   Folder,
   Gauge,
   LayoutDashboard,
+  LineChart,
   List,
   ReceiptRussianRuble,
   Settings,
@@ -93,6 +94,16 @@ const navMain = [
         title: 'Платежи и обязательства',
         icon: <BanknoteArrowDown className="size-5" />,
         url: '/payables',
+      },
+    ],
+  },
+  {
+    title: 'Отчёты',
+    items: [
+      {
+        title: 'Доходность',
+        icon: <LineChart className="size-5" />,
+        url: '/reports/profitability',
       },
     ],
   },

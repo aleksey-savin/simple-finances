@@ -2,10 +2,8 @@ import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
 
-import {
-  DocumentUploader,
-  type DocumentItem,
-} from '@/components/ui/document-uploader'
+import { DocumentUploader } from '@/components/ui/document-uploader'
+import type { DocumentItem } from '@/components/ui/document-uploader'
 import { Field, FieldLabel } from '@/components/ui/field'
 import {
   addContractDocument,
