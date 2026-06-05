@@ -56,7 +56,8 @@ export function getPaymentState(input: {
         settlement.settledAt ? new Date(settlement.settledAt) : null,
       )
       .filter((value): value is Date => value instanceof Date)
-      .sort((a, b) => b.getTime() - a.getTime())[0]
+      .sort((a, b) => b.getTime() - a.getTime())
+      .at(0)
 
     effectivePaidAt = latestSettledAt ?? null
   }
@@ -70,6 +71,14 @@ export function getPaymentState(input: {
     status: effectivePaid ? 'paid' : effectivePartial ? 'partial' : 'unpaid',
     effectivePaidAt,
   } satisfies PaymentState
+}
+
+/**
+ * Sign of an invoice's effect on its account's running balance: income
+ * (receivable) increases it, expense (payable) decreases it.
+ */
+export function invoiceBalanceSign(kind: 'payable' | 'receivable') {
+  return kind === 'receivable' ? 1 : -1
 }
 
 export function isInvoiceOpen(input: {

@@ -14,7 +14,7 @@ import {
   invoice,
   invoiceTag,
 } from '#/db/schema'
-import { getPaymentState } from '#/lib/invoice-payment'
+import { getPaymentState, invoiceBalanceSign } from '#/lib/invoice-payment'
 import {
   getScopedCounterpartyIds,
   resolveScopedAccountIds,
@@ -317,10 +317,43 @@ const togglePaidSchema = z.object({
 export const togglePaid = createServerFn({ method: 'POST' })
   .inputValidator(togglePaidSchema)
   .handler(async ({ data }) => {
-    await db
-      .update(invoice)
-      .set({ paidAt: data.paidAt ? new Date(data.paidAt) : null })
-      .where(eq(invoice.id, data.id))
+    const session = await requireSession()
+    const userId = session.user.id
+    const nextPaidAt = data.paidAt ? new Date(data.paidAt) : null
+
+    await db.transaction(async (tx) => {
+      const existing = await tx.query.invoice.findFirst({
+        where: eq(invoice.id, data.id),
+        with: { settlements: { columns: { id: true } } },
+      })
+
+      if (!existing) return
+
+      await tx
+        .update(invoice)
+        .set({ paidAt: nextPaidAt, updatedBy: userId })
+        .where(eq(invoice.id, data.id))
+
+      // Balance only tracks manually-paid invoices; bank-settled ones were
+      // already accounted for at import time.
+      if (existing.settlements.length > 0) return
+
+      const wasPaid = existing.paidAt !== null
+      const willPaid = nextPaidAt !== null
+      if (wasPaid === willPaid) return
+
+      await tx
+        .update(currentAccount)
+        .set({
+          balance: sql`${currentAccount.balance} + ${(
+            invoiceBalanceSign(existing.kind) *
+            Number(existing.amount) *
+            (willPaid ? 1 : -1)
+          ).toFixed(2)}::numeric`,
+          updatedBy: userId,
+        })
+        .where(eq(currentAccount.id, existing.currentAccountId))
+    })
   })
 
 const accountTransferInputSchema = z

@@ -108,7 +108,8 @@ export async function runProxmoxVmManager({
       .at(0)
     const graceActive =
       latestPausedUntil !== undefined && latestPausedUntil > now
-    const shouldSuspend = hasOverdue && !graceActive
+    const isDevMode = process.env.NODE_ENV === 'development'
+    const shouldSuspend = hasOverdue && !graceActive && !isDevMode
     const shouldResume = !hasOverdue || graceActive
     const resumeReason = graceActive
       ? 'grace period is active'
@@ -116,7 +117,7 @@ export async function runProxmoxVmManager({
     const latestPausedUntilText = latestPausedUntil?.toISOString() ?? 'none'
 
     console.log(
-      `[proxmox-vm-manager] (${source}) Contract ${currentContractId}: hasOverdue=${hasOverdue}, graceActive=${graceActive}, latestPausedUntil=${latestPausedUntilText}, bindings=${bindings.length}`,
+      `[proxmox-vm-manager] (${source}) Contract ${currentContractId}: hasOverdue=${hasOverdue}, graceActive=${graceActive}, devMode=${isDevMode}, latestPausedUntil=${latestPausedUntilText}, bindings=${bindings.length}`,
     )
 
     let contractSuspended = 0

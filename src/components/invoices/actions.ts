@@ -1,10 +1,11 @@
 import { createServerFn } from '@tanstack/react-start'
 
-import { and, eq } from 'drizzle-orm'
+import { and, eq, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { db } from '#/db/index.server'
-import { currentAccountUser, invoice } from '@/db/schema'
+import { currentAccount, currentAccountUser, invoice } from '@/db/schema'
+import { invoiceBalanceSign } from '#/lib/invoice-payment'
 import { requireSession } from '#/utils/session.server'
 
 export const fetchPaymentAccounts = createServerFn({ method: 'POST' })
@@ -47,6 +48,33 @@ async function requireSessionUser() {
   return session.user.id
 }
 
+type BalanceTx = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+/**
+ * Shift a current account's stored running balance by a signed delta.
+ *
+ * The balance is a stored field, not computed on the fly, so every code path
+ * that "moves money" has to keep it in sync. Manual invoices only contribute
+ * to it when paid AND not backed by a bank settlement — bank import already
+ * moved the balance for settled invoices, so counting them here would double up.
+ */
+async function shiftAccountBalance(
+  tx: BalanceTx,
+  accountId: string,
+  delta: number,
+  userId: string,
+) {
+  if (delta === 0) return
+
+  await tx
+    .update(currentAccount)
+    .set({
+      balance: sql`${currentAccount.balance} + ${delta.toFixed(2)}::numeric`,
+      updatedBy: userId,
+    })
+    .where(eq(currentAccount.id, accountId))
+}
+
 export const addInvoice = createServerFn({ method: 'POST' })
   .inputValidator(invoiceInputSchema)
   .handler(async ({ data }) => {
@@ -75,6 +103,17 @@ export const addInvoice = createServerFn({ method: 'POST' })
         })
         .returning({ id: invoice.id })
 
+      // A freshly created invoice has no settlements yet, so a paid one always
+      // moves the running balance.
+      if (paidAt) {
+        await shiftAccountBalance(
+          tx,
+          data.currentAccountId,
+          invoiceBalanceSign(data.kind) * data.amount,
+          userId,
+        )
+      }
+
       if (
         data.kind === 'payable' &&
         data.paymentAccountId &&
@@ -94,6 +133,15 @@ export const addInvoice = createServerFn({ method: 'POST' })
           createdBy: userId,
           updatedBy: userId,
         })
+
+        if (paidAt) {
+          await shiftAccountBalance(
+            tx,
+            data.paymentAccountId,
+            invoiceBalanceSign('receivable') * data.amount,
+            userId,
+          )
+        }
       }
 
       return inserted.id
@@ -113,41 +161,98 @@ export const updateInvoice = createServerFn({ method: 'POST' })
     const createdAt = data.createdAt ? new Date(data.createdAt) : undefined
     const paidAt = data.paidAt ? new Date(data.paidAt) : null
 
-    await db
-      .update(invoice)
-      .set({
-        kind: data.kind,
-        amount: data.amount.toString(),
-        description: data.description,
-        categoryId: data.categoryId ?? null,
-        currentAccountId: data.currentAccountId,
-        counterpartyId: data.counterpartyId,
-        contractId: data.contractId ?? null,
-        dueDate,
-        paidAt,
-        ...(createdAt && { createdAt }),
-        updatedBy: userId,
+    await db.transaction(async (tx) => {
+      const existing = await tx.query.invoice.findFirst({
+        where: eq(invoice.id, data.id),
+        with: { settlements: { columns: { id: true } } },
       })
-      .where(eq(invoice.id, data.id))
 
-    if (data.kind === 'payable') {
-      await db
+      if (!existing) {
+        throw new Error('Документ не найден')
+      }
+
+      // Revert the old contribution, then apply the new one. Settlements aren't
+      // touched here, so a bank-backed invoice contributes 0 both ways and its
+      // balance stays owned by the bank import.
+      if (existing.settlements.length === 0 && existing.paidAt) {
+        await shiftAccountBalance(
+          tx,
+          existing.currentAccountId,
+          -invoiceBalanceSign(existing.kind) * Number(existing.amount),
+          userId,
+        )
+      }
+
+      await tx
         .update(invoice)
         .set({
+          kind: data.kind,
           amount: data.amount.toString(),
           description: data.description,
+          categoryId: data.categoryId ?? null,
+          currentAccountId: data.currentAccountId,
+          counterpartyId: data.counterpartyId,
+          contractId: data.contractId ?? null,
           dueDate,
           paidAt,
           ...(createdAt && { createdAt }),
           updatedBy: userId,
         })
-        .where(
-          and(
+        .where(eq(invoice.id, data.id))
+
+      if (existing.settlements.length === 0 && paidAt) {
+        await shiftAccountBalance(
+          tx,
+          data.currentAccountId,
+          invoiceBalanceSign(data.kind) * data.amount,
+          userId,
+        )
+      }
+
+      if (data.kind === 'payable') {
+        const mirror = await tx.query.invoice.findFirst({
+          where: and(
             eq(invoice.linkedInvoiceId, data.id),
             eq(invoice.kind, 'receivable'),
           ),
-        )
-    }
+          with: { settlements: { columns: { id: true } } },
+        })
+
+        if (mirror) {
+          // The mirror's account never changes on update, so revert/apply land
+          // on the same account.
+          if (mirror.settlements.length === 0 && mirror.paidAt) {
+            await shiftAccountBalance(
+              tx,
+              mirror.currentAccountId,
+              -invoiceBalanceSign('receivable') * Number(mirror.amount),
+              userId,
+            )
+          }
+
+          await tx
+            .update(invoice)
+            .set({
+              amount: data.amount.toString(),
+              description: data.description,
+              dueDate,
+              paidAt,
+              ...(createdAt && { createdAt }),
+              updatedBy: userId,
+            })
+            .where(eq(invoice.id, mirror.id))
+
+          if (mirror.settlements.length === 0 && paidAt) {
+            await shiftAccountBalance(
+              tx,
+              mirror.currentAccountId,
+              invoiceBalanceSign('receivable') * data.amount,
+              userId,
+            )
+          }
+        }
+      }
+    })
   })
 
 const deleteInvoiceSchema = z.object({ id: z.string() })
@@ -155,9 +260,30 @@ const deleteInvoiceSchema = z.object({ id: z.string() })
 export const deleteInvoice = createServerFn({ method: 'POST' })
   .inputValidator(deleteInvoiceSchema)
   .handler(async ({ data }) => {
-    await requireSessionUser()
+    const userId = await requireSessionUser()
 
     await db.transaction(async (tx) => {
+      const rows = await tx.query.invoice.findMany({
+        where: or(
+          eq(invoice.id, data.id),
+          eq(invoice.linkedInvoiceId, data.id),
+        ),
+        with: { settlements: { columns: { id: true } } },
+      })
+
+      // Revert the running-balance contribution of any paid, non-settled row
+      // before it disappears.
+      for (const row of rows) {
+        if (row.settlements.length === 0 && row.paidAt) {
+          await shiftAccountBalance(
+            tx,
+            row.currentAccountId,
+            -invoiceBalanceSign(row.kind) * Number(row.amount),
+            userId,
+          )
+        }
+      }
+
       await tx.delete(invoice).where(eq(invoice.linkedInvoiceId, data.id))
       await tx.delete(invoice).where(eq(invoice.id, data.id))
     })
