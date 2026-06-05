@@ -3,6 +3,8 @@ import { createServerFn } from '@tanstack/react-start'
 import { and, eq, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 
+import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
+
 import { db } from '#/db/index.server'
 import { currentAccount, currentAccountUser, invoice } from '@/db/schema'
 import { invoiceBalanceSign } from '#/lib/invoice-payment'
@@ -48,7 +50,7 @@ async function requireSessionUser() {
   return session.user.id
 }
 
-type BalanceTx = Parameters<Parameters<typeof db.transaction>[0]>[0]
+type BalanceTx = Parameters<Parameters<NodePgDatabase['transaction']>[0]>[0]
 
 /**
  * Shift a current account's stored running balance by a signed delta.

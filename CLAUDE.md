@@ -37,6 +37,7 @@ All `createServerFn` calls live in `actions.ts` inside the matching component fe
 - Plain async helpers called only from server handlers (e.g. `requireOwner`) also live in that feature `actions.ts` — no need to wrap them in `createServerFn`.
 - Server-only modules import `'@tanstack/react-start/server-only'` at the top and access `db` via `#/db/index.server`.
 - Auth in handlers: call `requireSession()` from `#/utils/session.server` (throws `'Не авторизован'` if no user).
+- **Never reference a server-only value (`db`, anything from `*.server.ts`) at module top level in an `actions.ts`** — only inside `.handler()` bodies. The TanStack compiler strips handler bodies for the client bundle, but a top-level reference keeps the `#/db/index.server` import alive and triggers `import-protection` ("Import denied in client environment") at build time, because `actions.ts` is re-exported through the feature `index.ts` into client routes. This bites most often via type aliases like `Parameters<typeof db.transaction>` — derive the tx type from `import type { NodePgDatabase } from 'drizzle-orm/node-postgres'` instead (`Parameters<Parameters<NodePgDatabase['transaction']>[0]>[0]`). The same pattern is fine in a fully server-only module (one with the `server-only` marker, e.g. `src/lib/recurring.ts`) since it never enters the client graph.
 
 ### Types layering (strict)
 
