@@ -10,7 +10,9 @@ ENV HUSKY=0
 RUN pnpm install --frozen-lockfile
 
 COPY . .
-RUN pnpm build
+# Raise V8 heap for the build only — Rollup's chunk rendering peaks above the
+# ~2 GB the runtime auto-caps to in the Alpine builder (OOM during build).
+RUN NODE_OPTIONS=--max-old-space-size=4096 pnpm build
 
 EXPOSE 3000
 
