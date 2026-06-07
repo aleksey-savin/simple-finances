@@ -40,6 +40,8 @@ import type {
   settlement,
   settlementScoring,
   tag,
+  task,
+  taskList,
   user,
   verification,
   vmTypeEnum,
@@ -88,6 +90,16 @@ export type CurrentAccountUserUpdate = Partial<CurrentAccountUserInsert> & {
 export type Category = typeof category.$inferSelect
 export type CategoryInsert = typeof category.$inferInsert
 export type CategoryUpdate = Partial<CategoryInsert> & { id: string }
+
+// ─── Task ─────────────────────────────────────────────────────────────────────
+
+export type Task = typeof task.$inferSelect
+export type TaskInsert = typeof task.$inferInsert
+export type TaskUpdate = Partial<TaskInsert> & { id: string }
+
+export type TaskList = typeof taskList.$inferSelect
+export type TaskListInsert = typeof taskList.$inferInsert
+export type TaskListUpdate = Partial<TaskListInsert> & { id: string }
 
 // ─── Tag ──────────────────────────────────────────────────────────────────────
 

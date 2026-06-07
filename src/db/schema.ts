@@ -290,6 +290,38 @@ export const category = pgTable('category', {
     .references(() => user.id),
 })
 
+export const taskList = pgTable('task_list', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  name: text('name').notNull(),
+  icon: text('icon'),
+  color: text('color'),
+  position: integer('position').notNull().default(0),
+  createdBy: text('created_by')
+    .notNull()
+    .references(() => user.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+export const task = pgTable('task', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  description: text('description').notNull(),
+  listId: text('list_id')
+    .notNull()
+    .references(() => taskList.id, { onDelete: 'cascade' }),
+  finishedAt: timestamp('finished_at'),
+  dayList: boolean('day_list').notNull().default(false),
+  favourite: boolean('favourite').notNull().default(false),
+  position: integer('position').notNull().default(0),
+  createdBy: text('created_by')
+    .notNull()
+    .references(() => user.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
 export const counterparty = pgTable('counterparty', {
   id: text('id')
     .primaryKey()
@@ -1452,6 +1484,17 @@ export const categoryRelations = relations(category, ({ one, many }) => ({
   incomes: many(income),
   invoices: many(invoice),
   recurringRules: many(recurringRule),
+}))
+
+export const taskListRelations = relations(taskList, ({ many }) => ({
+  tasks: many(task),
+}))
+
+export const taskRelations = relations(task, ({ one }) => ({
+  list: one(taskList, {
+    fields: [task.listId],
+    references: [taskList.id],
+  }),
 }))
 
 export const recurringRuleRelations = relations(recurringRule, ({ one }) => ({

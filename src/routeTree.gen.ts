@@ -13,6 +13,7 @@ import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as TwoFactorRouteImport } from './routes/two-factor'
 import { Route as TransactionsRouteImport } from './routes/transactions'
+import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RecurringRouteImport } from './routes/recurring'
@@ -76,6 +77,11 @@ const TwoFactorRoute = TwoFactorRouteImport.update({
 const TransactionsRoute = TransactionsRouteImport.update({
   id: '/transactions',
   path: '/transactions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TasksRoute = TasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignupRoute = SignupRouteImport.update({
@@ -321,6 +327,7 @@ export interface FileRoutesByFullPath {
   '/recurring': typeof RecurringRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/tasks': typeof TasksRoute
   '/transactions': typeof TransactionsRouteWithChildren
   '/two-factor': typeof TwoFactorRoute
   '/users': typeof UsersRouteWithChildren
@@ -369,6 +376,7 @@ export interface FileRoutesByTo {
   '/recurring': typeof RecurringRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/tasks': typeof TasksRoute
   '/transactions': typeof TransactionsRouteWithChildren
   '/two-factor': typeof TwoFactorRoute
   '/users': typeof UsersRouteWithChildren
@@ -420,6 +428,7 @@ export interface FileRoutesById {
   '/recurring': typeof RecurringRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/tasks': typeof TasksRoute
   '/transactions': typeof TransactionsRouteWithChildren
   '/two-factor': typeof TwoFactorRoute
   '/users': typeof UsersRouteWithChildren
@@ -472,6 +481,7 @@ export interface FileRouteTypes {
     | '/recurring'
     | '/reset-password'
     | '/signup'
+    | '/tasks'
     | '/transactions'
     | '/two-factor'
     | '/users'
@@ -520,6 +530,7 @@ export interface FileRouteTypes {
     | '/recurring'
     | '/reset-password'
     | '/signup'
+    | '/tasks'
     | '/transactions'
     | '/two-factor'
     | '/users'
@@ -570,6 +581,7 @@ export interface FileRouteTypes {
     | '/recurring'
     | '/reset-password'
     | '/signup'
+    | '/tasks'
     | '/transactions'
     | '/two-factor'
     | '/users'
@@ -621,6 +633,7 @@ export interface RootRouteChildren {
   RecurringRoute: typeof RecurringRouteWithChildren
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
+  TasksRoute: typeof TasksRoute
   TransactionsRoute: typeof TransactionsRouteWithChildren
   TwoFactorRoute: typeof TwoFactorRoute
   UsersRoute: typeof UsersRouteWithChildren
@@ -658,6 +671,13 @@ declare module '@tanstack/react-router' {
       path: '/transactions'
       fullPath: '/transactions'
       preLoaderRoute: typeof TransactionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tasks': {
+      id: '/tasks'
+      path: '/tasks'
+      fullPath: '/tasks'
+      preLoaderRoute: typeof TasksRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/signup': {
@@ -1140,6 +1160,7 @@ const rootRouteChildren: RootRouteChildren = {
   RecurringRoute: RecurringRouteWithChildren,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
+  TasksRoute: TasksRoute,
   TransactionsRoute: TransactionsRouteWithChildren,
   TwoFactorRoute: TwoFactorRoute,
   UsersRoute: UsersRouteWithChildren,

@@ -14,6 +14,8 @@ import type {
   CurrentAccountUser,
   User,
   RecurringRule,
+  Task as DBTask,
+  TaskList as DBTaskList,
 } from '@/db/types'
 import type { TagItem } from '#/components/ui/tag-picker'
 
@@ -650,4 +652,27 @@ export type ProfitabilityMonthPoint = {
 export type ProfitabilityReportData = {
   points: ProfitabilityMonthPoint[]
   hasAccounts: boolean
+}
+
+// ─── Tasks ──────────────────────────────────────────────────────────────────
+
+export type TaskItem = Pick<
+  DBTask,
+  | 'id'
+  | 'description'
+  | 'listId'
+  | 'finishedAt'
+  | 'dayList'
+  | 'favourite'
+  | 'position'
+>
+
+export type TaskListItem = Pick<
+  DBTaskList,
+  'id' | 'name' | 'position' | 'icon' | 'color'
+>
+
+export type TasksData = {
+  lists: TaskListItem[]
+  tasks: TaskItem[]
 }

@@ -185,3 +185,11 @@ code {
     @apply bg-background text-foreground;
   }
 }
+
+/* Horizontally/vertically scrollable areas without a visible scrollbar. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
