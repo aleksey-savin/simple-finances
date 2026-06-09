@@ -40,6 +40,18 @@ export default function TasksPage({ data }: { data: TasksData }) {
 
   const isDay = activeTab === DAY_TAB
   const listNameById = new Map(lists.map((list) => [list.id, list.name]))
+  const listColorById = new Map(lists.map((list) => [list.id, list.color]))
+  const activeListColor = isDay
+    ? null
+    : (lists.find((list) => list.id === activeTab)?.color ?? null)
+
+  // Favourite templates with at least one pending (unfinished) clone are hidden:
+  // the clone stands in for the template until it is done.
+  const activeClonedFavIds = new Set(
+    tasks
+      .filter((t) => t.sourceFavouriteId && !t.finishedAt)
+      .map((t) => t.sourceFavouriteId),
+  )
 
   // ─── Grouping ────────────────────────────────────────────────────────────
   const undone = isDay
@@ -52,9 +64,11 @@ export default function TasksPage({ data }: { data: TasksData }) {
     : tasks.filter(
         (t) => t.listId === activeTab && !t.favourite && t.finishedAt,
       )
-  const favourites = isDay
-    ? tasks.filter((t) => t.favourite)
-    : tasks.filter((t) => t.listId === activeTab && t.favourite)
+  const favourites = (
+    isDay
+      ? tasks.filter((t) => t.favourite)
+      : tasks.filter((t) => t.listId === activeTab && t.favourite)
+  ).filter((t) => !activeClonedFavIds.has(t.id))
 
   // ─── Undone counters per tab ───────────────────────────────────────────────
   const undoneCountByList = new Map<string, number>()
@@ -91,7 +105,7 @@ export default function TasksPage({ data }: { data: TasksData }) {
   }
 
   const tabBase =
-    'flex shrink-0 items-center gap-1 px-3 py-2 text-sm whitespace-nowrap transition-colors'
+    'flex shrink-0 items-center gap-1 px-3 py-2 text-base whitespace-nowrap transition-colors'
   const NewListIcon = getListIcon(newListIcon)
 
   return (
@@ -107,10 +121,10 @@ export default function TasksPage({ data }: { data: TasksData }) {
               : `${tabBase} text-muted-foreground hover:bg-muted/50`
           }
         >
-          <Sun className="size-4" />
+          <Sun className="size-4 text-yellow-500" />
           На день
           {dayUndoneCount > 0 ? (
-            <span className="ml-0.5 text-xs tabular-nums text-muted-foreground">
+            <span className="ml-0.5 text-sm tabular-nums text-muted-foreground">
               {dayUndoneCount}
             </span>
           ) : null}
@@ -140,7 +154,7 @@ export default function TasksPage({ data }: { data: TasksData }) {
                 />
                 {list.name}
                 {undoneCount > 0 ? (
-                  <span className="text-xs tabular-nums text-muted-foreground">
+                  <span className="text-sm tabular-nums text-muted-foreground">
                     {undoneCount}
                   </span>
                 ) : null}
@@ -268,6 +282,9 @@ export default function TasksPage({ data }: { data: TasksData }) {
               task={task}
               lists={lists}
               listName={isDay ? listNameById.get(task.listId) : undefined}
+              accentColor={
+                isDay ? listColorById.get(task.listId) : activeListColor
+              }
             />
           ))}
         </TaskGroup>
@@ -279,6 +296,9 @@ export default function TasksPage({ data }: { data: TasksData }) {
               task={task}
               lists={lists}
               listName={isDay ? listNameById.get(task.listId) : undefined}
+              accentColor={
+                isDay ? listColorById.get(task.listId) : activeListColor
+              }
             />
           ))}
         </TaskGroup>
@@ -295,6 +315,9 @@ export default function TasksPage({ data }: { data: TasksData }) {
               targetListId={isDay ? task.listId : activeTab}
               markDay={isDay}
               listName={isDay ? listNameById.get(task.listId) : undefined}
+              accentColor={
+                isDay ? listColorById.get(task.listId) : activeListColor
+              }
             />
           ))}
         </TaskGroup>

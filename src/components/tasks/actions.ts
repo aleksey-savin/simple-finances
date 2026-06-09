@@ -39,8 +39,10 @@ export const fetchTasks = createServerFn().handler(
           description: true,
           listId: true,
           finishedAt: true,
+          dueDate: true,
           dayList: true,
           favourite: true,
+          sourceFavouriteId: true,
           position: true,
         },
       }),
@@ -176,9 +178,11 @@ export const toggleTaskDone = createServerFn({ method: 'POST' })
       .where(and(eq(task.id, data.id), eq(task.createdBy, session.user.id)))
   })
 
-// Star a task: create a favourite (template) clone in the same list, leaving
-// the original task untouched in its group.
-export const addFavourite = createServerFn({ method: 'POST' })
+// Toggle a task's favourite link. When the task is not yet linked, create a
+// favourite (template) clone in the same list and point the task at it. When it
+// is already linked, remove the template (the FK clears the link on every clone)
+// and defensively null the link on this task.
+export const toggleFavourite = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
     const session = await requireSession()
@@ -186,10 +190,28 @@ export const addFavourite = createServerFn({ method: 'POST' })
 
     const source = await db.query.task.findFirst({
       where: and(eq(task.id, data.id), eq(task.createdBy, userId)),
-      columns: { description: true, listId: true },
+      columns: { description: true, listId: true, sourceFavouriteId: true },
     })
     if (!source) throw new Error('Задача не найдена')
 
+    // Already favourited → unlink: delete the template (FK nulls clone links).
+    if (source.sourceFavouriteId) {
+      await db
+        .delete(task)
+        .where(
+          and(
+            eq(task.id, source.sourceFavouriteId),
+            eq(task.createdBy, userId),
+          ),
+        )
+      await db
+        .update(task)
+        .set({ sourceFavouriteId: null })
+        .where(and(eq(task.id, data.id), eq(task.createdBy, userId)))
+      return null
+    }
+
+    // Not favourited → create a template clone and link this task to it.
     const [{ max }] = await db
       .select({ max: sql<number>`coalesce(max(${task.position}), -1)` })
       .from(task)
@@ -207,6 +229,12 @@ export const addFavourite = createServerFn({ method: 'POST' })
         createdBy: userId,
       })
       .returning({ id: task.id })
+
+    await db
+      .update(task)
+      .set({ sourceFavouriteId: inserted.id })
+      .where(and(eq(task.id, data.id), eq(task.createdBy, userId)))
+
     return inserted.id
   })
 
@@ -281,9 +309,22 @@ export const cloneFavourite = createServerFn({ method: 'POST' })
         dayList: data.markDay,
         favourite: false,
         finishedAt: null,
+        // Link the clone back to the favourite template it was created from.
+        sourceFavouriteId: data.id,
         position: Number(max) + 1,
         createdBy: userId,
       })
       .returning({ id: task.id })
     return inserted.id
+  })
+
+// Set or clear a task's due date.
+export const setTaskDueDate = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ id: z.string(), dueDate: z.string().nullable() }))
+  .handler(async ({ data }) => {
+    const session = await requireSession()
+    await db
+      .update(task)
+      .set({ dueDate: data.dueDate ? new Date(data.dueDate) : null })
+      .where(and(eq(task.id, data.id), eq(task.createdBy, session.user.id)))
   })

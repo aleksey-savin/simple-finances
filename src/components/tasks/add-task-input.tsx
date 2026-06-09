@@ -30,7 +30,7 @@ export function AddTaskInput({ listId }: { listId: string }) {
           }
         }}
         placeholder="Новая задача…"
-        className="h-8 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
+        className="h-8 border-0 bg-transparent pl-2 text-base shadow-none focus-visible:ring-0"
       />
     </div>
   )

@@ -29,7 +29,7 @@ export function TaskGroup({
 
   return (
     <Collapsible open={open} onOpenChange={setOpen} className="flex flex-col">
-      <CollapsibleTrigger className="flex items-center gap-1.5 px-2 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase hover:text-on-surface">
+      <CollapsibleTrigger className="flex items-center gap-1.5 px-2 py-2 text-sm font-medium tracking-wide text-muted-foreground uppercase hover:text-on-surface">
         <ChevronRight
           className={
             open
@@ -40,9 +40,9 @@ export function TaskGroup({
         {title}
         <span className="tabular-nums">({count})</span>
       </CollapsibleTrigger>
-      <CollapsibleContent className="flex flex-col">
+      <CollapsibleContent className="flex flex-col overflow-hidden data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out data-[state=open]:fade-in data-[state=closed]:slide-out-to-top-1 data-[state=open]:slide-in-from-top-1">
         {count === 0 && showEmpty ? (
-          <p className="px-2 py-1.5 text-sm text-muted-foreground">Пусто</p>
+          <p className="px-2 py-1.5 text-base text-muted-foreground">Пусто</p>
         ) : (
           children
         )}

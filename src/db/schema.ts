@@ -13,6 +13,7 @@ import {
   timestamp,
   unique,
 } from 'drizzle-orm/pg-core'
+import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 
 export const counterpartyTypeEnum = pgEnum('counterparty_type', [
   'Юридическое лицо',
@@ -313,8 +314,15 @@ export const task = pgTable('task', {
     .notNull()
     .references(() => taskList.id, { onDelete: 'cascade' }),
   finishedAt: timestamp('finished_at'),
+  dueDate: timestamp('due_date'),
   dayList: boolean('day_list').notNull().default(false),
   favourite: boolean('favourite').notNull().default(false),
+  // Self-reference: a cloned task points at the favourite template it came from.
+  // onDelete 'set null' clears the link on clones when their template is removed.
+  sourceFavouriteId: text('source_favourite_id').references(
+    (): AnyPgColumn => task.id,
+    { onDelete: 'set null' },
+  ),
   position: integer('position').notNull().default(0),
   createdBy: text('created_by')
     .notNull()

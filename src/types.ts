@@ -662,8 +662,10 @@ export type TaskItem = Pick<
   | 'description'
   | 'listId'
   | 'finishedAt'
+  | 'dueDate'
   | 'dayList'
   | 'favourite'
+  | 'sourceFavouriteId'
   | 'position'
 >
 
