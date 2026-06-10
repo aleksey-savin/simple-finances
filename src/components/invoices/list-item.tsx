@@ -27,6 +27,7 @@ import type { Invoice } from '#/types'
 import { resolveDocumentUrl } from '@/components/contracts/actions'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
+import { Input } from '../ui/input'
 import { Item, ItemContent } from '../ui/item'
 import { TableCell, TableRow } from '../ui/table'
 import {
@@ -43,6 +44,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '../ui/dialog'
@@ -62,6 +64,27 @@ function formatDate(date: Date): string {
   if (isYesterday(date)) return 'Вчера'
   if (isSameYear(date, new Date())) return format(date, 'd MMM', { locale: ru })
   return format(date, 'd MMM yyyy', { locale: ru })
+}
+
+function toDateInputValue(date: Date) {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
+// Stamp the picked calendar day with the current time of day, matching the
+// invoice form — keeps same-day ordering stable while honoring the chosen date.
+function dateInputToTimestamp(dateValue: string) {
+  const [year, month, day] = dateValue.split('-').map(Number)
+  const now = new Date()
+  return new Date(
+    year,
+    month - 1,
+    day,
+    now.getHours(),
+    now.getMinutes(),
+    now.getSeconds(),
+    now.getMilliseconds(),
+  ).toISOString()
 }
 
 type DialogRenderProp = (
@@ -112,6 +135,30 @@ export function InvoiceListItem({
   const [linkedDocumentsOpen, setLinkedDocumentsOpen] = useState(false)
   const [contractDetailOpen, setContractDetailOpen] = useState(false)
   const [openingDocId, setOpeningDocId] = useState<string | null>(null)
+  const [paidDialogOpen, setPaidDialogOpen] = useState(false)
+  const [paidDateInput, setPaidDateInput] = useState(() =>
+    toDateInputValue(new Date()),
+  )
+  const [isMarkingPaid, setIsMarkingPaid] = useState(false)
+
+  const confirmMarkPaid = async () => {
+    try {
+      setIsMarkingPaid(true)
+      await togglePaid({
+        data: {
+          id: item.id,
+          kind: item.kind,
+          paidAt: dateInputToTimestamp(paidDateInput),
+        },
+      })
+      await router.invalidate()
+      setPaidDialogOpen(false)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Произошла ошибка')
+    } finally {
+      setIsMarkingPaid(false)
+    }
+  }
 
   const isPayable = item.kind === 'payable'
   const isLinkedReceivable = !isPayable && !!item.linkedInvoiceId
@@ -210,13 +257,14 @@ export function InvoiceListItem({
       <DropdownMenuContent align="end">
         <DropdownMenuItem
           onClick={async () => {
+            if (!isPaid) {
+              setPaidDateInput(toDateInputValue(new Date()))
+              setPaidDialogOpen(true)
+              return
+            }
             try {
               await togglePaid({
-                data: {
-                  id: item.id,
-                  kind: item.kind,
-                  paidAt: !isPaid ? new Date().toISOString() : null,
-                },
+                data: { id: item.id, kind: item.kind, paidAt: null },
               })
               await router.invalidate()
             } catch (error) {
@@ -419,6 +467,49 @@ export function InvoiceListItem({
 
   const dialogs = (
     <>
+      <Dialog open={paidDialogOpen} onOpenChange={setPaidDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Отметить как оплаченное</DialogTitle>
+            <DialogDescription>
+              Укажите дату оплаты — по ней операция попадёт в нужный месяц.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor={`paid-date-${item.id}`}
+              className="text-sm font-medium"
+            >
+              Дата оплаты
+            </label>
+            <Input
+              id={`paid-date-${item.id}`}
+              type="date"
+              value={paidDateInput}
+              onChange={(event) => setPaidDateInput(event.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setPaidDialogOpen(false)}
+              disabled={isMarkingPaid}
+            >
+              Отмена
+            </Button>
+            <Button onClick={confirmMarkPaid} disabled={isMarkingPaid}>
+              {isMarkingPaid ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  Сохранение
+                </>
+              ) : (
+                'Отметить оплаченным'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {canEditDelete && renderEdit(editOpen, setEditOpen)}
       {canEditDelete && !isPaid && renderDelete?.(deleteOpen, setDeleteOpen)}
       <AlertDialog open={archiveOpen} onOpenChange={setArchiveOpen}>

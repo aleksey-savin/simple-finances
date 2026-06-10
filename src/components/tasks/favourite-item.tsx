@@ -11,6 +11,9 @@ type Props = {
   // Where a clone should land + whether it should be marked for "На день".
   targetListId: string
   markDay: boolean
+  // A pending clone already stands in for this template: show it muted and
+  // disable cloning until that clone is finished.
+  inactive?: boolean
   // List name shown next to the description (used on the "На день" tab).
   listName?: string
   // List accent colour; tints the row background at low opacity.
@@ -21,6 +24,7 @@ export function FavouriteItemRow({
   task,
   targetListId,
   markDay,
+  inactive = false,
   listName,
   accentColor,
 }: Props) {
@@ -28,14 +32,23 @@ export function FavouriteItemRow({
 
   return (
     <div
-      className="group flex animate-in items-center gap-2 px-2 py-1.5 transition-colors duration-200 fade-in slide-in-from-top-1 hover:bg-muted/50"
-      style={accentColor ? { backgroundColor: `${accentColor}14` } : undefined}
+      className={`group flex animate-in items-center gap-2 px-2 py-1.5 transition-colors duration-200 fade-in slide-in-from-top-1 hover:bg-muted/50 ${
+        inactive ? 'opacity-50' : ''
+      }`}
+      style={
+        accentColor && !inactive
+          ? { backgroundColor: `${accentColor}14` }
+          : undefined
+      }
     >
       <Button
         variant="ghost"
         size="icon"
         className="size-7 shrink-0 text-primary transition-all active:scale-90"
-        title="Добавить копию в активный список"
+        disabled={inactive}
+        title={
+          inactive ? 'Копия уже добавлена' : 'Добавить копию в активный список'
+        }
         onClick={() =>
           run(
             cloneFavourite({
@@ -48,7 +61,11 @@ export function FavouriteItemRow({
         <Plus className="size-4" />
       </Button>
 
-      <span className="min-w-0 flex-1 text-base text-on-surface">
+      <span
+        className={`min-w-0 flex-1 text-base ${
+          inactive ? 'text-muted-foreground' : 'text-on-surface'
+        }`}
+      >
         {task.description}
         {listName ? (
           <span className="ml-2 text-sm text-muted-foreground">{listName}</span>

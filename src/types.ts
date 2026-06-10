@@ -378,6 +378,12 @@ export type NamedEntity = {
   name: string
 }
 
+export type AccountBalance = {
+  id: string
+  name: string
+  balance: string
+}
+
 export type InvoiceFormCategory = Pick<
   DBCategory,
   'id' | 'name' | 'useForExpenses' | 'useForIncome' | 'isShared'
@@ -473,6 +479,7 @@ export type PayablesLoaderData = {
   currentMonth: ExpenseRow[]
   previousUnpaid: ExpenseRow[]
   accounts: NamedEntity[]
+  accountBalances: AccountBalance[]
   categories: NamedEntity[]
   formCategories: InvoiceFormCategory[]
   counterparties: NamedEntity[]
@@ -638,6 +645,9 @@ export type ProfitabilityMonthPoint = {
   // Outstanding payable obligations as of the 1st of the month (carried debt),
   // reconstructed historically from settlement / payment dates.
   debt: number
+  // Account balance (sum across scoped accounts) as of the 1st of the month,
+  // reconstructed historically by reversing balance movements since then.
+  balanceStart: number
   // Forecast portion — populated only for the current (incomplete) month, 0 otherwise.
   // Accrual: recurring occurrences still to be created this month.
   // Cash: outstanding amounts expected by their due date this month
@@ -652,6 +662,24 @@ export type ProfitabilityMonthPoint = {
 export type ProfitabilityReportData = {
   points: ProfitabilityMonthPoint[]
   hasAccounts: boolean
+}
+
+// One invoice contributing to a clicked report figure (drill-down breakdown).
+export type ReportBreakdownRow = {
+  id: string
+  kind: 'payable' | 'receivable'
+  description: string
+  date: string // ISO — payment date (cash) / creation date (accrual) / due date (forecast)
+  amount: number
+  account: { id: string; name: string }
+  category: { id: string; name: string } | null
+  counterparty: { id: string; name: string } | null
+  // Forecast (not-yet-realized) contribution: unpaid invoice expected this month.
+  isForecast: boolean
+}
+
+export type ReportBreakdownData = {
+  rows: ReportBreakdownRow[]
 }
 
 // ─── Tasks ──────────────────────────────────────────────────────────────────

@@ -12,7 +12,10 @@ import { Card } from '#/components/ui/card'
 import { DataTable } from '#/components/ui/data-table'
 import { Skeleton } from '#/components/ui/skeleton'
 import { ToggleGroup, ToggleGroupItem } from '#/components/ui/toggle-group'
+import { ReportBreakdownSheet } from '#/components/reports/breakdown-sheet'
+import type { ReportBreakdownSelection } from '#/components/reports/breakdown-sheet'
 import { formatMoney } from '#/lib/format'
+import { cn } from '#/lib/utils'
 
 const searchSchema = z.object({
   months: z.union([z.literal(6), z.literal(12), z.literal(24)]).default(6),
@@ -23,14 +26,23 @@ function StatCard({
   value,
   className,
   hint,
+  onClick,
 }: {
   label: string
   value: string
   className?: string
   hint?: string
+  onClick?: () => void
 }) {
   return (
-    <Card className="flex min-w-44 flex-col justify-center gap-1 p-4">
+    <Card
+      onClick={onClick}
+      className={cn(
+        'flex min-w-44 flex-col justify-center gap-1 p-4',
+        onClick &&
+          'cursor-pointer transition-colors hover:bg-muted/50 focus-visible:bg-muted/50',
+      )}
+    >
       <span className="text-sm text-muted-foreground">{label}</span>
       <span
         className={`text-2xl font-semibold tabular-nums ${className ?? ''}`}
@@ -50,8 +62,13 @@ function ProfitabilityPage() {
   const router = useRouter()
 
   const [basis, setBasis] = useState<ProfitabilityBasis>('cash')
+  const [selection, setSelection] = useState<ReportBreakdownSelection | null>(
+    null,
+  )
 
-  const columns = buildProfitabilityColumns()
+  const columns = buildProfitabilityColumns({ months, onSelect: setSelection })
+
+  const basisLabel = basis === 'cash' ? 'факт' : 'начисл.'
 
   const totals = points.reduce(
     (acc, p) => {
@@ -130,14 +147,34 @@ function ProfitabilityPage() {
         <>
           <div className="flex flex-wrap gap-3">
             <StatCard
-              label={`Доход за период (${basis === 'cash' ? 'факт' : 'начисл.'})`}
+              label={`Доход за период (${basisLabel})`}
               value={formatMoney(totals.income)}
               className="text-success"
+              onClick={() =>
+                setSelection({
+                  basis,
+                  kind: 'income',
+                  month: 'all',
+                  months,
+                  label: `Доход за период (${basisLabel})`,
+                  expectedTotal: totals.income,
+                })
+              }
             />
             <StatCard
-              label={`Расход за период (${basis === 'cash' ? 'факт' : 'начисл.'})`}
+              label={`Расход за период (${basisLabel})`}
               value={formatMoney(totals.expense)}
               className="text-warning"
+              onClick={() =>
+                setSelection({
+                  basis,
+                  kind: 'expense',
+                  month: 'all',
+                  months,
+                  label: `Расход за период (${basisLabel})`,
+                  expectedTotal: totals.expense,
+                })
+              }
             />
             <StatCard
               label="Сальдо за период"
@@ -148,6 +185,16 @@ function ProfitabilityPage() {
                   : totals.net < 0
                     ? 'text-warning'
                     : undefined
+              }
+              onClick={() =>
+                setSelection({
+                  basis,
+                  kind: 'net',
+                  month: 'all',
+                  months,
+                  label: 'Сальдо за период',
+                  expectedTotal: totals.net,
+                })
               }
             />
           </div>
@@ -164,6 +211,13 @@ function ProfitabilityPage() {
           />
         </>
       )}
+
+      <ReportBreakdownSheet
+        selection={selection}
+        onOpenChange={(open) => {
+          if (!open) setSelection(null)
+        }}
+      />
     </div>
   )
 }

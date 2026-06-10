@@ -1,4 +1,5 @@
 export type {
+  AccountBalance,
   ExpenseRow,
   ExpenseStatus,
   InvoiceFormCategory,

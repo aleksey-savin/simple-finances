@@ -37,6 +37,7 @@ const uiFormSchema = z.object({
   dueDate: z.string(),
   createdAt: z.string(),
   isPaid: z.boolean(),
+  paidAt: z.string(),
   paymentAccountId: z.string(),
   paymentCategoryId: z.string(),
   contractId: z.string(),
@@ -81,6 +82,25 @@ function addDays(date: Date, days: number) {
   const result = new Date(date)
   result.setDate(result.getDate() + days)
   return result
+}
+
+// A date-only input collapses to midnight, so several entries on the same day
+// tie when the transactions feed sorts by createdAt — the stable sort then
+// falls back to DB row order and the newest entry sinks below older ones.
+// Stamp the picked calendar day with the current time of day so newer entries
+// sort above older ones while the displayed date stays the same.
+function dateInputToTimestamp(dateValue: string) {
+  const [year, month, day] = dateValue.split('-').map(Number)
+  const now = new Date()
+  return new Date(
+    year,
+    month - 1,
+    day,
+    now.getHours(),
+    now.getMinutes(),
+    now.getSeconds(),
+    now.getMilliseconds(),
+  ).toISOString()
 }
 
 export function InvoiceForm({
@@ -168,6 +188,9 @@ export function InvoiceForm({
       createdAt: toDateInputValue(currentInvoice?.createdAt ?? new Date()),
       isPaid:
         currentInvoice?.paidAt !== null && currentInvoice?.paidAt !== undefined,
+      paidAt: currentInvoice?.paidAt
+        ? toDateInputValue(currentInvoice.paidAt)
+        : toDateInputValue(new Date()),
       paymentAccountId: '',
       paymentCategoryId: '',
       contractId: currentInvoice?.contractId ?? '',
@@ -176,6 +199,24 @@ export function InvoiceForm({
     onSubmit: async ({ value }) => {
       try {
         const includeDetails = !isQuickCreate
+        // On edit, leave createdAt untouched when the date wasn't changed, so
+        // editing a row doesn't reorder it within its day.
+        const createdAtIso = !value.createdAt
+          ? undefined
+          : isEdit &&
+              value.createdAt === toDateInputValue(currentInvoice.createdAt)
+            ? undefined
+            : dateInputToTimestamp(value.createdAt)
+        // Use the picked payment date, not "now", so a backdated payment lands
+        // in the correct month. On edit, keep the original timestamp when the
+        // date wasn't changed.
+        const paidAtIso = !value.isPaid
+          ? null
+          : isEdit &&
+              currentInvoice.paidAt &&
+              value.paidAt === toDateInputValue(currentInvoice.paidAt)
+            ? new Date(currentInvoice.paidAt).toISOString()
+            : dateInputToTimestamp(value.paidAt)
         const serverData = {
           kind,
           amount: Number(normalizeAmountInput(value.amount)),
@@ -191,10 +232,8 @@ export function InvoiceForm({
             includeDetails && value.dueDate
               ? new Date(`${value.dueDate}T00:00:00.000Z`).toISOString()
               : undefined,
-          createdAt: value.createdAt
-            ? new Date(`${value.createdAt}T00:00:00.000Z`).toISOString()
-            : undefined,
-          paidAt: value.isPaid ? new Date().toISOString() : null,
+          createdAt: createdAtIso,
+          paidAt: paidAtIso,
           paymentAccountId: includeDetails
             ? value.paymentAccountId || undefined
             : undefined,
@@ -359,18 +398,46 @@ export function InvoiceForm({
             </form.Field>
           </div>
 
-          <form.Field name="isPaid">
-            {(field) => (
-              <Field orientation="horizontal" className="w-fit">
-                <FieldLabel htmlFor={field.name}>Оплачено</FieldLabel>
-                <Switch
-                  id={field.name}
-                  checked={field.state.value}
-                  onCheckedChange={(checked) => field.handleChange(checked)}
-                />
-              </Field>
-            )}
-          </form.Field>
+          <div className="flex items-end gap-4">
+            <form.Field name="isPaid">
+              {(field) => (
+                <Field orientation="horizontal" className="w-fit">
+                  <FieldLabel htmlFor={field.name}>Оплачено</FieldLabel>
+                  <Switch
+                    id={field.name}
+                    checked={field.state.value}
+                    onCheckedChange={(checked) => field.handleChange(checked)}
+                  />
+                </Field>
+              )}
+            </form.Field>
+
+            <form.Subscribe selector={(state) => state.values.isPaid}>
+              {(isPaid) =>
+                isPaid ? (
+                  <form.Field name="paidAt">
+                    {(field) => (
+                      <Field className="w-fit">
+                        <FieldLabel htmlFor={field.name}>
+                          Дата оплаты
+                        </FieldLabel>
+                        <Input
+                          id={field.name}
+                          name={field.name}
+                          type="date"
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(event) =>
+                            field.handleChange(event.target.value)
+                          }
+                        />
+                      </Field>
+                    )}
+                  </form.Field>
+                ) : null
+              }
+            </form.Subscribe>
+          </div>
         </>
       )}
 
@@ -602,9 +669,7 @@ export function InvoiceForm({
             <form.Field name="dueDate">
               {(field) => (
                 <Field>
-                  <FieldLabel htmlFor={field.name}>
-                    {kind === 'payable' ? 'Оплатить до' : 'Получить до'}
-                  </FieldLabel>
+                  <FieldLabel htmlFor={field.name}>Срок оплаты</FieldLabel>
                   <Input
                     id={field.name}
                     name={field.name}
@@ -618,18 +683,46 @@ export function InvoiceForm({
             </form.Field>
           </div>
 
-          <form.Field name="isPaid">
-            {(field) => (
-              <Field orientation="horizontal" className="w-fit">
-                <FieldLabel htmlFor={field.name}>Оплачено</FieldLabel>
-                <Switch
-                  id={field.name}
-                  checked={field.state.value}
-                  onCheckedChange={(checked) => field.handleChange(checked)}
-                />
-              </Field>
-            )}
-          </form.Field>
+          <div className="flex items-end gap-4">
+            <form.Field name="isPaid">
+              {(field) => (
+                <Field orientation="horizontal" className="w-fit">
+                  <FieldLabel htmlFor={field.name}>Оплачено</FieldLabel>
+                  <Switch
+                    id={field.name}
+                    checked={field.state.value}
+                    onCheckedChange={(checked) => field.handleChange(checked)}
+                  />
+                </Field>
+              )}
+            </form.Field>
+
+            <form.Subscribe selector={(state) => state.values.isPaid}>
+              {(isPaid) =>
+                isPaid ? (
+                  <form.Field name="paidAt">
+                    {(field) => (
+                      <Field className="w-fit">
+                        <FieldLabel htmlFor={field.name}>
+                          Дата оплаты
+                        </FieldLabel>
+                        <Input
+                          id={field.name}
+                          name={field.name}
+                          type="date"
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(event) =>
+                            field.handleChange(event.target.value)
+                          }
+                        />
+                      </Field>
+                    )}
+                  </form.Field>
+                ) : null
+              }
+            </form.Subscribe>
+          </div>
         </>
       )}
 

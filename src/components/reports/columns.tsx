@@ -5,6 +5,8 @@ import { formatMoney } from '#/lib/format'
 import { cn } from '#/lib/utils'
 import type { ProfitabilityMonthPoint } from '#/types'
 
+import type { ReportBreakdownSelection } from './breakdown-sheet'
+
 function Money({ value, className }: { value: number; className?: string }) {
   return (
     <span className={cn('whitespace-nowrap tabular-nums', className)}>
@@ -43,37 +45,69 @@ const accrual = {
     (p.expenseAccrual + p.plannedExpenseAccrual),
 }
 
-function moneyColumn(
-  id: string,
-  title: string,
-  accessor: (p: ProfitabilityMonthPoint) => number,
-  variant: Variant = 'plain',
-): ColumnDef<ProfitabilityMonthPoint, unknown> {
-  return {
-    id,
-    accessorFn: accessor,
-    header: ({ column }) => (
-      <DataTableColumnHeader
-        column={column}
-        title={title}
-        className="w-full justify-end"
-      />
-    ),
-    cell: ({ row }) => {
-      const value = accessor(row.original)
-      return (
-        <div className="text-right">
-          <Money value={value} className={variantClass(variant, value)} />
-        </div>
-      )
-    },
-  }
+type Figure = {
+  basis: ReportBreakdownSelection['basis']
+  kind: ReportBreakdownSelection['kind']
 }
 
-export function buildProfitabilityColumns(): ColumnDef<
-  ProfitabilityMonthPoint,
-  unknown
->[] {
+export type ProfitabilityColumnsOptions = {
+  months: ReportBreakdownSelection['months']
+  onSelect?: (selection: ReportBreakdownSelection) => void
+}
+
+export function buildProfitabilityColumns({
+  months,
+  onSelect,
+}: ProfitabilityColumnsOptions): ColumnDef<ProfitabilityMonthPoint, unknown>[] {
+  function moneyColumn(
+    id: string,
+    title: string,
+    accessor: (p: ProfitabilityMonthPoint) => number,
+    variant: Variant,
+    figure?: Figure,
+  ): ColumnDef<ProfitabilityMonthPoint, unknown> {
+    return {
+      id,
+      accessorFn: accessor,
+      header: ({ column }) => (
+        <DataTableColumnHeader
+          column={column}
+          title={title}
+          className="w-full justify-end"
+        />
+      ),
+      cell: ({ row }) => {
+        const value = accessor(row.original)
+        const money = (
+          <Money value={value} className={variantClass(variant, value)} />
+        )
+        if (!figure || !onSelect) {
+          return <div className="text-right">{money}</div>
+        }
+        return (
+          <div className="text-right">
+            <button
+              type="button"
+              className="cursor-pointer underline-offset-2 hover:underline focus-visible:underline focus-visible:outline-none"
+              onClick={() =>
+                onSelect({
+                  basis: figure.basis,
+                  kind: figure.kind,
+                  month: row.original.month,
+                  months,
+                  label: `${title} · ${row.original.label}`,
+                  expectedTotal: value,
+                })
+              }
+            >
+              {money}
+            </button>
+          </div>
+        )
+      },
+    }
+  }
+
   return [
     {
       id: 'month',
@@ -90,17 +124,34 @@ export function buildProfitabilityColumns(): ColumnDef<
         </span>
       ),
     },
-    moneyColumn('incomeCash', 'Доход (факт)', cash.income, 'income'),
-    moneyColumn('expenseCash', 'Расход (факт)', cash.expense, 'expense'),
-    moneyColumn('netCash', 'Сальдо (факт)', cash.net, 'net'),
-    moneyColumn('incomeAccrual', 'Доход (начисл.)', accrual.income, 'income'),
+    moneyColumn('incomeCash', 'Доход (факт)', cash.income, 'income', {
+      basis: 'cash',
+      kind: 'income',
+    }),
+    moneyColumn('expenseCash', 'Расход (факт)', cash.expense, 'expense', {
+      basis: 'cash',
+      kind: 'expense',
+    }),
+    moneyColumn('netCash', 'Сальдо (факт)', cash.net, 'net', {
+      basis: 'cash',
+      kind: 'net',
+    }),
+    moneyColumn('incomeAccrual', 'Доход (начисл.)', accrual.income, 'income', {
+      basis: 'accrual',
+      kind: 'income',
+    }),
     moneyColumn(
       'expenseAccrual',
       'Расход (начисл.)',
       accrual.expense,
       'expense',
+      { basis: 'accrual', kind: 'expense' },
     ),
-    moneyColumn('netAccrual', 'Сальдо (начисл.)', accrual.net, 'net'),
+    moneyColumn('netAccrual', 'Сальдо (начисл.)', accrual.net, 'net', {
+      basis: 'accrual',
+      kind: 'net',
+    }),
     moneyColumn('debt', 'Долг на 1-е', (p) => p.debt, 'debt'),
+    moneyColumn('balanceStart', 'Баланс на 1-е', (p) => p.balanceStart, 'net'),
   ]
 }

@@ -35,7 +35,11 @@
       "Bash(grep -v \"^$\")",
       "Bash(npm run *)",
       "Bash(pnpm eslint *)",
-      "Bash(echo \"exit: $?\")"
+      "Bash(echo \"exit: $?\")",
+      "Bash(git checkout *)",
+      "Bash(sed -n \"/ProfitabilityMonthPoint = {/,/^}/p\" src/types.ts)",
+      "Bash(sed -n '39,48p' src/db/schema.ts)",
+      "Bash(echo \"eslint exit: $?\")"
     ],
     "deny": ["Bash(**/.env)", "Read(**/.env)", "Write(**/.env)"]
   }

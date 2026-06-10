@@ -14,6 +14,7 @@ const chartConfig = {
   expense: { label: 'Расход', color: 'var(--warning)' },
   net: { label: 'Сальдо за месяц', color: 'var(--primary)' },
   debt: { label: 'Долг на 1-е', color: 'var(--destructive)' },
+  balance: { label: 'Баланс на 1-е', color: 'var(--chart-1)' },
 } satisfies ChartConfig
 
 type ChartDatum = {
@@ -24,6 +25,7 @@ type ChartDatum = {
   expensePlanned: number
   net: number
   debt: number
+  balanceStart: number
   isForecast: boolean
 }
 
@@ -101,6 +103,7 @@ function ReportTooltip({
         value={d.debt}
         className="text-destructive"
       />
+      <TooltipRow label="Баланс на 1-е" value={d.balanceStart} />
     </div>
   )
 }
@@ -122,6 +125,7 @@ export function ProfitabilityChart({
       expensePlanned: v.expensePlanned,
       net: v.net,
       debt: point.debt,
+      balanceStart: point.balanceStart,
       isForecast: point.isForecast,
     }
   })
@@ -188,6 +192,13 @@ export function ProfitabilityChart({
           stroke="var(--color-debt)"
           strokeWidth={2}
           strokeDasharray="4 4"
+          dot={false}
+        />
+        <Line
+          dataKey="balanceStart"
+          type="monotone"
+          stroke="var(--color-balance)"
+          strokeWidth={2}
           dot={false}
         />
       </ComposedChart>

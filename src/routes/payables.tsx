@@ -30,6 +30,7 @@ function PayablesRouteComponent() {
     currentMonth,
     previousUnpaid,
     accounts,
+    accountBalances,
     categories,
     formCategories,
     counterparties,
@@ -140,6 +141,7 @@ function PayablesRouteComponent() {
       <PayablesSummaryCards
         currentMonth={currentMonth}
         previousUnpaid={previousUnpaid}
+        accountBalances={accountBalances}
       />
 
       <PayablesTableSection

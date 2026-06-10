@@ -188,8 +188,8 @@ export default defineTask({
 
             if (nextPaymentRows.length > 0 && nextPaymentRows[0].dueDate) {
               const nextPaymentDate = formatDateRu(nextPaymentRows[0].dueDate)
-              renewalHtml = `<p>После оплаты текущего счёта сервер будет продлён до <strong>${nextPaymentDate}</strong>.</p>`
-              renewalText = `После оплаты текущего счёта сервер будет продлён до ${nextPaymentDate}.`
+              renewalHtml = `<p>После оплаты текущего счёта срок действия услуги будет продлён до <strong>${nextPaymentDate}</strong>.</p>`
+              renewalText = `После оплаты текущего счёта срок действия услуги будет продлён до ${nextPaymentDate}.`
             }
           }
         }

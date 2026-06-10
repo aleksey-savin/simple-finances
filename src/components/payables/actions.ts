@@ -40,6 +40,7 @@ export const fetchPayables = createServerFn().handler(async () => {
       currentMonth: [],
       previousUnpaid: [],
       accounts: [],
+      accountBalances: [],
       categories: [],
       formCategories: [],
       counterparties: [],
@@ -117,7 +118,7 @@ export const fetchPayables = createServerFn().handler(async () => {
     }),
     db.query.currentAccount.findMany({
       where: inArray(currentAccount.id, accountIds),
-      columns: { id: true, name: true },
+      columns: { id: true, name: true, balance: true },
       orderBy: (table, { asc }) => asc(table.name),
     }),
     db.query.category.findMany({
@@ -379,7 +380,8 @@ export const fetchPayables = createServerFn().handler(async () => {
   return {
     currentMonth,
     previousUnpaid,
-    accounts: sortByName(accounts),
+    accounts: sortByName(accounts.map(({ id, name }) => ({ id, name }))),
+    accountBalances: sortByName(accounts),
     categories: sortByName(categories),
     formCategories: sortByName(formCategories),
     counterparties: sortByName(counterparties),

@@ -172,7 +172,7 @@ export function buildInvoiceReminderEmail(params: {
       : 'Чтобы избежать приостановки услуги, пожалуйста, оплатите направленный в ЭДО счёт.'
 
   return {
-    subject: `Напоминание об оплате счёта до ${params.dueDateLabel}`,
+    subject: `Напоминание об оплате услуг`,
     html: renderEmailLayout({
       title: 'Напоминаем об оплате',
       tone: style === 'soft' ? 'info' : 'critical',

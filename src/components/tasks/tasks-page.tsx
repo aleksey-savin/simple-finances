@@ -45,8 +45,9 @@ export default function TasksPage({ data }: { data: TasksData }) {
     ? null
     : (lists.find((list) => list.id === activeTab)?.color ?? null)
 
-  // Favourite templates with at least one pending (unfinished) clone are hidden:
-  // the clone stands in for the template until it is done.
+  // Favourite templates with at least one pending (unfinished) clone are shown
+  // muted and inactive: the clone stands in for the template until it is done,
+  // so the template can't be cloned again.
   const activeClonedFavIds = new Set(
     tasks
       .filter((t) => t.sourceFavouriteId && !t.finishedAt)
@@ -64,11 +65,9 @@ export default function TasksPage({ data }: { data: TasksData }) {
     : tasks.filter(
         (t) => t.listId === activeTab && !t.favourite && t.finishedAt,
       )
-  const favourites = (
-    isDay
-      ? tasks.filter((t) => t.favourite)
-      : tasks.filter((t) => t.listId === activeTab && t.favourite)
-  ).filter((t) => !activeClonedFavIds.has(t.id))
+  const favourites = isDay
+    ? tasks.filter((t) => t.favourite)
+    : tasks.filter((t) => t.listId === activeTab && t.favourite)
 
   // ─── Undone counters per tab ───────────────────────────────────────────────
   const undoneCountByList = new Map<string, number>()
@@ -314,6 +313,7 @@ export default function TasksPage({ data }: { data: TasksData }) {
               task={task}
               targetListId={isDay ? task.listId : activeTab}
               markDay={isDay}
+              inactive={activeClonedFavIds.has(task.id)}
               listName={isDay ? listNameById.get(task.listId) : undefined}
               accentColor={
                 isDay ? listColorById.get(task.listId) : activeListColor
