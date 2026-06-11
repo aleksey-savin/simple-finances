@@ -100,14 +100,15 @@ export const fetchProfitabilityReport = createServerFn()
       balanceTransfers,
     ] = await Promise.all([
       // Accrual basis: invoices created within the window.
-      // Exclude mirror invoices (linkedInvoiceId set) — they are the
-      // "Зачислить доход контрагенту" receivable twin of a payable, i.e. an
-      // internal money movement, not real income/expense.
+      // Mirror invoices (linkedInvoiceId set) — the "Зачислить доход
+      // контрагенту" receivable twin of a payable — are kept: in the mirror's
+      // own scope it is genuine income, and its linked payable normally lives
+      // in another scope, so the account-scope filter below already prevents
+      // double-counting. This matches the drill-down breakdown.
       db.query.invoice.findMany({
         where: and(
           inArray(invoice.currentAccountId, accountIds),
           isNull(invoice.archivedAt),
-          isNull(invoice.linkedInvoiceId),
           gte(invoice.createdAt, windowStart),
         ),
         columns: { kind: true, amount: true, createdAt: true },
@@ -116,13 +117,13 @@ export const fetchProfitabilityReport = createServerFn()
       // Cash basis: any non-archived invoice — payment may fall in the window
       // even when the invoice was created earlier. Also used for the cash
       // forecast (outstanding amounts due by the end of the current month).
-      // Mirror invoices (linkedInvoiceId set) are excluded for the same reason
-      // as the accrual query — they double-count internal transfers.
+      // Mirror invoices (linkedInvoiceId set) are kept for the same reason as
+      // the accrual query — they are real income in the mirror's scope and the
+      // account-scope filter already guards against double-counting.
       db.query.invoice.findMany({
         where: and(
           inArray(invoice.currentAccountId, accountIds),
           isNull(invoice.archivedAt),
-          isNull(invoice.linkedInvoiceId),
         ),
         columns: {
           kind: true,
