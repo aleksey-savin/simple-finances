@@ -687,7 +687,7 @@ function App() {
                   : statusFilter === 'paid'
                     ? 'оплачены'
                     : statusFilter === 'unpaid'
-                      ? 'неоплачены'
+                      ? 'не оплачены'
                       : 'просрочены'}
               </span>
             </SelectValue>
@@ -695,7 +695,7 @@ function App() {
           <SelectContent>
             <SelectItem value="all">Все</SelectItem>
             <SelectItem value="paid">Оплачены</SelectItem>
-            <SelectItem value="unpaid">Неоплачены</SelectItem>
+            <SelectItem value="unpaid">Не оплачены</SelectItem>
             <SelectItem value="overdue">Просрочены</SelectItem>
           </SelectContent>
         </Select>

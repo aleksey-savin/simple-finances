@@ -237,7 +237,7 @@ export function InvoiceListItem({
             </>
           ) : (
             <>
-              <XCircle className="size-3.5" /> Неоплачено
+              <XCircle className="size-3.5" /> Не оплачено
             </>
           )}
         </DropdownMenuItem>
