@@ -63,11 +63,13 @@ export const Route = createFileRoute('/bank-import')({
   }),
   loader: async ({ deps }) => {
     const context = await fetchBankImportContext()
+    // Accounts come sorted by the latest import, so the first one is the
+    // most recently updated account — the default when none is chosen.
     const selectedAccountId =
       deps.accountId &&
       context.accounts.some((account) => account.id === deps.accountId)
         ? deps.accountId
-        : ''
+        : (context.accounts[0]?.id ?? '')
 
     const [rowsPage, counterpartyOptions] = selectedAccountId
       ? await Promise.all([

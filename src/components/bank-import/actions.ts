@@ -142,7 +142,10 @@ export const fetchBankImportContext = createServerFn().handler(async () => {
             currentAccount.balance,
             currentAccount.acceptPayments,
           )
-          .orderBy(asc(currentAccount.name))
+          .orderBy(
+            sql`${latestImportedAt} desc nulls last`,
+            asc(currentAccount.name),
+          )
       : [],
     db.query.category.findMany({
       columns: {
