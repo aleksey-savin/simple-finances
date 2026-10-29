@@ -30,17 +30,31 @@ import {
 } from '#/components/transactions/actions'
 import { TransferItem } from '#/components/transactions/transfer-item'
 
-import { createFileRoute, Outlet, useRouter } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  Link,
+  Outlet,
+  useRouter,
+} from '@tanstack/react-router'
 import { format, isSameYear, isToday, isYesterday } from 'date-fns'
 import { ru } from 'date-fns/locale'
-import { CalendarIcon, Search, X } from 'lucide-react'
+import { CalendarIcon, Plus, Search, X } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import type { DateRange } from 'react-day-picker'
 
 import z from 'zod'
 import { ToggleGroup, ToggleGroupItem } from '#/components/ui/toggle-group'
 import { useIsMobile } from '#/hooks/use-mobile'
-import { Card } from '#/components/ui/card'
+import { PageHeader } from '#/components/ui/page-header'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '#/components/ui/select'
+import { cn } from '#/lib/utils'
+import { computeDayTotals, getFeedDateKey } from '#/lib/transaction-feed'
 import {
   addExpenseTag,
   addIncomeTag,
@@ -372,11 +386,17 @@ function App() {
     return filteredFeed.slice(offset, offset + pageSize)
   }, [filteredFeed, pageSize, safePage])
 
+  // Paid-only day totals over the whole filtered feed (not the current page)
+  const dayTotals = useMemo(
+    () => computeDayTotals(filteredFeed),
+    [filteredFeed],
+  )
+
   const desktopGroups = useMemo(() => {
     const groups = new Map<string, typeof paginatedFeed>()
 
     for (const item of paginatedFeed) {
-      const key = format(new Date(getTransactionTime(item)), 'yyyy-MM-dd')
+      const key = getFeedDateKey(item)
       const group = groups.get(key)
 
       if (group) {
@@ -445,16 +465,39 @@ function App() {
     }
   }, [router, searchParams, currentPage, safePage, pageSize, unallocatedFilter])
 
-  return (
-    <div className="flex flex-col gap-4">
-      {/* ── Summary cards ──────────────────────────────────────────────────── */}
-      <InvoiceSummary feed={filteredFeed.filter(isInvoiceItem)} />
+  const chipClass = (active: boolean) =>
+    cn(
+      'h-10 gap-1.5 px-3 text-sm font-medium',
+      active && 'border-primary/45 bg-primary/10 text-accent-text',
+    )
+  const periodChipContent = (
+    <>
+      <CalendarIcon className="size-3.5 text-muted-foreground" />
+      <span>Период</span>
+      <span className="font-normal text-muted-foreground">
+        {dateRange?.from ? (
+          dateRange.to ? (
+            <>
+              {format(dateRange.from, 'dd.MM.yyyy')}
+              {' — '}
+              {format(dateRange.to, 'dd.MM.yyyy')}
+            </>
+          ) : (
+            format(dateRange.from, 'dd.MM.yyyy')
+          )
+        ) : (
+          'все'
+        )}
+      </span>
+    </>
+  )
 
-      {/* ── Filter bar ─────────────────────────────────────────────────────── */}
-      <Card className="flex flex-col gap-4 p-4">
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+  return (
+    <div className="flex flex-col">
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <PageHeader title="Операции" count={filteredFeed.length}>
+        <div className="relative w-full sm:w-[300px]">
+          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Поиск по описанию, категории, счёту..."
             value={search}
@@ -462,239 +505,241 @@ function App() {
             className="pl-9"
           />
         </div>
-        <div className="flex flex-wrap w-full lg:justify-between items-center gap-4">
-          {/* Type */}
-          <ToggleGroup variant="outline" type="single" value={typeFilter}>
-            {(['all', 'receivable', 'payable', 'transfer'] as const).map(
-              (t) => (
-                <ToggleGroupItem
-                  value={t}
-                  key={t}
-                  onClick={() => setTypeFilter(t)}
-                >
-                  {t === 'all'
-                    ? 'Все'
-                    : t === 'receivable'
-                      ? 'Поступления'
-                      : t === 'payable'
-                        ? 'Списания'
-                        : 'Переводы'}
-                </ToggleGroupItem>
-              ),
-            )}
-          </ToggleGroup>
-          <Button
-            variant={unallocatedFilter ? 'secondary' : 'outline'}
-            size="sm"
-            className="h-9"
-            onClick={() => {
-              const next = !unallocatedFilter
-              setUnallocatedFilter(next)
-              void router.navigate({
-                to: '/transactions',
-                search: {
-                  ...searchParams,
-                  page: 1,
-                  unallocated: next,
-                  pageSize,
-                },
-                replace: true,
-              })
-            }}
-          >
-            Неразнесённые
-          </Button>
+        <Button asChild>
+          <Link to="/transactions/new" search={searchParams}>
+            <Plus className="size-4" />
+            Новая операция
+          </Link>
+        </Button>
+      </PageHeader>
 
-          {/* Date range + field toggle */}
-          <div className="flex items-center gap-1">
-            {isMobile ? (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-9 gap-2 font-normal text-sm min-w-40"
-                  onClick={() => {
-                    setDraftDateRange(dateRange)
-                    setDatePickerOpen(true)
-                  }}
-                >
-                  <CalendarIcon className="size-3.5 text-muted-foreground" />
-                  {dateRange?.from ? (
-                    dateRange.to ? (
-                      <>
-                        {format(dateRange.from, 'dd.MM.yyyy')}
-                        {' — '}
-                        {format(dateRange.to, 'dd.MM.yyyy')}
-                      </>
-                    ) : (
-                      format(dateRange.from, 'dd.MM.yyyy')
-                    )
-                  ) : (
-                    <span className="text-muted-foreground">Период</span>
-                  )}
-                </Button>
-                <Drawer open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-                  <DrawerContent>
-                    <DrawerHeader>
-                      <DrawerTitle>Выберите период</DrawerTitle>
-                    </DrawerHeader>
-                    <div className="overflow-y-auto px-2 pb-6">
-                      <Calendar
-                        mode="range"
-                        selected={draftDateRange}
-                        onSelect={setDraftDateRange}
-                        numberOfMonths={2}
-                        className="mx-auto"
-                      />
-                    </div>
-                    <DrawerFooter>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setDraftDateRange(undefined)
-                        }}
-                      >
-                        Сбросить
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          setDateRange(draftDateRange)
-                          setDatePickerOpen(false)
-                        }}
-                      >
-                        Применить
-                      </Button>
-                    </DrawerFooter>
-                  </DrawerContent>
-                </Drawer>
-              </>
-            ) : (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-9 gap-2 font-normal text-sm min-w-40"
-                  >
-                    <CalendarIcon className="size-3.5 text-muted-foreground" />
-                    {dateRange?.from ? (
-                      dateRange.to ? (
-                        <>
-                          {format(dateRange.from, 'dd.MM.yyyy')}
-                          {' — '}
-                          {format(dateRange.to, 'dd.MM.yyyy')}
-                        </>
-                      ) : (
-                        format(dateRange.from, 'dd.MM.yyyy')
-                      )
-                    ) : (
-                      <span className="text-muted-foreground">Период</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="range"
-                    selected={dateRange}
-                    onSelect={handleDateRangeChange}
-                    numberOfMonths={2}
-                  />
-                </PopoverContent>
-              </Popover>
-            )}
+      {/* ── Summary cards ──────────────────────────────────────────────────── */}
+      <div className="mb-4">
+        <InvoiceSummary feed={filteredFeed.filter(isInvoiceItem)} />
+      </div>
 
-            <ToggleGroup
+      {/* ── Toolbar ────────────────────────────────────────────────────────── */}
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        {/* Date field */}
+        <ToggleGroup
+          variant="outline"
+          type="single"
+          value={dateField}
+          onValueChange={(v) => {
+            if (v) setDateField(v as 'createdAt' | 'paidAt')
+          }}
+        >
+          <ToggleGroupItem value="createdAt" className="h-10 px-3 text-sm">
+            Создано
+          </ToggleGroupItem>
+          <ToggleGroupItem value="paidAt" className="h-10 px-3 text-sm">
+            Оплачено
+          </ToggleGroupItem>
+        </ToggleGroup>
+
+        {/* Period */}
+        {isMobile ? (
+          <>
+            <Button
               variant="outline"
-              type="single"
-              value={dateField}
-              onValueChange={(v) => {
-                if (v) setDateField(v as 'createdAt' | 'paidAt')
+              className={chipClass(dateRange !== undefined)}
+              onClick={() => {
+                setDraftDateRange(dateRange)
+                setDatePickerOpen(true)
               }}
             >
-              <ToggleGroupItem value="createdAt" className="h-9 text-sm px-3">
-                Создан
-              </ToggleGroupItem>
-              <ToggleGroupItem value="paidAt" className="h-9 text-sm px-3">
-                Оплачен
-              </ToggleGroupItem>
-            </ToggleGroup>
-          </div>
-          {/* Status */}
-          <ToggleGroup variant="outline" type="single" defaultValue="all">
-            {(
-              [
-                ['all', 'Все'],
-                ['paid', 'Оплачены'],
-                ['unpaid', 'Неоплачены'],
-                ['overdue', 'Просрочены'],
-              ] as const
-            ).map(([val, label]) => (
-              <ToggleGroupItem
-                value={val}
-                key={val}
-                onClick={() => setStatusFilter(val)}
-              >
-                {label}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-          <MultiSelectCombobox
-            options={accountOptions}
-            value={accountFilter}
-            onValueChange={setAccountFilter}
-            placeholder="Все счета"
-            searchPlaceholder="Поиск счета…"
-            emptyText="Счета не найдены"
-          />
-          <MultiSelectCombobox
-            options={categoryOptions}
-            value={categoryFilter}
-            onValueChange={setCategoryFilter}
-            placeholder="Все категории"
-            searchPlaceholder="Поиск категории…"
-            emptyText="Категории не найдены"
-          />
-          <MultiSelectCombobox
-            options={counterpartyOptions}
-            value={counterpartyFilter}
-            onValueChange={setCounterpartyFilter}
-            placeholder="Все контрагенты"
-            searchPlaceholder="Поиск контрагента…"
-            emptyText="Контрагенты не найдены"
-          />
-          <MultiSelectCombobox
-            options={tagOptions}
-            value={tagFilter}
-            onValueChange={setTagFilter}
-            placeholder="Все теги"
-            searchPlaceholder="Поиск тега…"
-            emptyText="Теги не найдены"
-          />
-          {/* Clear */}
-          {hasActiveFilters && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={clearFilters}
-              className="gap-1.5"
-            >
-              <X className="size-3.5" />
-              Сброс
+              {periodChipContent}
             </Button>
-          )}
-          {/* Count */}
-          <span className="text-xs text-muted-foreground ml-auto">
-            {filteredFeed.length} из {feed.length}
-          </span>
-        </div>
-      </Card>
+            <Drawer open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+              <DrawerContent>
+                <DrawerHeader>
+                  <DrawerTitle>Выберите период</DrawerTitle>
+                </DrawerHeader>
+                <div className="overflow-y-auto px-2 pb-6">
+                  <Calendar
+                    mode="range"
+                    selected={draftDateRange}
+                    onSelect={setDraftDateRange}
+                    numberOfMonths={2}
+                    className="mx-auto"
+                  />
+                </div>
+                <DrawerFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setDraftDateRange(undefined)
+                    }}
+                  >
+                    Сбросить
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setDateRange(draftDateRange)
+                      setDatePickerOpen(false)
+                    }}
+                  >
+                    Применить
+                  </Button>
+                </DrawerFooter>
+              </DrawerContent>
+            </Drawer>
+          </>
+        ) : (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={chipClass(dateRange !== undefined)}
+              >
+                {periodChipContent}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="range"
+                selected={dateRange}
+                onSelect={handleDateRangeChange}
+                numberOfMonths={2}
+              />
+            </PopoverContent>
+          </Popover>
+        )}
+
+        <MultiSelectCombobox
+          label="Счёт"
+          options={accountOptions}
+          value={accountFilter}
+          onValueChange={setAccountFilter}
+          placeholder="Все счета"
+          searchPlaceholder="Поиск счета…"
+          emptyText="Счета не найдены"
+        />
+        <MultiSelectCombobox
+          label="Категория"
+          options={categoryOptions}
+          value={categoryFilter}
+          onValueChange={setCategoryFilter}
+          placeholder="Все категории"
+          searchPlaceholder="Поиск категории…"
+          emptyText="Категории не найдены"
+        />
+        <MultiSelectCombobox
+          label="Контрагенты"
+          options={counterpartyOptions}
+          value={counterpartyFilter}
+          onValueChange={setCounterpartyFilter}
+          placeholder="Все контрагенты"
+          searchPlaceholder="Поиск контрагента…"
+          emptyText="Контрагенты не найдены"
+        />
+        <MultiSelectCombobox
+          label="Метки"
+          options={tagOptions}
+          value={tagFilter}
+          onValueChange={setTagFilter}
+          placeholder="Все теги"
+          searchPlaceholder="Поиск тега…"
+          emptyText="Теги не найдены"
+        />
+
+        {/* Type */}
+        <Select
+          value={typeFilter}
+          onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}
+        >
+          <SelectTrigger className={chipClass(typeFilter !== 'all')}>
+            <span>Тип</span>
+            <SelectValue>
+              <span className="font-normal text-muted-foreground">
+                {typeFilter === 'all'
+                  ? 'все'
+                  : typeFilter === 'receivable'
+                    ? 'поступления'
+                    : typeFilter === 'payable'
+                      ? 'списания'
+                      : 'переводы'}
+              </span>
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Все</SelectItem>
+            <SelectItem value="receivable">Поступления</SelectItem>
+            <SelectItem value="payable">Списания</SelectItem>
+            <SelectItem value="transfer">Переводы</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {/* Status */}
+        <Select
+          value={statusFilter}
+          onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}
+        >
+          <SelectTrigger className={chipClass(statusFilter !== 'all')}>
+            <span>Статус</span>
+            <SelectValue>
+              <span className="font-normal text-muted-foreground">
+                {statusFilter === 'all'
+                  ? 'все'
+                  : statusFilter === 'paid'
+                    ? 'оплачены'
+                    : statusFilter === 'unpaid'
+                      ? 'неоплачены'
+                      : 'просрочены'}
+              </span>
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Все</SelectItem>
+            <SelectItem value="paid">Оплачены</SelectItem>
+            <SelectItem value="unpaid">Неоплачены</SelectItem>
+            <SelectItem value="overdue">Просрочены</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {/* Unallocated */}
+        <Button
+          variant="outline"
+          className={chipClass(unallocatedFilter)}
+          aria-pressed={unallocatedFilter}
+          onClick={() => {
+            const next = !unallocatedFilter
+            setUnallocatedFilter(next)
+            void router.navigate({
+              to: '/transactions',
+              search: {
+                ...searchParams,
+                page: 1,
+                unallocated: next,
+                pageSize,
+              },
+              replace: true,
+            })
+          }}
+        >
+          Неразнесённые
+        </Button>
+
+        {/* Clear */}
+        {hasActiveFilters && (
+          <Button variant="ghost" onClick={clearFilters} className="gap-1.5">
+            <X className="size-3.5" />
+            Сброс
+          </Button>
+        )}
+
+        {/* Count */}
+        <span className="ml-auto text-sm text-muted-foreground tabular-nums">
+          {filteredFeed.length} из {feed.length}
+        </span>
+      </div>
 
       {filteredFeed.length === 0 ? (
         <p className="py-10 text-center text-sm text-muted-foreground">
           Ничего не найдено
         </p>
       ) : (
-        <>
+        <div className="flex flex-col sm:border sm:bg-card">
           <div className="flex flex-col gap-2 sm:hidden">
             {paginatedFeed.map((item) =>
               isTransferItem(item) ? (
@@ -726,35 +771,33 @@ function App() {
             )}
           </div>
 
-          <Card className="hidden sm:block p-4">
+          <div className="hidden px-3 pt-1 sm:block">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="font-bold">Документ</TableHead>
-                  <TableHead className="w-56 text-center font-bold">
-                    Cчёт
-                  </TableHead>
-                  <TableHead className="w-56 text-center font-bold">
-                    Категория
-                  </TableHead>
-                  <TableHead className="w-56 font-bold text-center">
-                    Статус
-                  </TableHead>
-                  <TableHead className="w-40 text-right font-bold">
-                    Сумма
-                  </TableHead>
-                  <TableHead className="w-14 text-right font-bold" />
+                  <TableHead>Документ</TableHead>
+                  <TableHead className="w-56">Счёт</TableHead>
+                  <TableHead className="w-56">Категория</TableHead>
+                  <TableHead className="w-56">Статус</TableHead>
+                  <TableHead className="w-40 text-right">Сумма</TableHead>
+                  <TableHead className="w-14 text-right" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {desktopGroups.map((group) => (
                   <Fragment key={group.dateKey}>
                     <TableRow className="hover:bg-transparent">
-                      <TableCell
-                        colSpan={6}
-                        className="bg-muted/30 py-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase text-center"
-                      >
-                        {group.label}
+                      <TableCell colSpan={6} className="pt-5 pb-2">
+                        <div className="flex items-baseline justify-between gap-4">
+                          <span className="text-left text-xs font-bold tracking-wider text-faint uppercase">
+                            {group.label}
+                          </span>
+                          {dayTotals.has(group.dateKey) && (
+                            <span className="text-sm font-medium text-muted-foreground tabular-nums">
+                              {formatDayTotal(dayTotals.get(group.dateKey)!)}
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                     {group.items.map((item) =>
@@ -791,10 +834,10 @@ function App() {
                 ))}
               </TableBody>
             </Table>
-          </Card>
+          </div>
 
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted-foreground">
+          <div className="flex flex-col gap-4 pt-4 sm:flex-row sm:items-center sm:justify-between sm:border-t sm:border-border-soft sm:px-5 sm:py-3">
+            <p className="text-sm text-muted-foreground tabular-nums">
               Страница {safePage} из {totalPages} · всего страниц {totalPages} ·
               всего записей {filteredFeed.length}
             </p>
@@ -804,7 +847,7 @@ function App() {
                   На странице
                 </span>
                 <select
-                  className="flex h-9 w-24 border border-input bg-background px-3 py-1 text-sm shadow-xs"
+                  className="flex h-10 w-24 border border-input bg-background px-3 py-1 text-sm shadow-xs"
                   value={String(pageSize)}
                   onChange={(event) => {
                     void router.navigate({
@@ -826,7 +869,6 @@ function App() {
               </div>
               <Button
                 variant="outline"
-                size="sm"
                 onClick={() =>
                   router.navigate({
                     to: '/transactions',
@@ -845,7 +887,6 @@ function App() {
               </Button>
               <Button
                 variant="outline"
-                size="sm"
                 onClick={() =>
                   router.navigate({
                     to: '/transactions',
@@ -864,9 +905,11 @@ function App() {
               </Button>
             </div>
           </div>
-        </>
+        </div>
       )}
-      <TagSummaryPanel totals={tagTotals} />
+      <div className="mt-4">
+        <TagSummaryPanel totals={tagTotals} />
+      </div>
       <Outlet />
     </div>
   )
@@ -883,6 +926,14 @@ function formatGroupDateLabel(dateKey: string) {
     return format(date, 'd MMMM, EEEE', { locale: ru })
   }
   return format(date, 'd MMMM yyyy, EEEE', { locale: ru })
+}
+
+function formatDayTotal(value: number) {
+  const formatted = Math.abs(value).toLocaleString('ru-RU', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+  return `${value < 0 ? '\u2212' : '+'}${formatted}`
 }
 
 function isTransferItem(item: TransactionFeedItem): item is AccountTransfer {

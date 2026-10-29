@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronRight,
-  Clock,
   Copy,
   ExternalLink,
   FileText,
@@ -56,6 +55,8 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu'
 import { cn } from '#/lib/utils'
+import { StatusText } from '../ui/status-text'
+import { getInvoiceStatus } from '#/lib/transaction-feed'
 import { TagChips, TagPicker } from '../ui/tag-picker'
 import type { TagItem } from '../ui/tag-picker'
 
@@ -64,6 +65,10 @@ function formatDate(date: Date): string {
   if (isYesterday(date)) return 'Вчера'
   if (isSameYear(date, new Date())) return format(date, 'd MMM', { locale: ru })
   return format(date, 'd MMM yyyy', { locale: ru })
+}
+
+function formatTime(date: Date): string {
+  return format(date, 'HH:mm')
 }
 
 function toDateInputValue(date: Date) {
@@ -163,19 +168,13 @@ export function InvoiceListItem({
   const isPayable = item.kind === 'payable'
   const isLinkedReceivable = !isPayable && !!item.linkedInvoiceId
   const isPaid = item.paymentStatus === 'paid'
-  const isPartial = item.paymentStatus === 'partial'
   const isArchived = item.archivedAt !== null
   const categoryName = item.category?.name ?? 'Без категории'
-  const isOverdue =
-    !isPaid && item.dueDate !== null && new Date(item.dueDate) < new Date()
 
-  const paidDate = isPaid ? formatDate(new Date(item.paidAt!)) : null
-  const dueDateFormatted = item.dueDate
-    ? formatDate(new Date(item.dueDate))
-    : null
-  const dueDateLabel = dueDateFormatted
-    ? `Ожидает оплаты до ${dueDateFormatted}`
-    : 'Ожидает оплаты'
+  const { tone: statusTone, label: statusLabel } = getInvoiceStatus(
+    item,
+    new Date(),
+  )
   const amountFormatted = Number(item.amount).toLocaleString('ru-RU', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -198,53 +197,11 @@ export function InvoiceListItem({
     ? {
         amountPrefix: '−',
         amountColor: '',
-        status: isPaid ? (
-          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-accent-text">
-            <CheckCircle2 className="w-4 h-4 inline-block" />{' '}
-            {`Оплачено ${paidDate}`}
-          </div>
-        ) : isPartial ? (
-          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-warning-text">
-            <Clock className="w-4 h-4 inline-block" />{' '}
-            {`Частично оплачено ${Number(item.settledAmount).toLocaleString(
-              'ru-RU',
-              {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              },
-            )} из ${amountFormatted}`}
-          </div>
-        ) : (
-          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-warning-text">
-            <Clock className="w-4 h-4 inline-block" /> {dueDateLabel}
-          </div>
-        ),
         entityName: 'Расход',
       }
     : {
         amountPrefix: '+',
         amountColor: 'text-accent-text',
-        status: isPaid ? (
-          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-accent-text">
-            <CheckCircle2 className="w-4 h-4 inline-block" />{' '}
-            {`Оплачено ${paidDate}`}
-          </div>
-        ) : isPartial ? (
-          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-warning-text">
-            <Clock className="w-4 h-4 inline-block" />{' '}
-            {`Частично оплачено ${Number(item.settledAmount).toLocaleString(
-              'ru-RU',
-              {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              },
-            )} из ${amountFormatted}`}
-          </div>
-        ) : (
-          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-warning-text">
-            <Clock className="w-4 h-4 inline-block" /> {dueDateLabel}
-          </div>
-        ),
         entityName: 'Доход',
       }
   const menuDropdown = (
@@ -721,66 +678,44 @@ export function InvoiceListItem({
     return (
       <>
         {dialogs}
-        <TableRow className={cn(isOverdue && 'bg-destructive/10')}>
+        <TableRow>
           <TableCell className="max-w-0 align-top whitespace-normal">
             <div className="py-4">
               {item.counterparty && (
-                <div
-                  className={cn(
-                    'wrap-break-word font-semibold leading-snug',
-                    !isPaid && 'text-muted-foreground',
-                  )}
-                >
+                <div className="wrap-break-word text-base leading-snug font-medium">
                   {item.counterparty.name}
                 </div>
               )}
-              <div
-                className={cn(
-                  'wrap-break-word text-sm',
-                  !isPaid && 'text-muted-foreground',
-                )}
-              >
+              <div className="wrap-break-word text-sm text-muted-foreground">
                 {item.description}
+                {' · '}
+                {formatTime(new Date(item.createdAt))}
               </div>
               <TagChips tags={assignedTags} />
               {linkedDocumentsSection}
             </div>
           </TableCell>
-          <TableCell
-            className={cn('text-center', !isPaid && 'text-muted-foreground')}
-          >
+          <TableCell className="w-56 text-left text-sm text-muted-foreground">
             {item.currentAccount.name}
           </TableCell>
-          <TableCell
-            className={cn('text-center', !isPaid && 'text-muted-foreground')}
-          >
+          <TableCell className="w-56 text-left text-sm text-muted-foreground">
             {categoryName}
           </TableCell>
-          <TableCell className="w-56 text-center">
-            <div className="flex flex-col gap-2">
-              {cfg.status}
-              {item.archivedAt && (
-                <div className="flex gap-1 items-center justify-center text-sm font-semibold text-muted-foreground">
-                  <Archive className="w-4 h-4 inline-block" /> В архиве
-                </div>
-              )}
-            </div>
+          <TableCell className="w-56 text-left text-sm">
+            <StatusText tone={statusTone}>{statusLabel}</StatusText>
           </TableCell>
           <TableCell className="w-40 text-right">
-            <div className="flex flex-col items-end gap-0.5">
-              <span
-                className={cn(
-                  'text-base font-semibold tabular-nums',
-                  cfg.amountColor,
-                  !isPaid && 'text-muted-foreground',
-                )}
-              >
-                {cfg.amountPrefix}
-                {amountFormatted}
-              </span>
-            </div>
+            <span
+              className={cn(
+                'text-base font-semibold tabular-nums',
+                cfg.amountColor,
+              )}
+            >
+              {cfg.amountPrefix}
+              {amountFormatted}
+            </span>
           </TableCell>
-          <TableCell className="w-14  text-right">
+          <TableCell className="w-14 text-right">
             <div className="flex justify-end gap-1">
               {tagPicker}
               {menuDropdown}
@@ -808,48 +743,33 @@ export function InvoiceListItem({
             </div>
 
             {item.counterparty && (
-              <p
-                className={`text-base font-bold leading-snug ${
-                  !isPaid ? 'text-muted-foreground' : ''
-                }`}
-              >
+              <p className="text-base leading-snug font-medium">
                 {item.counterparty.name}
               </p>
             )}
 
-            <p
-              className={`whitespace-normal text-sm ${
-                !isPaid ? 'text-muted-foreground' : ''
-              }`}
-            >
+            <p className="whitespace-normal text-sm text-muted-foreground">
               {item.description}
             </p>
+
+            <StatusText tone={statusTone} className="text-sm">
+              {statusLabel}
+            </StatusText>
 
             {badgesRow}
             <TagChips tags={assignedTags} />
             {linkedDocumentsSection}
 
             <div className="flex items-center justify-end pt-1">
-              <div className="flex flex-col items-end gap-0.5">
-                <span
-                  className={`text-2xl font-bold tabular-nums ${cfg.amountColor}`}
-                >
-                  {cfg.amountPrefix}
-                  {amountFormatted}
-                </span>
-                {dueDateLabel && !isPaid && (
-                  <span
-                    className={cn(
-                      'text-xs',
-                      isOverdue
-                        ? 'font-medium text-destructive'
-                        : 'text-muted-foreground',
-                    )}
-                  >
-                    {dueDateLabel}
-                  </span>
+              <span
+                className={cn(
+                  'text-2xl font-semibold tabular-nums',
+                  cfg.amountColor,
                 )}
-              </div>
+              >
+                {cfg.amountPrefix}
+                {amountFormatted}
+              </span>
             </div>
           </div>
         </ItemContent>

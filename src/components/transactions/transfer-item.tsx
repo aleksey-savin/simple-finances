@@ -13,6 +13,7 @@ import { toast } from 'sonner'
 import { deleteAccountTransfer } from '#/components/transactions/actions'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
+import { StatusText } from '#/components/ui/status-text'
 import { Item, ItemContent } from '#/components/ui/item'
 import { TableCell, TableRow } from '#/components/ui/table'
 import {
@@ -31,7 +32,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '#/components/ui/dropdown-menu'
-import { cn } from '#/lib/utils'
 import type { AccountTransfer } from '#/types'
 
 function formatDate(date: Date): string {
@@ -61,7 +61,6 @@ export function TransferItem({
   const [deleteOpen, setDeleteOpen] = useState(false)
 
   const transferredDate = formatDate(new Date(item.transferredAt))
-  const isPaid = item.paidAt !== null
   const amountFormatted = formatAmount(item.amount)
   const showAuthor =
     sharedAccountIds.has(item.fromAccount.id) ||
@@ -119,7 +118,7 @@ export function TransferItem({
   )
 
   const accountRoute = (
-    <div className="flex min-w-0 items-center justify-center gap-2 text-sm">
+    <div className="flex min-w-0 items-center justify-start gap-2 text-sm text-muted-foreground">
       <span className="truncate">{item.fromAccount.name}</span>
       <ArrowRight className="size-3.5 shrink-0 text-muted-foreground" />
       <span className="truncate">{item.toAccount.name}</span>
@@ -133,12 +132,14 @@ export function TransferItem({
         <TableRow>
           <TableCell className="max-w-0 align-top whitespace-normal">
             <div className="py-4">
-              <div className="flex items-center gap-2 font-semibold leading-snug">
+              <div className="flex items-center gap-2 text-base leading-snug font-medium">
                 <ArrowRightLeft className="size-4 text-muted-foreground" />
                 Перевод между счетами
               </div>
               <div className="wrap-break-word text-sm text-muted-foreground">
                 {item.description}
+                {' · '}
+                {format(new Date(item.transferredAt), 'HH:mm')}
               </div>
               {showAuthor ? (
                 <span className="text-xs text-muted-foreground">
@@ -147,20 +148,12 @@ export function TransferItem({
               ) : null}
             </div>
           </TableCell>
-          <TableCell className="text-center">{accountRoute}</TableCell>
-          <TableCell className="text-center text-muted-foreground">
-            Перевод
+          <TableCell className="w-56 text-left">{accountRoute}</TableCell>
+          <TableCell className="w-56 text-left text-sm text-muted-foreground">
+            —
           </TableCell>
-          <TableCell className="w-56 text-center">
-            <div
-              className={cn(
-                'flex items-center justify-center gap-1 text-sm font-semibold',
-                isPaid ? 'text-accent-text' : 'text-muted-foreground',
-              )}
-            >
-              <ArrowRightLeft className="size-4" />
-              {isPaid ? `Выполнен ${transferredDate}` : 'Не оплачен'}
-            </div>
+          <TableCell className="w-56 text-left text-sm">
+            <StatusText tone="neutral">Перевод</StatusText>
           </TableCell>
           <TableCell className="w-40 text-right">
             <span className="text-base font-semibold tabular-nums">
@@ -198,12 +191,9 @@ export function TransferItem({
             </p>
 
             <div className="flex flex-wrap items-center gap-1.5">
-              <Badge
-                variant={isPaid ? 'success' : 'secondary'}
-                className="px-1.5 py-0 text-xs"
-              >
-                {isPaid ? 'Оплачено' : 'Не оплачено'}
-              </Badge>
+              <StatusText tone="neutral" className="text-sm">
+                Перевод
+              </StatusText>
               <Badge variant="outline" className="px-1.5 py-0 text-xs">
                 {item.fromAccount.name}
               </Badge>
@@ -219,11 +209,7 @@ export function TransferItem({
             </div>
 
             <div className="flex items-center justify-end pt-1">
-              <span
-                className={cn(
-                  'text-2xl font-bold tabular-nums text-foreground',
-                )}
-              >
+              <span className="text-2xl font-semibold tabular-nums">
                 {amountFormatted}
               </span>
             </div>

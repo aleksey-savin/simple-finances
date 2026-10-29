@@ -1,7 +1,5 @@
 import { useMemo } from 'react'
 
-import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
-
 interface FeedItem {
   kind: 'payable' | 'receivable'
   amount: string | number
@@ -74,36 +72,36 @@ export function InvoiceSummary({ feed }: Props) {
   }, [feed])
 
   return (
-    <div className="flex gap-4">
-      <Card className="gap-2 px-4 py-4 w-full sm:w-auto">
-        <CardHeader className="p-0">
-          <CardTitle className="font-medium">Расходы</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-2 p-0 sm:flex-row sm:gap-12">
+    <div className="flex flex-wrap gap-4">
+      <div className="flex w-full flex-col gap-3 border bg-card px-5 py-4 sm:w-auto">
+        <h2 className="text-sm font-medium text-muted-foreground">Расходы</h2>
+        <div className="flex flex-col gap-3 sm:flex-row sm:gap-12">
           <div>
             <p className="mb-1 text-xs leading-none text-muted-foreground">
               Не оплачено
             </p>
-            <p className="text-sm font-semibold">{fmt(stats.unpaidPayables)}</p>
+            <p className="text-3xl font-bold tabular-nums">
+              {fmt(stats.unpaidPayables)}
+            </p>
           </div>
           <div>
             <p className="mb-1 text-xs leading-none text-muted-foreground">
               Оплачено
             </p>
-            <p className="text-sm font-semibold">{fmt(stats.paidPayables)}</p>
+            <p className="text-3xl font-bold tabular-nums">
+              {fmt(stats.paidPayables)}
+            </p>
           </div>
-        </CardContent>
-      </Card>
-      <Card className="gap-2 px-4 py-4 w-full sm:w-auto">
-        <CardHeader className="p-0">
-          <CardTitle className="font-medium">Доходы</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-2 p-0 sm:flex-row sm:gap-12">
+        </div>
+      </div>
+      <div className="flex w-full flex-col gap-3 border bg-card px-5 py-4 sm:w-auto">
+        <h2 className="text-sm font-medium text-muted-foreground">Доходы</h2>
+        <div className="flex flex-col gap-3 sm:flex-row sm:gap-12">
           <div>
             <p className="mb-1 text-xs leading-none text-muted-foreground">
               Не оплачено
             </p>
-            <p className="text-sm font-semibold">
+            <p className="text-3xl font-bold tabular-nums">
               {fmt(stats.unpaidReceivables)}
             </p>
           </div>
@@ -111,12 +109,12 @@ export function InvoiceSummary({ feed }: Props) {
             <p className="mb-1 text-xs leading-none text-muted-foreground">
               Оплачено
             </p>
-            <p className="text-sm font-semibold text-accent-text">
+            <p className="text-3xl font-bold tabular-nums text-accent-text">
               {fmt(stats.paidReceivables)}
             </p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   )
 }

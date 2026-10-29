@@ -23,6 +23,8 @@ type MultiSelectComboboxProps = {
   value: string[]
   onValueChange: (value: string[]) => void
   placeholder: string
+  /** When set, the trigger renders as a filter chip: «label value». */
+  label?: string
   searchPlaceholder?: string
   emptyText?: string
   className?: string
@@ -33,6 +35,7 @@ export function MultiSelectCombobox({
   value,
   onValueChange,
   placeholder,
+  label,
   searchPlaceholder = 'Поиск…',
   emptyText = 'Ничего не найдено',
   className,
@@ -85,12 +88,29 @@ export function MultiSelectCombobox({
           variant="outline"
           size="sm"
           className={cn(
-            'h-10 w-44 justify-between border-input px-3 text-sm font-normal',
-            value.length === 0 ? 'text-muted-foreground' : 'text-foreground',
+            label
+              ? 'h-10 max-w-64 justify-between gap-2 px-3 text-sm font-medium'
+              : 'h-10 w-44 justify-between border-input px-3 text-sm font-normal',
+            !label &&
+              (value.length === 0
+                ? 'text-muted-foreground'
+                : 'text-foreground'),
+            label &&
+              value.length > 0 &&
+              'border-primary/45 bg-primary/10 text-accent-text hover:bg-primary/15',
             className,
           )}
         >
-          <span className="truncate">{triggerLabel}</span>
+          {label ? (
+            <span className="flex min-w-0 items-center gap-1.5">
+              <span>{label}</span>
+              <span className="truncate font-normal text-muted-foreground">
+                {value.length === 0 ? 'все' : triggerLabel}
+              </span>
+            </span>
+          ) : (
+            <span className="truncate">{triggerLabel}</span>
+          )}
           <ChevronsUpDown className="size-3.5 opacity-60" />
         </Button>
       </PopoverTrigger>
