@@ -39,11 +39,13 @@
 ### Task 1: Токены, шрифт, подложка
 
 **Files:**
+
 - Modify: `src/styles.css` (весь блок `:root` / `.dark` / `@theme inline` / `@layer base`, удаление `.sidebar-dept-accent` и `.header-dept-accent`)
 - Modify: `package.json` (+ `@fontsource-variable/inter`)
 - Modify: `src/routes/__root.tsx` (импорт шрифта; класс подложки на `SidebarInset`)
 
 **Interfaces:**
+
 - Produces: Tailwind-утилиты `bg-canvas`, `text-faint`, `text-accent-text`, `text-warning-text`, `text-info`, `text-info-text`, `border-border-soft`, `bg-info` и все существующие (`bg-background`, `bg-card`, `text-muted-foreground`…) на значениях hd. Все последующие задачи пользуются только ими.
 
 - [ ] **Step 1:** Создать ветку: `git checkout -b feat/hd-redesign`.
@@ -59,11 +61,13 @@
 ### Task 2: Базовые компоненты `ui/*`
 
 **Files:**
+
 - Modify: `src/components/ui/{button,input,textarea,select,combobox,multi-select-combobox,tag-picker,toggle,toggle-group,tabs,label,field,card,table,badge,dialog,alert-dialog,sheet,drawer,popover,dropdown-menu,tooltip,calendar,switch,slider,avatar,input-otp,tag-summary-panel,responsive-dialog,item}.tsx`
 - Create: `src/components/ui/status-text.tsx`
 - Create: `src/components/ui/page-header.tsx`
 
 **Interfaces:**
+
 - Produces:
   - `type StatusTone = 'positive' | 'pending' | 'danger' | 'neutral'` и `StatusText({ tone: StatusTone, children: ReactNode, className?: string })` — `inline-flex items-center gap-2 font-medium` + точка `size-2 rounded-full bg-current`; цвет: positive → `text-accent-text`, pending → `text-warning-text`, danger → `text-destructive`, neutral → `text-muted-foreground`.
   - `PageHeader({ title: string, count?: number, children?: ReactNode })` — слева `h1` (`text-3xl leading-none font-semibold tracking-tight`) и счётчик (`text-xl font-medium text-faint tabular-nums`), справа `children` (поиск, главное действие), `flex flex-wrap items-center gap-3 mb-5`.
@@ -81,6 +85,7 @@
 ### Task 3: Меню слева и шапка
 
 **Files:**
+
 - Modify: `src/components/ui/sidebar.tsx`, `src/components/layout/app-sidebar.tsx`, `src/components/layout/nav-user.tsx`, `src/components/layout/app-header.tsx`, `src/components/layout/app-breadcrumbs.tsx`
 
 - [ ] **Step 1:** `sidebar.tsx`: `SidebarMenuButton` default — `h-10 text-sm font-medium gap-3 px-3`; активное состояние (`data-[active=true]`) — `bg-sidebar-accent text-sidebar-accent-foreground shadow-[inset_3px_0_0_var(--primary)]`; `SidebarGroupLabel` — `text-xs font-bold tracking-wider uppercase text-faint`; ширина `SIDEBAR_WIDTH = '16.5rem'`; рамка справа `border-r`.
@@ -92,6 +97,7 @@
 ### Task 4: Проход по кеглям
 
 **Files:**
+
 - Modify: все `.tsx` в `src/routes/` и `src/components/` (кроме `ui/`, сделанных в задаче 2), где встречаются `text-[10px]`, `text-[0.8rem]`, `text-xs`, `text-2xl`, `text-xl`, `text-lg`, `font-bold` в заголовках.
 
 - [ ] **Step 1:** `text-[10px]` (10 мест) и `text-[0.8rem]` (2) → `text-xs`.
@@ -103,6 +109,7 @@
 ### Task 5: Проход по цветам доход / расход / статусы
 
 **Files:**
+
 - Modify: все `.tsx`, где встречаются `text-success` (41), `text-warning` (24), `text-destructive` (85), включая `src/components/dashboard/*`, `src/components/reports/*`, `src/components/receivables/*`, `src/components/payables/*`.
 
 - [ ] **Step 1:** Текстовые `text-success` → `text-accent-text` (доход, «оплачено», положительная динамика).
@@ -115,11 +122,13 @@
 ### Task 6: Логика статуса счёта и итога дня (TDD)
 
 **Files:**
+
 - Create: `vitest.config.ts`
 - Create: `src/lib/transaction-feed.ts`
 - Test: `src/lib/transaction-feed.test.ts`
 
 **Interfaces:**
+
 - Consumes: типы `Invoice`, `AccountTransfer`, `TransactionFeedItem` из `#/types`; `StatusTone` из `#/components/ui/status-text` (импорт типа).
 - Produces:
   - `getInvoiceStatus(item: Pick<Invoice, 'paymentStatus' | 'paidAt' | 'dueDate' | 'archivedAt' | 'amount' | 'settledAmount'>, now: Date): { tone: StatusTone; label: string }`
@@ -127,6 +136,7 @@
   - `computeDayTotals(feed: TransactionFeedItem[]): Map<string, number>` — ключ `getFeedDateKey`; значение = Σ `amount` оплаченных (`paymentStatus === 'paid'`) `receivable` − Σ `amount` оплаченных `payable`; переводы, неоплаченные и частично оплаченные не учитываются; день без ни одного оплаченного счёта в Map **отсутствует**.
 
 Правила `getInvoiceStatus` (по приоритету, даты — `dd.MM.yyyy`, суммы — `toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })`):
+
 1. `paid` → `positive`, `Оплачено ${дата paidAt}`
 2. `partial` → `pending`, `Частично ${settledAmount} из ${amount}`
 3. `archivedAt !== null` → `neutral`, `В архиве`
@@ -155,12 +165,14 @@
 ### Task 7: Эталонная страница «Все операции»
 
 **Files:**
+
 - Modify: `src/routes/transactions.tsx`
 - Modify: `src/components/invoices/list-item.tsx` (desktop-строка ~724+, мобильная карточка, `cfg.status`)
 - Modify: `src/components/transactions/transfer-item.tsx`
 - Modify: `src/components/invoices/summary.tsx` (вид карточек)
 
 **Interfaces:**
+
 - Consumes: `PageHeader`, `StatusText` (задача 2); `getInvoiceStatus`, `getFeedDateKey`, `computeDayTotals` (задача 6).
 
 - [ ] **Step 1:** Шапка: `<PageHeader title="Операции" count={filteredFeed.length}>` + поиск (`Input` 300px с иконкой) + `Button` «Новая операция» (`Plus`); поиск переезжает из карточки-фильтра в шапку.
@@ -177,6 +189,7 @@
 ### Task 8: Документы системы
 
 **Files:**
+
 - Modify: `DESIGN.md` (полная замена)
 - Modify: `CLAUDE.md` (раздел «UI styling»)
 
