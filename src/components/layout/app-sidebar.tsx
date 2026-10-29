@@ -246,7 +246,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar {...props}>
       <SidebarHeader className="gap-0 p-0">
-        <div className="flex h-14 items-center gap-3 px-4">
+        <div className="flex h-14 items-center gap-3 px-4 group-data-[collapsible=icon]:px-2">
           <span className="flex size-7 shrink-0 items-center justify-center bg-primary text-sm font-bold text-primary-foreground">
             П
           </span>
@@ -254,7 +254,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             Портал
           </span>
         </div>
-        <SidebarMenu className="px-3 pb-3">
+        <SidebarMenu className="px-3 pb-3 group-data-[collapsible=icon]:px-2">
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

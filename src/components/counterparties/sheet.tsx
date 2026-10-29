@@ -19,7 +19,7 @@ export default function CounterParties() {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="default">
+        <Button variant="ghost">
           <Plus />
           Контрагент
         </Button>

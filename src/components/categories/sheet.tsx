@@ -24,7 +24,7 @@ const Categories = () => {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="default">
+        <Button variant="ghost">
           <Plus /> Категория
         </Button>
       </SheetTrigger>
