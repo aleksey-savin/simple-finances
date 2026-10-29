@@ -79,7 +79,7 @@ Take an `entityId` prop, not the whole entity object.
 
 ### UI styling
 
-- **No rounded corners.** Avoid `rounded`, `rounded-*`, or any `border-radius` on UI elements. The only exception is `rounded-full` for inherently round things: status/colour dots, switch/slider thumbs, avatars.
+- **No rounded corners.** Avoid `rounded`, `rounded-*`, or any `border-radius` on UI elements. The only exception is `rounded-full` for inherently round things: status/colour dots, slider thumbs, avatars (switches are fully square).
 - The design system (hd-based: Inter, tokens, type roles, controls, colour semantics, `StatusText` / `PageHeader`) is described in `DESIGN.md`; `src/routes/transactions.tsx` is the reference page. Three rules:
   - Use tokens (`bg-background`, `text-muted-foreground`, `var(--chart-1)`), never hardcoded hex; `tabular-nums` on all financial figures.
   - Use the type roles from `DESIGN.md` — nothing below 12px, no arbitrary `text-[Npx]`; row controls are `h-10` / `text-sm`.
