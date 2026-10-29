@@ -16,6 +16,7 @@ import TanStackQueryProvider from '../integrations/tanstack-query/root-provider'
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
 import appCss from '../styles.css?url'
+import '@fontsource-variable/inter'
 
 import type { QueryClient } from '@tanstack/react-query'
 import { TooltipProvider } from '#/components/ui/tooltip'
@@ -192,7 +193,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
               {isFullyAuthed ? (
                 <SidebarProvider>
                   <AppSidebar />
-                  <SidebarInset>
+                  <SidebarInset className="bg-canvas max-md:bg-background dark:max-md:bg-canvas">
                     <AppHeader />
                     <AnimatedOutlet>{children}</AnimatedOutlet>
                   </SidebarInset>

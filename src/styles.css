@@ -4,48 +4,8 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* --------------------------------------------------------------------------
-   Department accent tint — applied to the sidebar when a dept is selected.
-   Uses background-image layered over the existing background-color so the
-   sidebar colour is preserved and only a subtle tint is added on top.
-   --dept-accent is set as an inline CSS variable by AppSidebar.
-   -------------------------------------------------------------------------- */
-.sidebar-dept-accent {
-  background-image: linear-gradient(
-    color-mix(in srgb, var(--dept-accent) 13%, transparent),
-    color-mix(in srgb, var(--dept-accent) 13%, transparent)
-  );
-  transition: background-image 0.3s ease;
-}
-
-.dark .sidebar-dept-accent {
-  background-image: linear-gradient(
-    color-mix(in srgb, var(--dept-accent) 9%, transparent),
-    color-mix(in srgb, var(--dept-accent) 9%, transparent)
-  );
-}
-
-/* Header accent tint — applied to the top bar when a dept is selected */
-.header-dept-accent {
-  background-image: linear-gradient(
-    color-mix(in srgb, var(--dept-accent) 30%, transparent),
-    color-mix(in srgb, var(--dept-accent) 30%, transparent)
-  );
-  transition: background-image 0.3s ease;
-}
-
-.dark .header-dept-accent {
-  background-image: linear-gradient(
-    color-mix(in srgb, var(--dept-accent) 15%, transparent),
-    color-mix(in srgb, var(--dept-accent) 15%, transparent)
-  );
-}
-
 body {
   @apply m-0;
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
-    'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -56,85 +16,113 @@ code {
 }
 
 :root {
-  --background: #eff1f3;
-  --foreground: oklch(0.141 0.005 285.823);
+  --canvas: #f4f5f6;
+  --background: #ffffff;
+  --foreground: #1d2227;
   --card: #ffffff;
-  --card-foreground: oklch(0.141 0.005 285.823);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.141 0.005 285.823);
-  --primary: #2c3e50;
-  --primary-foreground: #eff1f3;
-  --success: #18bc9c;
-  --success-foreground: #eff1f3;
-  --secondary: #75818c;
-  --secondary-foreground: #eff1f3;
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: #e0e3e5;
-  --accent-foreground: oklch(0.21 0.006 285.885);
-  --destructive: #e74c3c;
-  --destructive-foreground: #e74c3c;
-  --warning: #f39c12;
-  --warning-foreground: #f39c12;
-  --border: oklch(0.92 0.004 286.32);
-  --input: #eff1f3;
-  --ring: oklch(0.871 0.006 286.286);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
-  --sidebar: #e0e3e5;
-  --sidebar-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-primary: oklch(0.21 0.006 285.885);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.871 0.006 286.286);
+  --card-foreground: #1d2227;
+  --popover: #ffffff;
+  --popover-foreground: #1d2227;
+  --primary: #00bc8c;
+  --primary-foreground: #ffffff;
+  --secondary: #f2f4f5;
+  --secondary-foreground: #1d2227;
+  --muted: #f2f4f5;
+  --muted-foreground: #677078;
+  --faint: #99a1a8;
+  --accent: #f2f4f5;
+  --accent-foreground: #1d2227;
+  --accent-text: #007a5e;
+  --destructive: #d63c3c;
+  --destructive-foreground: #ffffff;
+  --success: #00bc8c;
+  --success-foreground: #ffffff;
+  --warning: #eb9c14;
+  --warning-foreground: #2a1e03;
+  --warning-text: #b8730a;
+  --info: #4d94e8;
+  --info-foreground: #0a1826;
+  --info-text: #2f6fc0;
+  --border: #e2e5e8;
+  --border-soft: #ebedef;
+  --input: #e2e5e8;
+  --ring: #00bc8c;
+  --radius: 0;
+  --chart-1: #00bc8c;
+  --chart-2: #4d94e8;
+  --chart-3: #e8842c;
+  --chart-4: #a58ae0;
+  --chart-5: #d64d8e;
+  --sidebar: var(--background);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-text);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
 }
 
 .dark {
-  --background: oklch(0.141 0.005 285.823);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.141 0.005 285.823);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.141 0.005 285.823);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.21 0.006 285.885);
-  --success: #18bc9c;
-  --success-foreground: #eff1f3;
-  --secondary: oklch(0.274 0.006 286.033);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.274 0.006 286.033);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --warning: #f39c12;
-  --warning-foreground: #f39c12;
-  --border: oklch(0.274 0.006 286.033);
-  --input: oklch(0.274 0.006 286.033);
-  --ring: oklch(0.442 0.017 285.786);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.21 0.006 285.885);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.274 0.006 286.033);
-  --sidebar-ring: oklch(0.442 0.017 285.786);
+  --canvas: #16181c;
+  --background: #1d2024;
+  --foreground: #eceef0;
+  --card: #1d2024;
+  --card-foreground: #eceef0;
+  --popover: #1d2024;
+  --popover-foreground: #eceef0;
+  --primary: #00bc8c;
+  --primary-foreground: #ffffff;
+  --secondary: #23262b;
+  --secondary-foreground: #eceef0;
+  --muted: #23262b;
+  --muted-foreground: #9aa1a9;
+  --faint: #6f767d;
+  --accent: #23262b;
+  --accent-foreground: #eceef0;
+  --accent-text: #0bd39f;
+  --destructive: #f05252;
+  --destructive-foreground: #ffffff;
+  --success: #00bc8c;
+  --success-foreground: #ffffff;
+  --warning: #eb9c14;
+  --warning-foreground: #2a1e03;
+  --warning-text: #f2ad3d;
+  --info: #4d94e8;
+  --info-foreground: #0a1826;
+  --info-text: #6aa8ef;
+  --border: #2b2f35;
+  --border-soft: #242830;
+  --input: #2b2f35;
+  --ring: #00bc8c;
+  --chart-1: #00a37a;
+  --chart-2: #4d94e8;
+  --chart-3: #c9711f;
+  --chart-4: #8a6cd6;
+  --chart-5: #b8437a;
+  --sidebar: var(--background);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-text);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
 }
 
 @theme inline {
+  --font-sans:
+    'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    'Segoe UI Symbol';
+  --color-canvas: var(--canvas);
+  --color-faint: var(--faint);
+  --color-accent-text: var(--accent-text);
+  --color-warning-text: var(--warning-text);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-info-text: var(--info-text);
+  --color-border-soft: var(--border-soft);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -178,11 +166,25 @@ code {
 }
 
 @layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--border);
+  }
   * {
-    @apply border-border outline-ring/50;
+    @apply outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    background: var(--canvas);
+  }
+  @media (max-width: 767.98px) {
+    body {
+      background: var(--background);
+    }
+  }
+  .dark body {
+    background: var(--canvas);
   }
 }
 
