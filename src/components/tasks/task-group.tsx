@@ -29,7 +29,7 @@ export function TaskGroup({
 
   return (
     <Collapsible open={open} onOpenChange={setOpen} className="flex flex-col">
-      <CollapsibleTrigger className="flex items-center gap-1.5 px-2 py-2 text-sm font-medium tracking-wide text-muted-foreground uppercase hover:text-on-surface">
+      <CollapsibleTrigger className="flex items-center gap-1.5 px-2 py-2 text-xs font-bold tracking-wider text-faint uppercase hover:text-on-surface">
         <ChevronRight
           className={
             open

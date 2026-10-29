@@ -28,7 +28,7 @@ export function ClientAmountHistory({
 }) {
   return (
     <Card className="p-4">
-      <h3 className="mb-3 text-sm font-semibold">История изменений сумм</h3>
+      <h3 className="mb-3 text-base font-semibold">История изменений сумм</h3>
       {amountHistory.length === 0 ? (
         <p className="text-sm text-muted-foreground">История пуста</p>
       ) : (

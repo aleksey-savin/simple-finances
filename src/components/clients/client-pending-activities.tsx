@@ -30,7 +30,7 @@ export function ClientPendingActivities({
 }) {
   return (
     <Card className="p-4">
-      <h3 className="mb-3 text-sm font-semibold">Текущие активности</h3>
+      <h3 className="mb-3 text-base font-semibold">Текущие активности</h3>
       {activities.length === 0 ? (
         <p className="text-sm text-muted-foreground">Нет активных задач</p>
       ) : (

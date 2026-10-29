@@ -46,7 +46,7 @@ export function ClientActiveRevisions({
 }) {
   return (
     <Card className="p-4">
-      <h3 className="mb-3 text-sm font-semibold">Текущие ревизии цен</h3>
+      <h3 className="mb-3 text-base font-semibold">Текущие ревизии цен</h3>
       {activeRevisions.length === 0 ? (
         <p className="text-sm text-muted-foreground">Нет активных ревизий</p>
       ) : (

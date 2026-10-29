@@ -51,7 +51,7 @@ export function ClientProxmoxResources({
 }) {
   return (
     <Card className="p-4">
-      <h3 className="mb-3 text-sm font-semibold">Серверные ресурсы</h3>
+      <h3 className="mb-3 text-base font-semibold">Серверные ресурсы</h3>
       {resources.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           Нет привязанных ресурсов

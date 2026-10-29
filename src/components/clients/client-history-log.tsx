@@ -30,7 +30,7 @@ function formatDate(date: Date) {
 export function ClientHistoryLog({ entries }: { entries: HistoryEntry[] }) {
   return (
     <Card className="p-4">
-      <h3 className="mb-3 text-sm font-semibold">История</h3>
+      <h3 className="mb-3 text-base font-semibold">История</h3>
       {entries.length === 0 ? (
         <p className="text-sm text-muted-foreground">История пуста</p>
       ) : (

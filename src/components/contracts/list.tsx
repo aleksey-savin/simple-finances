@@ -92,7 +92,7 @@ function ContractRow({
             {' · '}
             {contract.businessLine?.name ?? 'Без направления'}
           </p>
-          <p className="mt-0.5 text-sm text-muted-foreground">
+          <p className="mt-0.5 text-sm text-muted-foreground tabular-nums">
             {contract.name}
             {' · '}
             {contract.amount

@@ -123,7 +123,9 @@ export function ClientInfoCard({ client }: { client: ClientDetail }) {
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="text-sm text-muted-foreground">Клиент</p>
-            <h2 className="mt-0.5 text-xl font-semibold">{client.name}</h2>
+            <h2 className="mt-0.5 text-xl font-semibold tracking-tight">
+              {client.name}
+            </h2>
             {(totals.income > 0 || totals.expense > 0) && (
               <div className="mt-1 flex flex-wrap items-center gap-3 text-sm font-mono tabular-nums">
                 {totals.income > 0 && (

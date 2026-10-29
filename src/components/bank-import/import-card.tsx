@@ -21,7 +21,7 @@ export function BankImport({
   return (
     <Card className="flex flex-col gap-4 p-4 w-full">
       <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold">Импорт</h1>
+        <h1 className="text-base font-semibold">Импорт</h1>
       </div>
 
       <div className="flex items-center gap-2">

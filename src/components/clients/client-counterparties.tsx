@@ -16,7 +16,7 @@ export function ClientCounterparties({
 }) {
   return (
     <Card className="p-4">
-      <h3 className="mb-3 text-sm font-semibold">Контрагенты</h3>
+      <h3 className="mb-3 text-base font-semibold">Контрагенты</h3>
       {counterparties.length === 0 ? (
         <p className="text-sm text-muted-foreground">Нет контрагентов</p>
       ) : (

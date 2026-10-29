@@ -96,7 +96,7 @@ export function ClientContracts({
     <>
       <Card className="p-4">
         <div className="mb-3 flex items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold">Договоры</h3>
+          <h3 className="text-base font-semibold">Договоры</h3>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 text-xs font-mono tabular-nums">
               {totals.income > 0 && (
