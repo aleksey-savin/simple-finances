@@ -264,7 +264,7 @@ export function TagChips({ tags }: { tags: TagItem[] }) {
       {tags.map((t) => (
         <Badge
           key={t.id}
-          className="px-1.5 py-0 text-[10px] font-medium text-white border-0 h-4"
+          className="px-1.5 py-0 text-xs font-medium text-white border-0"
           style={{ backgroundColor: t.color }}
         >
           {t.name}
