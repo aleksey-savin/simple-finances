@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Tag, ChevronDown, ChevronUp, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { ChevronRight } from 'lucide-react'
 import { cn } from '#/lib/utils'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -17,12 +17,22 @@ export type TagTotal = {
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
+const STORAGE_KEY = 'tag-summary-expanded'
+
 function formatCurrency(n: number) {
   return n.toLocaleString('ru-RU', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
 }
+
+function formatSigned(n: number) {
+  const sign = n > 0 ? '+' : n < 0 ? '−' : ''
+  return `${sign}${formatCurrency(Math.abs(n))}`
+}
+
+const columnsClass =
+  'grid grid-cols-[minmax(10rem,1fr)_repeat(3,9rem)] gap-3 sm:grid-cols-[minmax(0,1fr)_repeat(3,10rem)]'
 
 // ─── TagSummaryPanel ───────────────────────────────────────────────────────────
 
@@ -32,143 +42,141 @@ interface TagSummaryPanelProps {
 }
 
 export function TagSummaryPanel({ totals, className }: TagSummaryPanelProps) {
-  const [collapsed, setCollapsed] = useState(true)
-  const [hidden, setHidden] = useState(false)
+  const [expanded, setExpanded] = useState(false)
 
-  if (hidden) {
-    return (
-      <button
-        type="button"
-        onClick={() => setHidden(false)}
-        className={cn(
-          'fixed bottom-6 right-6 z-50',
-          'flex items-center gap-2 shadow-lg border',
-          'bg-background/95 backdrop-blur-sm px-4 py-2 text-sm font-medium',
-          'hover:bg-muted transition-colors',
-          className,
-        )}
-      >
-        <Tag className="size-4 text-primary" />
-        Теги ({totals.length})
-      </button>
-    )
+  useEffect(() => {
+    try {
+      setExpanded(localStorage.getItem(STORAGE_KEY) === '1')
+    } catch {
+      // storage unavailable — stay collapsed
+    }
+  }, [])
+
+  const toggle = () => {
+    setExpanded((value) => {
+      const next = !value
+      try {
+        localStorage.setItem(STORAGE_KEY, next ? '1' : '0')
+      } catch {
+        // storage unavailable — keep in-memory state only
+      }
+      return next
+    })
   }
 
+  const rows = totals.filter((t) => t.incomeTotal !== 0 || t.expenseTotal !== 0)
+  if (rows.length === 0) return null
+
+  const totalIncome = rows.reduce((s, t) => s + t.incomeTotal, 0)
+  const totalExpense = rows.reduce((s, t) => s + t.expenseTotal, 0)
+  const totalNet = rows.reduce((s, t) => s + t.net, 0)
+
   return (
-    <div
-      className={cn(
-        'fixed bottom-6 left-1/2 z-50 -translate-x-1/2',
-        'w-72 shadow-xl border',
-        'bg-background/95 backdrop-blur-sm',
-        'overflow-hidden',
-        className,
-      )}
+    <section
+      aria-label="Итоги по тегам"
+      className={cn('border bg-card', className)}
     >
-      {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b bg-muted/40">
-        <Tag className="size-4 text-primary shrink-0" />
-        <span className="text-sm font-semibold flex-1">Итоги по тегам</span>
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={expanded}
+        className="flex min-h-14 w-full flex-wrap items-center gap-x-7 gap-y-2 px-5 py-2 text-left tabular-nums hover:bg-muted/40"
+      >
+        <span className="mr-auto flex items-center gap-2">
+          <ChevronRight
+            className={cn(
+              'size-4 text-muted-foreground transition-transform',
+              expanded && 'rotate-90',
+            )}
+          />
+          <span className="text-base font-semibold">Итоги по тегам</span>
+          <span className="font-medium text-faint">{rows.length}</span>
+        </span>
+        <span className="flex items-baseline gap-2">
+          <span className="text-sm text-muted-foreground">Доходы</span>
+          <span className="text-base font-semibold text-accent-text">
+            {formatSigned(totalIncome)}
+          </span>
+        </span>
+        <span className="flex items-baseline gap-2">
+          <span className="text-sm text-muted-foreground">Расходы</span>
+          <span className="text-base font-semibold">
+            {formatCurrency(totalExpense)}
+          </span>
+        </span>
+        <span className="flex items-baseline gap-2">
+          <span className="text-sm text-muted-foreground">Сальдо</span>
+          <span
+            className={cn(
+              'text-base font-semibold',
+              totalNet > 0 && 'text-accent-text',
+            )}
+          >
+            {formatSigned(totalNet)}
+          </span>
+        </span>
+      </button>
 
-        <button
-          type="button"
-          onClick={() => setCollapsed((c) => !c)}
-          className="text-muted-foreground hover:text-foreground transition-colors p-0.5"
-          title={collapsed ? 'Развернуть' : 'Свернуть'}
-        >
-          {collapsed ? (
-            <ChevronUp className="size-4" />
-          ) : (
-            <ChevronDown className="size-4" />
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setHidden(true)}
-          className="text-muted-foreground hover:text-foreground transition-colors p-0.5"
-          title="Скрыть"
-        >
-          <X className="size-4" />
-        </button>
-      </div>
-
-      {/* Body */}
-      {!collapsed && (
-        <div className="max-h-80 overflow-y-auto">
-          {totals.length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center py-4 px-4">
-              Нет тегов с активными платежами
-            </p>
-          ) : (
-            <ul className="divide-y">
-              {totals.map(({ tag, expenseTotal, incomeTotal, net }) => (
-                <li key={tag.id} className="px-4 py-2.5">
-                  {/* Tag name */}
-                  <div className="flex items-center gap-2 mb-1.5">
+      {expanded && (
+        <div className="overflow-x-auto border-t border-border-soft">
+          <div className="min-w-max sm:min-w-0">
+            <div
+              className={cn(
+                columnsClass,
+                'px-5 pt-2.5 pb-1.5 text-xs font-bold tracking-wider text-faint uppercase',
+              )}
+            >
+              <span>Тег</span>
+              <span className="text-right">Доходы</span>
+              <span className="text-right">Расходы</span>
+              <span className="text-right">Сальдо</span>
+            </div>
+            <ul>
+              {rows.map(({ tag, incomeTotal, expenseTotal, net }) => (
+                <li
+                  key={tag.id}
+                  className={cn(
+                    columnsClass,
+                    'min-h-11 items-center border-t border-border-soft px-5 text-sm tabular-nums',
+                  )}
+                >
+                  <span className="flex min-w-0 items-center gap-2.5">
                     <span
-                      className="size-2.5 rounded-full shrink-0"
+                      className="size-2.5 shrink-0 rounded-full"
                       style={{ backgroundColor: tag.color }}
                     />
-                    <span className="text-sm font-medium truncate flex-1">
-                      {tag.name}
-                    </span>
-                    {/* Net badge */}
-                    <span
-                      className={cn(
-                        'text-xs font-semibold tabular-nums',
-                        net >= 0 ? 'text-accent-text' : 'text-foreground',
-                      )}
-                    >
-                      {net >= 0 ? '+' : ''}
-                      {formatCurrency(net)} ₽
-                    </span>
-                  </div>
-
-                  {/* Breakdown */}
-                  <div className="grid grid-cols-2 gap-x-2 text-xs text-muted-foreground pl-4">
-                    {incomeTotal > 0 && (
-                      <span className="text-accent-text">
-                        ↑ {formatCurrency(incomeTotal)} ₽
-                      </span>
+                    <span className="truncate font-medium">{tag.name}</span>
+                  </span>
+                  <span
+                    className={cn(
+                      'text-right',
+                      incomeTotal > 0 ? 'text-accent-text' : 'text-faint',
                     )}
-                    {expenseTotal > 0 && (
-                      <span>↓ {formatCurrency(expenseTotal)} ₽</span>
+                  >
+                    {incomeTotal > 0 ? formatSigned(incomeTotal) : '—'}
+                  </span>
+                  <span
+                    className={cn(
+                      'text-right',
+                      expenseTotal === 0 && 'text-faint',
                     )}
-                  </div>
+                  >
+                    {expenseTotal > 0 ? formatCurrency(expenseTotal) : '—'}
+                  </span>
+                  <span
+                    className={cn(
+                      'text-right font-semibold',
+                      net > 0 && 'text-accent-text',
+                    )}
+                  >
+                    {formatSigned(net)}
+                  </span>
                 </li>
               ))}
             </ul>
-          )}
+          </div>
         </div>
       )}
-
-      {/* Footer total */}
-      {!collapsed && totals.length > 0 && (
-        <div className="border-t px-4 py-2 bg-muted/30 flex items-center justify-between text-xs text-muted-foreground">
-          <span>
-            {totals.length}{' '}
-            {totals.length === 1
-              ? 'тег'
-              : totals.length <= 4
-                ? 'тега'
-                : 'тегов'}
-          </span>
-          <span
-            className={cn(
-              'font-semibold tabular-nums',
-              totals.reduce((s, t) => s + t.net, 0) >= 0
-                ? 'text-accent-text'
-                : 'text-foreground',
-            )}
-          >
-            Итого:{' '}
-            {(() => {
-              const total = totals.reduce((s, t) => s + t.net, 0)
-              return `${total >= 0 ? '+' : ''}${formatCurrency(total)} ₽`
-            })()}
-          </span>
-        </div>
-      )}
-    </div>
+    </section>
   )
 }

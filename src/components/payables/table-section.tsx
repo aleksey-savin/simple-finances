@@ -9,7 +9,7 @@ import { DataTable } from '#/components/ui/data-table'
 import type { TagItem } from '#/components/ui/tag-picker'
 import { TableCell, TableRow } from '#/components/ui/table'
 
-import { PayablesToolbar } from './toolbar'
+import { PayablesToolbar, payableStatusValues } from './toolbar'
 import type {
   ExpenseRow,
   NamedEntity,
@@ -76,6 +76,7 @@ export function PayablesTableSection({
         columns={columns}
         data={data}
         initialSorting={initialSorting}
+        initialColumnFilters={[{ id: 'status', value: payableStatusValues }]}
         pagination={false}
         renderBody={(table) =>
           renderGroupedBody(

@@ -57,6 +57,7 @@ interface DataTableProps<TData> {
   /** Page sizes shown in the pagination dropdown.  Defaults to [10, 20, 50, 100] */
   pageSizes?: number[]
   defaultPageSize?: number
+  initialColumnFilters?: ColumnFiltersState
 }
 
 export function DataTable<TData>({
@@ -68,11 +69,11 @@ export function DataTable<TData>({
   pagination = true,
   pageSizes = [10, 20, 50, 100],
   defaultPageSize = 20,
+  initialColumnFilters = [],
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = React.useState<SortingState>(initialSorting)
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    [],
-  )
+  const [columnFilters, setColumnFilters] =
+    React.useState<ColumnFiltersState>(initialColumnFilters)
   const [globalFilter, setGlobalFilter] = React.useState<string>('')
   const [paginationState, setPaginationState] = React.useState<PaginationState>(
     {

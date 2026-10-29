@@ -44,7 +44,7 @@ type PayablesToolbarProps = {
   onToggleAll?: () => void
 }
 
-const payableStatusValues: ExpenseStatus[] = [
+export const payableStatusValues: ExpenseStatus[] = [
   'overdue',
   'soon',
   'ontime',

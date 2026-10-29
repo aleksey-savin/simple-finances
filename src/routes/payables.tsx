@@ -144,6 +144,8 @@ function PayablesRouteComponent() {
         accountBalances={accountBalances}
       />
 
+      <TagSummaryPanel totals={tagTotals} />
+
       <PayablesTableSection
         data={expenseRows}
         columns={columns}
@@ -167,8 +169,6 @@ function PayablesRouteComponent() {
           }}
         />
       )}
-
-      <TagSummaryPanel totals={tagTotals} />
     </>
   )
 }

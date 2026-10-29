@@ -519,6 +519,8 @@ function App() {
         <InvoiceSummary feed={filteredFeed.filter(isInvoiceItem)} />
       </div>
 
+      <TagSummaryPanel totals={tagTotals} className="mb-4" />
+
       {/* ── Toolbar ────────────────────────────────────────────────────────── */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
         {/* Date field */}
@@ -908,9 +910,6 @@ function App() {
           </div>
         </div>
       )}
-      <div className="mt-4">
-        <TagSummaryPanel totals={tagTotals} />
-      </div>
       <Outlet />
     </div>
   )

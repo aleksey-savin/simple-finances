@@ -125,6 +125,8 @@ function ReceivablesRouteComponent() {
     <>
       <ReceivablesSummaryCards rows={rows} />
 
+      <TagSummaryPanel totals={tagTotals} />
+
       <ReceivablesTableSection
         data={rows}
         columns={columns}
@@ -134,8 +136,6 @@ function ReceivablesRouteComponent() {
         counterparties={counterparties}
         allTags={allTags}
       />
-
-      <TagSummaryPanel totals={tagTotals} />
     </>
   )
 }
