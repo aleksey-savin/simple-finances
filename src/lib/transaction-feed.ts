@@ -1,4 +1,4 @@
-import { format } from 'date-fns'
+import { format, startOfDay } from 'date-fns'
 
 import type { StatusTone } from '#/components/ui/status-text'
 import type { Invoice, TransactionFeedItem } from '#/types'
@@ -43,7 +43,7 @@ export function getInvoiceStatus(
   }
 
   if (item.dueDate) {
-    if (new Date(item.dueDate).getTime() < now.getTime()) {
+    if (new Date(item.dueDate) < startOfDay(now)) {
       return {
         tone: 'danger',
         label: `Просрочен · до ${formatDate(item.dueDate)}`,

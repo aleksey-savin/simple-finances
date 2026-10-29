@@ -101,6 +101,21 @@ describe('getInvoiceStatus', () => {
     ).toEqual({ tone: 'pending', label: 'до 05.11.2026' })
   })
 
+  it('due today → pending «до 29.10.2026»', () => {
+    expect(
+      getInvoiceStatus(
+        status({ dueDate: new Date(2026, 9, 29, 0, 0) }),
+        new Date(2026, 9, 29, 15, 0),
+      ),
+    ).toEqual({ tone: 'pending', label: 'до 29.10.2026' })
+  })
+
+  it('paid without paidAt → positive «Оплачено»', () => {
+    expect(
+      getInvoiceStatus(status({ paymentStatus: 'paid', paidAt: null }), now),
+    ).toEqual({ tone: 'positive', label: 'Оплачено' })
+  })
+
   it('no due date → pending «Ждёт оплаты»', () => {
     expect(getInvoiceStatus(status(), now)).toEqual({
       tone: 'pending',

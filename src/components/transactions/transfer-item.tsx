@@ -117,6 +117,12 @@ export function TransferItem({
     </DropdownMenu>
   )
 
+  const transferStatus = item.paidAt ? (
+    <StatusText tone="neutral">Перевод</StatusText>
+  ) : (
+    <StatusText tone="pending">Перевод · не проведён</StatusText>
+  )
+
   const accountRoute = (
     <div className="flex min-w-0 items-center justify-start gap-2 text-sm text-muted-foreground">
       <span className="truncate">{item.fromAccount.name}</span>
@@ -137,8 +143,7 @@ export function TransferItem({
                 Перевод между счетами
               </div>
               <div className="wrap-break-word text-sm text-muted-foreground">
-                {item.description}
-                {' · '}
+                {item.description ? `${item.description} · ` : ''}
                 {format(new Date(item.transferredAt), 'HH:mm')}
               </div>
               {showAuthor ? (
@@ -153,7 +158,7 @@ export function TransferItem({
             —
           </TableCell>
           <TableCell className="w-56 text-left text-sm">
-            <StatusText tone="neutral">Перевод</StatusText>
+            {transferStatus}
           </TableCell>
           <TableCell className="w-40 text-right">
             <span className="text-base font-semibold tabular-nums">
@@ -181,7 +186,7 @@ export function TransferItem({
               {menu}
             </div>
 
-            <div className="flex items-center gap-2 text-base font-bold leading-snug">
+            <div className="flex items-center gap-2 text-base font-medium leading-snug">
               <ArrowRightLeft className="size-4 text-muted-foreground" />
               Перевод между счетами
             </div>
@@ -191,9 +196,7 @@ export function TransferItem({
             </p>
 
             <div className="flex flex-wrap items-center gap-1.5">
-              <StatusText tone="neutral" className="text-sm">
-                Перевод
-              </StatusText>
+              {transferStatus}
               <Badge variant="outline" className="px-1.5 py-0 text-xs">
                 {item.fromAccount.name}
               </Badge>

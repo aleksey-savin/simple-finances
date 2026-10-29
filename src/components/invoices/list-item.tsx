@@ -626,7 +626,7 @@ export function InvoiceListItem({
                       key={doc.id}
                       type="button"
                       disabled={openingDocId === doc.id}
-                      className="flex items-center gap-2 px-2 py-1.5 text-left text-sm text-primary transition-colors hover:bg-muted hover:underline disabled:opacity-50"
+                      className="flex items-center gap-2 px-2 py-1.5 text-left text-sm text-accent-text transition-colors hover:bg-muted hover:underline disabled:opacity-50"
                       onClick={async () => {
                         const popup = window.open('about:blank', '_blank')
                         if (!popup) {
@@ -687,8 +687,7 @@ export function InvoiceListItem({
                 </div>
               )}
               <div className="wrap-break-word text-sm text-muted-foreground">
-                {item.description}
-                {' · '}
+                {item.description ? `${item.description} · ` : ''}
                 {formatTime(new Date(item.createdAt))}
               </div>
               <TagChips tags={assignedTags} />
@@ -703,6 +702,9 @@ export function InvoiceListItem({
           </TableCell>
           <TableCell className="w-56 text-left text-sm">
             <StatusText tone={statusTone}>{statusLabel}</StatusText>
+            {item.archivedAt && statusTone !== 'neutral' ? (
+              <span className="text-sm text-muted-foreground"> · В архиве</span>
+            ) : null}
           </TableCell>
           <TableCell className="w-40 text-right">
             <span

@@ -15,7 +15,7 @@ const ROUTE_LABELS: Record<string, { label: string; showAddButton: boolean }> =
   {
     dashboard: { label: 'Dashboard', showAddButton: false },
     tasks: { label: 'Задачи', showAddButton: false },
-    transactions: { label: 'Все операции', showAddButton: true },
+    transactions: { label: 'Все операции', showAddButton: false },
     'bank-import': { label: 'Банковские выписки', showAddButton: false },
     recurring: { label: 'Запланированные платежи', showAddButton: true },
     receivables: { label: 'Дебиторская задолженность', showAddButton: false },

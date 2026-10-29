@@ -499,6 +499,7 @@ function App() {
         <div className="relative w-full sm:w-[300px]">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
+            aria-label="Поиск"
             placeholder="Поиск по описанию, категории, счёту..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
