@@ -48,7 +48,7 @@ function InputOTPSlot({
       data-active={isActive}
       data-state={hasFakeCaret ? 'caret' : char ? 'filled' : 'empty'}
       className={cn(
-        'relative flex h-10 w-10 items-center justify-center border-y border-r text-sm shadow-xs transition-all first:rounded-l-md first:border-l last:rounded-r-md',
+        'relative flex h-10 w-10 items-center justify-center border-y border-r border-input bg-background text-sm transition-all first:border-l',
         'outline-none ring-ring ring-offset-background data-[active=true]:z-10 data-[active=true]:ring-2',
         className,
       )}

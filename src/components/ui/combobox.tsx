@@ -105,7 +105,7 @@ export function Combobox({
           type="button"
           variant="outline"
           className={cn(
-            'h-9 w-full justify-between text-sm font-normal',
+            'h-10 w-full justify-between border-input px-3 text-sm font-normal',
             selectedOption ? 'text-foreground' : 'text-muted-foreground',
             className,
           )}
@@ -148,7 +148,7 @@ export function Combobox({
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder={searchPlaceholder}
-                className="h-8 w-full min-w-0 border border-input bg-input px-3 py-1 pl-8 text-sm shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                className="h-10 w-full min-w-0 border border-input bg-background px-3 py-1 pl-8 text-sm transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-4 focus-visible:ring-ring/20"
               />
             </div>
 

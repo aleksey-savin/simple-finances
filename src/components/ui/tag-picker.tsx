@@ -154,7 +154,7 @@ export function TagPicker({
             setSearch(e.target.value)
             setCreating(false)
           }}
-          className="h-8 text-sm mb-2"
+          className="h-10 text-sm mb-2"
           autoFocus
         />
 

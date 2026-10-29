@@ -85,7 +85,7 @@ export function MultiSelectCombobox({
           variant="outline"
           size="sm"
           className={cn(
-            'h-8 w-44 justify-between text-sm font-normal',
+            'h-10 w-44 justify-between border-input px-3 text-sm font-normal',
             value.length === 0 ? 'text-muted-foreground' : 'text-foreground',
             className,
           )}
@@ -105,7 +105,7 @@ export function MultiSelectCombobox({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={searchPlaceholder}
-              className="h-8 pl-8 text-sm"
+              className="h-10 pl-8 text-sm"
             />
           </div>
 
