@@ -1,98 +1,126 @@
-# Design System Strategy: The Architectural Ledger
+# Дизайн-система Портала
 
-## 1. Overview & Creative North Star
+Система перенесена из соседнего проекта hd (`../hd`, гайд — `hd/docs/ux-ui-guide.md`) с одним отличием: **без скруглений**. Токены живут в `src/styles.css` (`:root`, `.dark`, `@theme inline`); эта страница — справочник по их назначению. Значения здесь совпадают с `styles.css` — при расхождении прав `styles.css`.
 
-**Creative North Star: "The Precise Monolith"**
+Шрифт — Inter Variable (`@fontsource-variable/inter`, подключён один раз в корне, `--font-sans`).
 
-In the world of financial management, trust is not built through decoration, but through clarity and structural integrity. This design system moves away from the "standard dashboard" aesthetic to embrace an **Architectural Ledger** approach. It treats data as a physical structure—rigid, dependable, and meticulously organized.
+## Токены
 
-By leveraging high-end editorial layouts, we replace traditional "boxed-in" UI with a sense of infinite, organized space. We reject the cluttered grid in favor of **Intentional Asymmetry**: using large-scale typography and varying surface depths to guide the eye, making complex financial data feel breathable yet authoritative. This is not just a tool; it is a premium environment for fiscal decision-making.
+Цвет всегда берётся через токен (`bg-background`, `text-muted-foreground`, `var(--chart-1)`), а не hex. Тема переключается классом `.dark`.
 
----
+| Токен                 | Светлая   | Тёмная    | Назначение                                                                   |
+| --------------------- | --------- | --------- | ---------------------------------------------------------------------------- |
+| `primary`             | `#00bc8c` | `#00bc8c` | одно главное действие на экране                                              |
+| `primary-foreground`  | `#ffffff` | `#ffffff` | текст на `primary`                                                           |
+| `canvas`              | `#f4f5f6` | `#16181c` | подложка страницы (на ширине < 768 — белая)                                  |
+| `background`          | `#ffffff` | `#1d2024` | базовая поверхность: панели, шторки, диалоги, меню                           |
+| `card`                | `#ffffff` | `#1d2024` | белая панель `bg-card border`, без тени                                      |
+| `foreground`          | `#1d2227` | `#eceef0` | основной текст (не чисто чёрный)                                             |
+| `muted` / `secondary` | `#f2f4f5` | `#23262b` | вторичные заливки                                                            |
+| `muted-foreground`    | `#677078` | `#9aa1a9` | мета, подписи, подсказки                                                     |
+| `faint`               | `#99a1a8` | `#6f767d` | счётчики, метки групп                                                        |
+| `accent`              | `#f2f4f5` | `#23262b` | наведение, активный пункт                                                    |
+| `accent-text`         | `#007a5e` | `#0bd39f` | доход, «оплачено», активный пункт меню                                       |
+| `warning`             | `#eb9c14` | `#eb9c14` | заливки предупреждений                                                       |
+| `warning-text`        | `#b8730a` | `#f2ad3d` | «ждёт оплаты», «частично», срок                                              |
+| `destructive`         | `#d63c3c` | `#f05252` | удаление, просрочка, ошибки, блокировка                                      |
+| `success`             | `#00bc8c` | `#00bc8c` | заливки успеха (текстом — `accent-text`)                                     |
+| `info`                | `#4d94e8` | `#4d94e8` | информационные заливки                                                       |
+| `info-text`           | `#2f6fc0` | `#6aa8ef` | информационный текст                                                         |
+| `border`              | `#e2e5e8` | `#2b2f35` | контуры панелей и полей (`input` и `ring` — `#e2e5e8`/`#2b2f35` и `#00bc8c`) |
+| `border-soft`         | `#ebedef` | `#242830` | разделители строк                                                            |
+| `chart-1`             | `#00bc8c` | `#00a37a` | график: доход                                                                |
+| `chart-2`             | `#4d94e8` | `#4d94e8` | график: категория 2                                                          |
+| `chart-3`             | `#e8842c` | `#c9711f` | график: расход                                                               |
+| `chart-4`             | `#a58ae0` | `#8a6cd6` | график: категория 4                                                          |
+| `chart-5`             | `#d64d8e` | `#b8437a` | график: категория 5                                                          |
 
-## 2. Colors: Tonal Architecture
+`--sidebar*` выводятся из токенов выше (`sidebar` = `background`, `sidebar-accent` = `accent`, `sidebar-accent-foreground` = `accent-text`, `sidebar-border` = `border`, `sidebar-primary` = `primary`). `--radius: 0`.
 
-The palette is rooted in a "Deep Slate" and "Subtle Frost" foundation. We prioritize optical comfort over high-contrast jarring.
+`warning-foreground` (`#2a1e03`), `info-foreground` (`#0a1826`), `destructive-foreground`, `success-foreground` — текст на соответствующих заливках.
 
-### The "No-Line" Rule
+## Типографика — роли
 
-To achieve a high-end feel, **1px solid borders are prohibited for sectioning.** Traditional borders create visual noise that exhausts the user during long sessions. Instead, define boundaries through:
+У каждого кегля одна роль. Тело — 14. Произвольных `text-[Npx]` нет.
 
-- **Tonal Shifts:** Placing a `surface-container-low` section against a `background`.
-- **Negative Space:** Utilizing the `Spacing Scale (8, 10, or 12)` to create natural breaks.
+| Роль                     | Класс                                                                                                        |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| Заголовок страницы       | `text-3xl leading-none font-semibold tracking-tight` + счётчик `text-xl font-medium text-faint tabular-nums` |
+| KPI на дашборде          | `text-3xl font-bold tabular-nums`                                                                            |
+| Заголовок формы          | `text-xl font-semibold tracking-tight`                                                                       |
+| Заголовок диалога/шторки | `text-lg font-semibold`                                                                                      |
+| Заголовок секции         | `text-base font-semibold`                                                                                    |
+| Заголовок строки списка  | `text-base font-medium`                                                                                      |
+| Тело, мета, подсказка    | `text-sm` / `text-sm text-muted-foreground`                                                                  |
+| Подпись поля             | `text-sm font-semibold text-muted-foreground`                                                                |
+| Метка группы, eyebrow    | `text-xs font-bold tracking-wider uppercase text-faint`                                                      |
+| Числа, даты, чипы        | `text-xs`                                                                                                    |
 
-### Surface Hierarchy & Nesting
+## Жёсткие правила
 
-Treat the UI as a series of stacked, premium materials.
+- **Ничего мельче 12px.** Нет `text-[10px]`, `text-[0.8rem]` и прочих произвольных кеглей. Всё, что читается как текст, — `text-sm`; `text-xs` только для служебных чисел, дат, чипов и меток групп.
+- **Контролы:** Input, Select/Combobox, чипы, кнопки, toggle, tabs — высота `h-10`, кегль `text-sm`. Иконочная кнопка — `size-10`. Меньшие размеры (`h-9`, `h-8`) — только осознанно, для плотных мест.
+- **Радиус 0.** Не использовать `rounded`, `rounded-*`, `border-radius`. Единственное исключение — круглое по смыслу: `rounded-full` у точек статуса и цвета, бегунков switch/slider и аватаров. При добавлении компонентов shadcn скругления вычищать.
+- **Токены, а не hex.** Захардкоженный цвет в компоненте — ошибка; тёмная тема ломается именно так.
+- **`tabular-nums` на всех денежных суммах** и числах в колонках.
+- Рамки: `border-color` по умолчанию — `var(--border)` (иначе в тёмной теме рамки поповеров светлые).
 
-- **Base Layer:** `surface` (#f7f9fb)
-- **Primary Workspaces:** `surface-container-low` (#f0f4f7)
-- **Interactive Cards:** `surface-container-lowest` (#ffffff)
-- **High-Priority Modals:** `surface-bright` (#f7f9fb) with a `surface-tint` backdrop.
+## Цвета: доход, расход, статусы
 
-### Signature Textures
+Цвет говорит о состоянии, а не о знаке.
 
-- **The Financial Gradient:** For primary actions (CTAs) or high-level summary cards, use a subtle linear gradient from `primary` (#565e74) to `primary-dim` (#4a5268) at a 135-degree angle. This adds "soul" and depth that prevents the UI from feeling flat or "template-like."
-- **Functional Accents:** Income uses `tertiary` (#006d4a) for a sophisticated "growth" green. Expenses use `error` (#9f403d) for a muted, authoritative "warning" red, avoiding the neon "stoplight" cliché.
+| Смысл                                   | Класс                                      |
+| --------------------------------------- | ------------------------------------------ |
+| доход, «оплачено»                       | `text-accent-text`                         |
+| ожидание, «частично», срок              | `text-warning-text`                        |
+| расход                                  | нейтральный `text-foreground` — не красный |
+| просрочка, ошибки, удаление, блокировка | `text-destructive` (и только они)          |
+| архив, перевод                          | `text-muted-foreground`                    |
 
----
+Заливки (`bg-success`, `bg-warning`, `bg-destructive`) остаются на своих токенах. На графиках доход — `var(--chart-1)`, расход — `var(--chart-3)`; остальные ряды — `--chart-2`, `--chart-4`, `--chart-5`.
 
-## 3. Typography: Editorial Authority
+## Обязательные компоненты
 
-We utilize **Inter** as a variable font to create a hierarchy that feels like a high-end financial broadsheet.
+### `StatusText` (`src/components/ui/status-text.tsx`)
 
-- **Display Scales (`display-lg` to `display-sm`):** Reserved for "Total Net Worth" or "Monthly Balance." Use a `-0.02em` letter-spacing to tighten the look and increase authority.
-- **Headline & Title Scales:** Use `title-lg` for section headers. Combine with `on-surface-variant` for sub-headers to create a clear "read-first, scan-second" flow.
-- **Body & Labels:** `body-md` is the workhorse for data tables. For numerical data, ensure `font-variant-numeric: tabular-nums` is active to maintain vertical alignment in lists.
+Статус — цветной текст с точкой (`size-2 rounded-full bg-current`), а не заливной бейдж. Проп `tone`: `positive` (`text-accent-text`), `pending` (`text-warning-text`), `danger` (`text-destructive`), `neutral` (`text-muted-foreground`). Нейтральная пилюля `Badge` остаётся для категорий и меток.
 
----
+```tsx
+import { StatusText } from '#/components/ui/status-text'
+;<StatusText tone="pending">Ждёт оплаты</StatusText>
+```
 
-## 4. Elevation & Depth: Tonal Layering
+Словарь статусов счёта — `getInvoiceStatus` в `src/lib/transaction-feed.ts`:
 
-Depth is communicated through light and material, not artificial lines.
+| Состояние                  | Тон        | Текст                       |
+| -------------------------- | ---------- | --------------------------- |
+| оплачен                    | `positive` | «Оплачено 12.10.2026»       |
+| оплачен частично           | `pending`  | «Частично X из Y»           |
+| не оплачен, срок не прошёл | `pending`  | «до 05.11.2026»             |
+| не оплачен, срок прошёл    | `danger`   | «Просрочен · до 20.10.2026» |
+| не оплачен, срока нет      | `pending`  | «Ждёт оплаты»               |
+| в архиве                   | `neutral`  | «В архиве»                  |
+| перевод                    | `neutral`  | «Перевод»                   |
 
-- **The Layering Principle:** A "Transaction Detail" drawer should use `surface-container-highest` (#d9e4ea) to sit visibly "above" the main ledger without needing a heavy shadow.
-- **Ambient Shadows:** When an element must float (e.g., a dropdown menu), use a "Whisper Shadow":
-- `box-shadow: 0 12px 40px rgba(42, 52, 57, 0.06);`
-- The shadow color is a 6% opacity tint of `on-surface` (#2a3439), making it feel like a natural shadow cast by studio lighting.
-- **Glassmorphism:** For top navigation bars or floating action buttons, use `surface-container-lowest` at 80% opacity with a `backdrop-blur: 12px`. This maintains context of the data underneath while emphasizing the top layer.
-- **The "Ghost Border":** If containment is required for accessibility, use `outline-variant` (#a9b4b9) at **15% opacity**. It should be felt, not seen.
+### `PageHeader` (`src/components/ui/page-header.tsx`)
 
----
+Шапка каждой страницы: заголовок и необязательный счётчик слева, поиск и главное действие (`children`) справа. Роли кеглей зашиты внутрь — не собирать шапку вручную.
 
-## 5. Components: Precision Primitives
+```tsx
+import { PageHeader } from '#/components/ui/page-header'
+;<PageHeader title="Операции" count={total}>
+  <SearchInput />
+  <Button>Новая операция</Button>
+</PageHeader>
+```
 
-### Buttons & Inputs
+## Эталон: «Все операции»
 
-- **Primary Action:** Solid `primary` with the signature gradient. `rounded-md` (0.375rem).
-- **Secondary Action:** `surface-container-high` background with `on-surface` text. No border.
-- **Input Fields:** Use `surface-container-lowest` with a "Ghost Border." On focus, transition the border to `primary` at 40% opacity and add a 2px `surface-container-highest` outer glow.
+`src/routes/transactions.tsx` — страница, на которую равняются остальные.
 
-### The Ledger (Tables & Lists)
-
-- **No Dividers:** Forbid the use of horizontal rules (`
-`).
-
-- **The Zebra Shift:** Differentiate rows using a subtle shift between `surface` and `surface-container-low`.
-- **Income/Expense Chips:** Use `tertiary-container` (#69f6b8) for income and `error-container` (#fe8983) for expenses, but keep the text at `on-tertiary-container` and `on-error-container` for high-legibility contrast.
-
-### Financial Context Components
-
-- **The Trend Sparkline:** Minimalist, no-axis line charts using `surface-tint`.
-- **The Delta Indicator:** Small `label-sm` tags showing percentage change, using `tertiary-fixed` for growth and `error-dim` for decline.
-
----
-
-## 6. Do's and Don'ts
-
-### Do
-
-- **Do** use `tabular-nums` for all financial figures.
-- **Do** favor vertical whitespace over lines. When in doubt, increase the spacing from `4` (0.9rem) to `6` (1.3rem).
-- **Do** use `surface-container-lowest` for the most interactive elements to make them "pop" against the slightly darker background.
-
-### Don'ts
-
-- **Don't** use pure black (#000) for text. Always use `on-surface` (#2a3439) to maintain a premium, slate-like feel.
-- **Don't** use 100% opaque borders. They break the "Monolith" flow and make the app look like a generic spreadsheet.
-- **Don't** use "Alert Red" for expenses. Use the designated `error` palette to keep the vibe "Strict and Professional" rather than "Panic."
+- `PageHeader` с заголовком «Операции» и счётчиком; поиск и «Новая операция» справа.
+- Строка инструментов из чипов (h-10, `text-sm`): тип, статус, контрагенты, счёт, категория, период, «Создано / Оплачено», чип-переключатель «Неразнесённые» (состояние в URL), «Сброс» и «N из M».
+- Список на белой панели `bg-card border`, без тени и скруглений; разделители строк — `border-soft`.
+- Заголовок дня — метка группы слева. Справа — **итог дня только по оплаченному**: оплаченные поступления минус оплаченные списания, без переводов. Считается по **всем** операциям дня в текущей выборке фильтров, а не по видимым на странице, поэтому у дня, разорванного пагинацией, итог на обеих страницах одинаковый. Нет оплаченных за день — итог не показывается.
+- Строка: документ — `text-base font-medium`, мета — `text-sm text-muted-foreground`, затем счёт, категория, статус через `StatusText`, сумма (доход `text-accent-text`, расход нейтральный, `tabular-nums`), меню действий. Состояние строки несёт статус: подкраски просроченной строки и приглушения неоплаченных нет.
+- Мобильная карточка (`sm:hidden`) — те же роли кеглей и статусы.

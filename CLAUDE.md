@@ -79,10 +79,13 @@ Take an `entityId` prop, not the whole entity object.
 
 ### UI styling
 
-- **No rounded corners.** Avoid `rounded`, `rounded-*`, or any `border-radius` on UI elements.
-- Design language is defined in `DESIGN.md` ("Architectural Ledger"): no 1px section borders (use tonal shifts + whitespace), `tabular-nums` for all financial figures, muted `error`/`tertiary` palettes for expense/income rather than alert red/green, `on-surface` instead of pure black.
+- **No rounded corners.** Avoid `rounded`, `rounded-*`, or any `border-radius` on UI elements. The only exception is `rounded-full` for inherently round things: status/colour dots, switch/slider thumbs, avatars.
+- The design system (hd-based: Inter, tokens, type roles, controls, colour semantics, `StatusText` / `PageHeader`) is described in `DESIGN.md`; `src/routes/transactions.tsx` is the reference page. Three rules:
+  - Use tokens (`bg-background`, `text-muted-foreground`, `var(--chart-1)`), never hardcoded hex; `tabular-nums` on all financial figures.
+  - Use the type roles from `DESIGN.md` — nothing below 12px, no arbitrary `text-[Npx]`; row controls are `h-10` / `text-sm`.
+  - Income / paid is `text-accent-text`; pending / partial / due is `text-warning-text`; expenses are neutral (not red); `text-destructive` only for overdue, errors, delete and blocked.
 - Tailwind v4: bare `w-[--var]` silently breaks — use `w-[var(--var)]` or `w-(--var)`.
 
 ## Testing
 
-Vitest + Testing Library (jsdom) are configured; no test files exist yet. New tests run under `pnpm test`. Set `TEST` env to disable the dev task scheduler during test runs.
+Vitest is configured (`vitest.config.ts`, node environment, tests in `src/**/*.test.ts`, e.g. `src/lib/transaction-feed.test.ts`). Run them with `pnpm test`. Set `TEST` env to disable the dev task scheduler during test runs.
