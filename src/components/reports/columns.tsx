@@ -18,11 +18,10 @@ function Money({ value, className }: { value: number; className?: string }) {
 type Variant = 'income' | 'expense' | 'net' | 'debt' | 'plain'
 
 function variantClass(variant: Variant, value: number) {
-  if (variant === 'income') return 'text-success'
-  if (variant === 'expense') return 'text-warning'
+  if (variant === 'income') return 'text-accent-text'
   if (variant === 'debt') return value > 0 ? 'text-destructive' : undefined
   if (variant === 'net') {
-    return value > 0 ? 'text-success' : value < 0 ? 'text-warning' : undefined
+    return value > 0 ? 'text-accent-text' : undefined
   }
   return undefined
 }

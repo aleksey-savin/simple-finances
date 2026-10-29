@@ -129,14 +129,12 @@ export function ClientInfoCard({ client }: { client: ClientDetail }) {
             {(totals.income > 0 || totals.expense > 0) && (
               <div className="mt-1 flex flex-wrap items-center gap-3 text-sm font-mono tabular-nums">
                 {totals.income > 0 && (
-                  <span className="text-success">
+                  <span className="text-accent-text">
                     +{numberFormatter.format(totals.income)} ₽
                   </span>
                 )}
                 {totals.expense > 0 && (
-                  <span className="text-destructive">
-                    −{numberFormatter.format(totals.expense)} ₽
-                  </span>
+                  <span>−{numberFormatter.format(totals.expense)} ₽</span>
                 )}
               </div>
             )}

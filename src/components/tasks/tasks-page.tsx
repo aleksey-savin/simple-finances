@@ -116,7 +116,7 @@ export default function TasksPage({ data }: { data: TasksData }) {
           onClick={() => setActiveTab(DAY_TAB)}
           className={
             isDay
-              ? `${tabBase} bg-muted font-medium text-on-surface`
+              ? `${tabBase} bg-muted font-medium text-foreground`
               : `${tabBase} text-muted-foreground hover:bg-muted/50`
           }
         >
@@ -138,7 +138,7 @@ export default function TasksPage({ data }: { data: TasksData }) {
               key={list.id}
               className={
                 active
-                  ? `${tabBase} bg-muted font-medium text-on-surface`
+                  ? `${tabBase} bg-muted font-medium text-foreground`
                   : `${tabBase} text-muted-foreground hover:bg-muted/50`
               }
             >

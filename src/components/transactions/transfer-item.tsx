@@ -155,7 +155,7 @@ export function TransferItem({
             <div
               className={cn(
                 'flex items-center justify-center gap-1 text-sm font-semibold',
-                isPaid ? 'text-success' : 'text-muted-foreground',
+                isPaid ? 'text-accent-text' : 'text-muted-foreground',
               )}
             >
               <ArrowRightLeft className="size-4" />

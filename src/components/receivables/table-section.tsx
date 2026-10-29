@@ -165,7 +165,7 @@ function renderReceivablesTableBody(
                   {counterparties.join(', ')}
                 </span>
               )}
-              <span className="ml-auto text-sm font-semibold text-success tabular-nums">
+              <span className="ml-auto text-sm font-semibold text-accent-text tabular-nums">
                 {formatCurrency(total)} ₽
               </span>
             </button>

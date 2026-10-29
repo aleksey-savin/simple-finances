@@ -110,7 +110,7 @@ function ServiceRow({
 
           {effectiveLabel ? (
             <p
-              className={`text-xs ${isExpired ? 'text-destructive' : 'text-success'}`}
+              className={`text-xs ${isExpired ? 'text-destructive' : 'text-accent-text'}`}
             >
               {isExpired
                 ? `Срок действия истёк: ${effectiveLabel}`

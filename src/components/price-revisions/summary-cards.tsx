@@ -9,12 +9,7 @@ export function PriceRevisionSummaryCards({
 }) {
   const summary = computeRevisionSummary(items)
 
-  const deltaClass =
-    summary.delta > 0
-      ? 'text-success'
-      : summary.delta < 0
-        ? 'text-destructive'
-        : ''
+  const deltaClass = summary.delta > 0 ? 'text-accent-text' : ''
 
   const deltaSign = summary.delta > 0 ? '+' : ''
 

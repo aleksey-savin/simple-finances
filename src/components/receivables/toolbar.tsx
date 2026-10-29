@@ -252,7 +252,7 @@ export function ReceivablesToolbar({
               {filteredOverdue} просрочено
             </span>
           )}
-          <span className="font-semibold text-success tabular-nums">
+          <span className="font-semibold text-accent-text tabular-nums">
             Итого: {formatCurrency(filteredTotal)} ₽
           </span>
         </div>

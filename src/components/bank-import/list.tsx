@@ -81,7 +81,7 @@ export function BankImportList({
               <div className="flex flex-col items-start gap-1 lg:items-end">
                 <div
                   className={`text-xl font-semibold tabular-nums ${
-                    row.direction === 'credit' ? 'text-success' : ''
+                    row.direction === 'credit' ? 'text-accent-text' : ''
                   }`}
                 >
                   {row.direction === 'credit' ? '+' : '−'}
@@ -228,7 +228,7 @@ export function BankImportList({
                   <TableCell className="max-w-0 text-right">
                     <div
                       className={`font-semibold tabular-nums ${
-                        row.direction === 'credit' && 'text-success'
+                        row.direction === 'credit' && 'text-accent-text'
                       }`}
                     >
                       {row.direction === 'credit' ? '+' : '−'}

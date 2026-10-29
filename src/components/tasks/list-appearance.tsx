@@ -31,7 +31,7 @@ export function ListAppearanceFields({
                 title={name}
                 className={cn(
                   'flex size-8 items-center justify-center text-muted-foreground transition-colors hover:bg-muted',
-                  selected && 'bg-muted text-on-surface',
+                  selected && 'bg-muted text-foreground',
                 )}
                 style={selected && color ? { color } : undefined}
                 onClick={() => onIconChange(name)}

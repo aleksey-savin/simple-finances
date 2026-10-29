@@ -106,7 +106,7 @@ export function buildReceivablesColumns({
         <span
           className={`block text-right font-semibold tabular-nums ${
             row.original.paymentStatus === 'partial'
-              ? 'text-warning'
+              ? 'text-warning-text'
               : 'text-primary'
           }`}
         >

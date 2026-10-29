@@ -96,11 +96,7 @@ export function ClientActiveRevisions({
                       const diff =
                         Number(amt) - Number(r.currentAmounts[i] ?? '0')
                       const colorClass =
-                        diff > 0
-                          ? 'text-success'
-                          : diff < 0
-                            ? 'text-destructive'
-                            : ''
+                        diff > 0 ? 'text-accent-text' : diff < 0 ? '' : ''
                       return (
                         <span
                           key={i}

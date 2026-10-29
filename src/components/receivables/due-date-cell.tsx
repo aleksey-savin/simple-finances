@@ -21,7 +21,9 @@ export function ReceivablesDueDateCell({ row }: { row: IncomeRow }) {
         </span>
       )}
       {!isOverdue && daysLeft !== null && daysLeft <= 7 && (
-        <span className="text-xs text-warning">осталось {daysLeft} дн.</span>
+        <span className="text-xs text-warning-text">
+          осталось {daysLeft} дн.
+        </span>
       )}
     </div>
   )

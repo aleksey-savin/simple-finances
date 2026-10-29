@@ -129,7 +129,7 @@ export function TaskItemRow({ task, lists, listName, accentColor }: Props) {
         className={
           done
             ? 'min-w-0 flex-1 text-base text-muted-foreground line-through'
-            : 'min-w-0 flex-1 text-base text-on-surface'
+            : 'min-w-0 flex-1 text-base text-foreground'
         }
       >
         {task.description}
@@ -140,7 +140,7 @@ export function TaskItemRow({ task, lists, listName, accentColor }: Props) {
           <span
             className={cn(
               'ml-2 inline-flex animate-in items-center gap-1 text-sm tabular-nums fade-in',
-              overdue ? 'text-muted-foreground' : 'text-success',
+              overdue ? 'text-muted-foreground' : 'text-accent-text',
             )}
           >
             <CalendarDays className="size-3" />
@@ -177,7 +177,7 @@ export function TaskItemRow({ task, lists, listName, accentColor }: Props) {
                   dueDate
                     ? overdue
                       ? 'text-muted-foreground'
-                      : 'text-success'
+                      : 'text-accent-text'
                     : 'text-muted-foreground',
                 )}
                 title="Срок"

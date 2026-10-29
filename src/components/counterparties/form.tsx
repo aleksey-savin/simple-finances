@@ -400,7 +400,7 @@ function CreateCounterpartyFields({
           </p>
         )}
         {!isSearching && foundUser && (
-          <p className="flex items-center gap-1.5 text-xs text-success">
+          <p className="flex items-center gap-1.5 text-xs text-accent-text">
             <UserCheck className="size-3.5" />
             {foundUser.name} ({foundUser.email})
           </p>
@@ -651,7 +651,7 @@ export function EditCounterpartyForm({
           </p>
         )}
         {!isSearching && foundUser && (
-          <p className="flex items-center gap-1.5 text-xs text-success">
+          <p className="flex items-center gap-1.5 text-xs text-accent-text">
             <UserCheck className="size-3.5" />
             {foundUser.name} ({foundUser.email})
           </p>

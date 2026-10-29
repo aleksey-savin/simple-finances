@@ -8,8 +8,7 @@ import { updateRevisionItem, priceRevisionQueryKey } from './actions'
 
 function amountColorClass(current: string, proposed: string): string {
   const diff = Number(proposed) - Number(current)
-  if (diff > 0) return 'text-success'
-  if (diff < 0) return 'text-destructive'
+  if (diff > 0) return 'text-accent-text'
   return ''
 }
 

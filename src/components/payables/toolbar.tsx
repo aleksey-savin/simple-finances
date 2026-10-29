@@ -326,7 +326,7 @@ export function PayablesToolbar({
         <div className="ml-auto flex items-center gap-3 text-sm">
           <span
             className={`font-semibold tabular-nums ${
-              accentColor === 'red' ? 'text-destructive' : 'text-warning'
+              accentColor === 'red' ? 'text-foreground' : 'text-warning-text'
             }`}
           >
             Итого: {formatCurrency(filteredTotal)} ₽

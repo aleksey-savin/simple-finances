@@ -336,7 +336,7 @@ function ClientsPage() {
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
                         {client.totalRevenue > 0 ? (
-                          <span className="text-sm font-semibold text-success">
+                          <span className="text-sm font-semibold text-accent-text">
                             {formatCurrency(client.totalRevenue)} ₽
                           </span>
                         ) : (

@@ -16,7 +16,7 @@ export function ReceivablesSummaryCards({
     <div className="flex flex-wrap gap-3">
       <Card className="flex min-w-35 flex-col justify-center gap-2 p-4">
         <p className="text-sm text-muted-foreground">Всего ожидается</p>
-        <p className="text-success text-lg font-semibold tabular-nums">
+        <p className="text-accent-text text-lg font-semibold tabular-nums">
           {formatCurrency(summary.totalAll)} ₽
         </p>
       </Card>

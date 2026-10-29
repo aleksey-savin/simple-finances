@@ -10,11 +10,11 @@ import type { ProfitabilityBasis } from '#/components/reports/utils'
 export type { ProfitabilityBasis } from '#/components/reports/utils'
 
 const chartConfig = {
-  income: { label: 'Доход', color: 'var(--success)' },
-  expense: { label: 'Расход', color: 'var(--warning)' },
+  income: { label: 'Доход', color: 'var(--chart-1)' },
+  expense: { label: 'Расход', color: 'var(--chart-3)' },
   net: { label: 'Сальдо за месяц', color: 'var(--primary)' },
   debt: { label: 'Долг на 1-е', color: 'var(--destructive)' },
-  balance: { label: 'Баланс на 1-е', color: 'var(--chart-1)' },
+  balance: { label: 'Баланс на 1-е', color: 'var(--chart-2)' },
 } satisfies ChartConfig
 
 type ChartDatum = {
@@ -76,26 +76,21 @@ function ReportTooltip({
       <TooltipRow
         label={d.isForecast ? 'Доход (факт)' : 'Доход'}
         value={d.incomeActual}
-        className="text-success"
+        className="text-accent-text"
       />
       {d.incomePlanned > 0 ? (
         <TooltipRow
           label="Доход (план)"
           value={d.incomePlanned}
-          className="text-success"
+          className="text-accent-text"
         />
       ) : null}
       <TooltipRow
         label={d.isForecast ? 'Расход (факт)' : 'Расход'}
         value={d.expenseActual}
-        className="text-warning"
       />
       {d.expensePlanned > 0 ? (
-        <TooltipRow
-          label="Расход (план)"
-          value={d.expensePlanned}
-          className="text-warning"
-        />
+        <TooltipRow label="Расход (план)" value={d.expensePlanned} />
       ) : null}
       <TooltipRow label="Сальдо за месяц" value={d.net} />
       <TooltipRow

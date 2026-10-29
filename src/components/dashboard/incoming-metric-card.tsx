@@ -43,7 +43,7 @@ export function IncomingMetricCard({
         </p>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-4">
-        <p className="text-success text-3xl font-bold tabular-nums">
+        <p className="text-accent-text text-3xl font-bold tabular-nums">
           {formatMoney(total)} ₽
         </p>
 

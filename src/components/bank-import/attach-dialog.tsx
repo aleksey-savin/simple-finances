@@ -113,8 +113,8 @@ export function BankImportAttachDialog({
                 isOverAllocated
                   ? 'text-destructive'
                   : remaining > 0.001
-                    ? 'text-warning'
-                    : 'text-success'
+                    ? 'text-warning-text'
+                    : 'text-accent-text'
               }`}
             >
               {remaining > 0.001

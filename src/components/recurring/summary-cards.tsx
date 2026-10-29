@@ -65,7 +65,7 @@ export function RecurringSummaryCards({
           next={nextTotals.income}
           nextCount={nextTotals.incomeCount}
           tone="success"
-          icon={<ArrowUpRight className="size-4 text-success" />}
+          icon={<ArrowUpRight className="size-4 text-accent-text" />}
         />
         <SummaryCard
           title="Расходы"
@@ -74,7 +74,7 @@ export function RecurringSummaryCards({
           next={nextTotals.expenses}
           nextCount={nextTotals.expensesCount}
           tone="warning"
-          icon={<ArrowDownRight className="size-4 text-warning" />}
+          icon={<ArrowDownRight className="size-4" />}
         />
         <NetCard
           currentNet={currentTotals.income - currentTotals.expenses}
@@ -116,7 +116,7 @@ function SummaryCard({
       <CardContent className="space-y-1">
         <p
           className={`text-3xl font-semibold tabular-nums ${
-            tone === 'success' ? 'text-success' : 'text-warning'
+            tone === 'success' ? 'text-accent-text' : ''
           }`}
         >
           {formatRuleAmount(current)} ₽
@@ -146,24 +146,20 @@ function NetCard({
           <p className="text-sm text-muted-foreground">Доходы минус расходы</p>
         </div>
         {currentNet >= 0 ? (
-          <ArrowUpRight className="size-4 text-success" />
+          <ArrowUpRight className="size-4 text-accent-text" />
         ) : (
-          <ArrowDownRight className="size-4 text-destructive" />
+          <ArrowDownRight className="size-4" />
         )}
       </CardHeader>
       <CardContent className="space-y-1">
         <p
           className={`text-3xl font-semibold tabular-nums ${
-            tone === 'success' ? 'text-success' : 'text-destructive'
+            tone === 'success' ? 'text-accent-text' : ''
           }`}
         >
           {formatRuleAmount(currentNet)} ₽
         </p>
-        <p
-          className={`text-sm tabular-nums ${
-            nextNet >= 0 ? 'text-muted-foreground' : 'text-destructive/70'
-          }`}
-        >
+        <p className="text-sm tabular-nums text-muted-foreground">
           След. месяц: {formatRuleAmount(nextNet)} ₽
         </p>
       </CardContent>

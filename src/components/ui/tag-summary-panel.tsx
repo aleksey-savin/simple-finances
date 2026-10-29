@@ -116,7 +116,7 @@ export function TagSummaryPanel({ totals, className }: TagSummaryPanelProps) {
                     <span
                       className={cn(
                         'text-xs font-semibold tabular-nums',
-                        net >= 0 ? 'text-primary' : 'text-destructive',
+                        net >= 0 ? 'text-primary' : 'text-foreground',
                       )}
                     >
                       {net >= 0 ? '+' : ''}
@@ -127,14 +127,12 @@ export function TagSummaryPanel({ totals, className }: TagSummaryPanelProps) {
                   {/* Breakdown */}
                   <div className="grid grid-cols-2 gap-x-2 text-xs text-muted-foreground pl-4">
                     {incomeTotal > 0 && (
-                      <span className="text-success">
+                      <span className="text-accent-text">
                         ↑ {formatCurrency(incomeTotal)} ₽
                       </span>
                     )}
                     {expenseTotal > 0 && (
-                      <span className="text-destructive">
-                        ↓ {formatCurrency(expenseTotal)} ₽
-                      </span>
+                      <span>↓ {formatCurrency(expenseTotal)} ₽</span>
                     )}
                   </div>
                 </li>
@@ -160,7 +158,7 @@ export function TagSummaryPanel({ totals, className }: TagSummaryPanelProps) {
               'font-semibold tabular-nums',
               totals.reduce((s, t) => s + t.net, 0) >= 0
                 ? 'text-primary'
-                : 'text-destructive',
+                : 'text-foreground',
             )}
           >
             Итого:{' '}

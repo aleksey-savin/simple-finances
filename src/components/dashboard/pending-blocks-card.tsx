@@ -22,7 +22,7 @@ export function PendingBlocksCard({
     <Card>
       <CardHeader className="space-y-1">
         <CardTitle className="flex items-center gap-2 text-base">
-          <Clock className="size-4 text-warning" />
+          <Clock className="size-4 text-warning-text" />
           {title}
         </CardTitle>
       </CardHeader>
@@ -43,7 +43,7 @@ export function PendingBlocksCard({
                 ВМ: {service.vmNames.join(', ')}
               </p>
             )}
-            <p className="text-xs text-warning">
+            <p className="text-xs text-warning-text">
               Будет заблокирована: {formatDate(service.willSuspendAt)}
             </p>
           </div>

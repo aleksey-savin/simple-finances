@@ -151,7 +151,7 @@ function ProfitabilityPage() {
             <StatCard
               label={`Доход за период (${basisLabel})`}
               value={formatMoney(totals.income)}
-              className="text-success"
+              className="text-accent-text"
               onClick={() =>
                 setSelection({
                   basis,
@@ -166,7 +166,6 @@ function ProfitabilityPage() {
             <StatCard
               label={`Расход за период (${basisLabel})`}
               value={formatMoney(totals.expense)}
-              className="text-warning"
               onClick={() =>
                 setSelection({
                   basis,
@@ -181,13 +180,7 @@ function ProfitabilityPage() {
             <StatCard
               label="Сальдо за период"
               value={formatMoney(totals.net)}
-              className={
-                totals.net > 0
-                  ? 'text-success'
-                  : totals.net < 0
-                    ? 'text-warning'
-                    : undefined
-              }
+              className={totals.net > 0 ? 'text-accent-text' : undefined}
               onClick={() =>
                 setSelection({
                   basis,

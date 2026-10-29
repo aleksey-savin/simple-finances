@@ -68,7 +68,7 @@ function AmountText({
     <span
       className={cn(
         'tabular-nums',
-        positive ? 'text-success' : 'text-warning',
+        positive && 'text-accent-text',
         row.isForecast && 'opacity-60',
       )}
     >
@@ -256,7 +256,7 @@ export function ReportBreakdownSheet({
               <Loader2 className="size-4 animate-spin" /> Загрузка…
             </div>
           ) : isError ? (
-            <p className="py-16 text-center text-sm text-warning">
+            <p className="py-16 text-center text-sm text-warning-text">
               Не удалось загрузить операции.
             </p>
           ) : filteredRows.length === 0 ? (

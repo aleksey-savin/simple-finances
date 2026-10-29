@@ -24,7 +24,7 @@ export function SaldoMetricCard({
       <CardContent className="flex flex-1 flex-col gap-4">
         <p
           className={`text-3xl font-bold tabular-nums ${
-            saldo >= 0 ? 'text-success' : 'text-destructive'
+            saldo >= 0 ? 'text-accent-text' : ''
           }`}
         >
           {formatMoney(saldo)} ₽

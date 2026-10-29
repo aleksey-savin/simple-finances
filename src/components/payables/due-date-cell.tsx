@@ -25,7 +25,9 @@ export function PayablesDueDateCell({ row }: { row: ExpenseRow }) {
       )}
 
       {!row.isProjected && !isOverdue && daysLeft !== null && daysLeft <= 7 && (
-        <span className="text-xs text-warning">осталось {daysLeft} дн.</span>
+        <span className="text-xs text-warning-text">
+          осталось {daysLeft} дн.
+        </span>
       )}
 
       {row.isProjected && (

@@ -97,8 +97,7 @@ export function buildRevisionColumns(
             >
               {proposedAmounts.map((amt, i) => {
                 const diff = Number(amt) - Number(currentAmounts[i] ?? '0')
-                const colorClass =
-                  diff > 0 ? 'text-success' : diff < 0 ? 'text-destructive' : ''
+                const colorClass = diff > 0 ? 'text-accent-text' : ''
                 return (
                   <span
                     key={i}

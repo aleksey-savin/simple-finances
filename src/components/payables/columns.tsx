@@ -141,8 +141,8 @@ export function buildPayablesColumns({
               : row.original.paymentStatus === 'paid'
                 ? 'text-foreground/60 line-through'
                 : row.original.paymentStatus === 'partial'
-                  ? 'text-warning'
-                  : 'text-destructive'
+                  ? 'text-warning-text'
+                  : 'text-foreground'
           }`}
         >
           −{formatCurrency(getValue() as number)} ₽

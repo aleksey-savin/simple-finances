@@ -30,9 +30,7 @@ export function PayablesSummaryCards({
               >
                 <p className="text-muted-foreground text-sm">{account.name}</p>
                 <p
-                  className={`text-lg font-semibold tabular-nums ${
-                    balance < 0 ? 'text-destructive' : 'text-on-surface'
-                  }`}
+                  className={`text-lg font-semibold tabular-nums ${'text-foreground'}`}
                 >
                   {formatCurrency(balance)} ₽
                 </p>
@@ -45,7 +43,7 @@ export function PayablesSummaryCards({
       <div className="flex flex-wrap gap-3">
         <Card className="flex min-w-35 flex-col justify-center gap-2 p-4">
           <p className="text-muted-foreground text-sm">К оплате (месяц)</p>
-          <p className="text-destructive text-lg font-semibold tabular-nums">
+          <p className="text-lg font-semibold tabular-nums">
             {formatCurrency(summary.currentMonthUnpaid)} ₽
           </p>
         </Card>
@@ -53,7 +51,7 @@ export function PayablesSummaryCards({
         {summary.currentMonthPaid > 0 && (
           <Card className="flex min-w-35 flex-col justify-center gap-2 p-4">
             <p className="text-muted-foreground text-sm">Оплачено (месяц)</p>
-            <p className="text-success text-lg font-semibold tabular-nums">
+            <p className="text-accent-text text-lg font-semibold tabular-nums">
               {formatCurrency(summary.currentMonthPaid)} ₽
             </p>
           </Card>
@@ -64,7 +62,7 @@ export function PayablesSummaryCards({
             <p className="text-muted-foreground text-sm">
               Долг прошлых периодов
             </p>
-            <p className="text-warning text-lg font-semibold tabular-nums">
+            <p className="text-warning-text text-lg font-semibold tabular-nums">
               {formatCurrency(summary.previousTotal)} ₽
             </p>
           </Card>

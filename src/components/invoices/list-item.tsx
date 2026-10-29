@@ -199,12 +199,12 @@ export function InvoiceListItem({
         amountPrefix: '−',
         amountColor: '',
         status: isPaid ? (
-          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-success">
+          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-accent-text">
             <CheckCircle2 className="w-4 h-4 inline-block" />{' '}
             {`Оплачено ${paidDate}`}
           </div>
         ) : isPartial ? (
-          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-warning">
+          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-warning-text">
             <Clock className="w-4 h-4 inline-block" />{' '}
             {`Частично оплачено ${Number(item.settledAmount).toLocaleString(
               'ru-RU',
@@ -215,7 +215,7 @@ export function InvoiceListItem({
             )} из ${amountFormatted}`}
           </div>
         ) : (
-          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-warning">
+          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-warning-text">
             <Clock className="w-4 h-4 inline-block" /> {dueDateLabel}
           </div>
         ),
@@ -223,14 +223,14 @@ export function InvoiceListItem({
       }
     : {
         amountPrefix: '+',
-        amountColor: 'text-success',
+        amountColor: 'text-accent-text',
         status: isPaid ? (
-          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-success">
+          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-accent-text">
             <CheckCircle2 className="w-4 h-4 inline-block" />{' '}
             {`Оплачено ${paidDate}`}
           </div>
         ) : isPartial ? (
-          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-warning">
+          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-warning-text">
             <Clock className="w-4 h-4 inline-block" />{' '}
             {`Частично оплачено ${Number(item.settledAmount).toLocaleString(
               'ru-RU',
@@ -241,7 +241,7 @@ export function InvoiceListItem({
             )} из ${amountFormatted}`}
           </div>
         ) : (
-          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-warning">
+          <div className="flex gap-1 justify-center items-center text-sm font-semibold text-warning-text">
             <Clock className="w-4 h-4 inline-block" /> {dueDateLabel}
           </div>
         ),

@@ -63,7 +63,7 @@ export function FavouriteItemRow({
 
       <span
         className={`min-w-0 flex-1 text-base ${
-          inactive ? 'text-muted-foreground' : 'text-on-surface'
+          inactive ? 'text-muted-foreground' : 'text-foreground'
         }`}
       >
         {task.description}

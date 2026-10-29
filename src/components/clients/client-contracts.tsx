@@ -100,14 +100,12 @@ export function ClientContracts({
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 text-xs font-mono tabular-nums">
               {totals.income > 0 && (
-                <span className="text-success">
+                <span className="text-accent-text">
                   +{formatTotal(totals.income)} ₽
                 </span>
               )}
               {totals.expense > 0 && (
-                <span className="text-destructive">
-                  −{formatTotal(totals.expense)} ₽
-                </span>
+                <span>−{formatTotal(totals.expense)} ₽</span>
               )}
             </div>
             <Button

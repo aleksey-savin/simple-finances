@@ -66,8 +66,7 @@ function AmountChange({
       <div className="flex flex-col gap-0.5">
         {newAmounts.map((amt, i) => {
           const diff = Number(amt) - Number(previousAmounts[i] ?? '0')
-          const colorClass =
-            diff > 0 ? 'text-success' : diff < 0 ? 'text-destructive' : ''
+          const colorClass = diff > 0 ? 'text-accent-text' : ''
           return (
             <span key={i} className={`font-mono font-medium ${colorClass}`}>
               {formatAmount(amt)} ₽

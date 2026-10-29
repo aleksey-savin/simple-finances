@@ -205,7 +205,7 @@ function renderGroupSection({
                 {rows.length} {countLabel}
               </span>
             </div>
-            <span className="font-semibold tabular-nums text-destructive">
+            <span className="font-semibold tabular-nums">
               {formatCurrency(total)} ₽
             </span>
           </div>
@@ -279,7 +279,7 @@ function renderExpenseGroups(
               <span className="text-xs text-muted-foreground">
                 {entry.rows.length} {countLabel}
               </span>
-              <span className="ml-auto text-sm font-semibold text-destructive tabular-nums">
+              <span className="ml-auto text-sm font-semibold tabular-nums">
                 {formatCurrency(total)} ₽
               </span>
             </button>

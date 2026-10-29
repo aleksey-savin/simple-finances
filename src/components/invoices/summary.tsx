@@ -90,9 +90,7 @@ export function InvoiceSummary({ feed }: Props) {
             <p className="mb-1 text-xs leading-none text-muted-foreground">
               Оплачено
             </p>
-            <p className="text-sm font-semibold text-destructive">
-              {fmt(stats.paidPayables)}
-            </p>
+            <p className="text-sm font-semibold">{fmt(stats.paidPayables)}</p>
           </div>
         </CardContent>
       </Card>
@@ -113,7 +111,7 @@ export function InvoiceSummary({ feed }: Props) {
             <p className="mb-1 text-xs leading-none text-muted-foreground">
               Оплачено
             </p>
-            <p className="text-sm font-semibold text-success">
+            <p className="text-sm font-semibold text-accent-text">
               {fmt(stats.paidReceivables)}
             </p>
           </div>
