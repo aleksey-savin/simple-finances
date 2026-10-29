@@ -49,7 +49,7 @@ export function ClientHistoryLog({ entries }: { entries: HistoryEntry[] }) {
                 <TableCell>
                   <span className="text-sm font-medium">{e.title}</span>
                   {e.subtitle && (
-                    <p className="mt-0.5 text-xs text-muted-foreground">
+                    <p className="mt-0.5 text-sm text-muted-foreground">
                       {e.subtitle}
                     </p>
                   )}

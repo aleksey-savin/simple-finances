@@ -95,7 +95,7 @@ function ServiceRow({
               <p className="text-sm font-medium">
                 {service.clientName ?? 'Клиент не указан'}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 {service.contractName}
               </p>
             </>
@@ -103,7 +103,7 @@ function ServiceRow({
             <p className="text-sm font-medium">{service.contractName}</p>
           )}
           {showVmList && service.blockedVmNames.length > 0 && (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Заблокированные ВМ: {service.blockedVmNames.join(', ')}
             </p>
           )}
@@ -117,7 +117,7 @@ function ServiceRow({
                 : `Срок действия до: ${effectiveLabel}`}
             </p>
           ) : (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Срок действия не ограничен
             </p>
           )}

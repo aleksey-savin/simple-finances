@@ -23,7 +23,7 @@ export function SaldoMetricCard({
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-4">
         <p
-          className={`text-3xl font-semibold tabular-nums ${
+          className={`text-3xl font-bold tabular-nums ${
             saldo >= 0 ? 'text-success' : 'text-destructive'
           }`}
         >

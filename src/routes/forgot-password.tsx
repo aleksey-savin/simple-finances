@@ -54,7 +54,9 @@ function ForgotPasswordPage() {
       <div className="flex w-full max-w-sm flex-col gap-4">
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-xl">Восстановление пароля</CardTitle>
+            <CardTitle className="text-xl font-semibold tracking-tight">
+              Восстановление пароля
+            </CardTitle>
             <CardDescription>
               Введите email — мы отправим ссылку для сброса пароля.
             </CardDescription>

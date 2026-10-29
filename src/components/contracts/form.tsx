@@ -392,7 +392,7 @@ export const ContractForm = ({
               return (
                 <Field>
                   <FieldLabel>Направление</FieldLabel>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     Для договора с поставщиком направление скрыто. Договор
                     учитывается как расход.
                   </p>
@@ -503,7 +503,7 @@ export const ContractForm = ({
                   <FieldLabel htmlFor={field.name} className="cursor-pointer">
                     Отправлять напоминания об оплате
                   </FieldLabel>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     Если выключено, для этого договора не будут отправляться
                     напоминания.
                   </p>

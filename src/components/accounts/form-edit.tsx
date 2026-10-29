@@ -24,9 +24,11 @@ export const EditAccountForm = ({
 
   const form = useForm({
     defaultValues: {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       name: account.name ?? '',
       bankBik: account.bankBik ?? '',
       accountNumber: account.accountNumber ?? '',
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       acceptPayments: account.acceptPayments ?? false,
     },
     validators: { onSubmit: editAccountFormSchema },
@@ -101,7 +103,7 @@ export const EditAccountForm = ({
                 maxLength={9}
                 placeholder="Введите БИК банка"
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 Банковские реквизиты будут обновлены автоматически по БИК.
               </p>
               {isInvalid && <FieldError errors={field.state.meta.errors} />}

@@ -38,34 +38,34 @@ export function ClientStatistics({
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       <Card className="p-4">
-        <p className="text-xs text-muted-foreground">Сумма договоров</p>
+        <p className="text-sm text-muted-foreground">Сумма договоров</p>
         <p className="mt-1 text-xl font-semibold tabular-nums">
           {formatAmount(totalContractValue)} ₽
         </p>
-        <p className="mt-0.5 text-xs text-muted-foreground">
+        <p className="mt-0.5 text-sm text-muted-foreground">
           {contracts.length} договор
           {contracts.length === 1 ? '' : contracts.length < 5 ? 'а' : 'ов'}
         </p>
       </Card>
 
       <Card className="p-4">
-        <p className="text-xs text-muted-foreground">С покупателями</p>
+        <p className="text-sm text-muted-foreground">С покупателями</p>
         <p className="mt-1 text-xl font-semibold tabular-nums">
           {customerContracts}
         </p>
-        <p className="mt-0.5 text-xs text-muted-foreground">договоров</p>
+        <p className="mt-0.5 text-sm text-muted-foreground">договоров</p>
       </Card>
 
       <Card className="p-4">
-        <p className="text-xs text-muted-foreground">С поставщиками</p>
+        <p className="text-sm text-muted-foreground">С поставщиками</p>
         <p className="mt-1 text-xl font-semibold tabular-nums">
           {supplierContracts}
         </p>
-        <p className="mt-0.5 text-xs text-muted-foreground">договоров</p>
+        <p className="mt-0.5 text-sm text-muted-foreground">договоров</p>
       </Card>
 
       <Card className="p-4">
-        <p className="text-xs text-muted-foreground">Ожидаемые платежи</p>
+        <p className="text-sm text-muted-foreground">Ожидаемые платежи</p>
         <p className="mt-1 text-xl font-semibold tabular-nums">
           {formatAmount(pendingTotal)} ₽
         </p>

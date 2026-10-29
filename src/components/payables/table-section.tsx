@@ -62,7 +62,7 @@ export function PayablesTableSection({
           <div>
             {title && <h2 className="text-lg font-semibold">{title}</h2>}
             {description && (
-              <p className="mt-0.5 text-xs text-muted-foreground">
+              <p className="mt-0.5 text-sm text-muted-foreground">
                 {description}
               </p>
             )}

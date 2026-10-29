@@ -36,7 +36,7 @@ function CompanyRow({
 
         <ItemContent>
           <ItemTitle>{company.name}</ItemTitle>
-          <p className="mt-0.5 text-xs text-muted-foreground">
+          <p className="mt-0.5 text-sm text-muted-foreground">
             {company.accounts.length > 0
               ? company.accounts.map((item) => item.name).join(', ')
               : 'Счета не выбраны'}

@@ -58,7 +58,7 @@ export function ClientPendingPayments({
                 <div className="min-w-0">
                   <p className="text-sm font-medium">{p.description}</p>
                   {p.counterpartyName && (
-                    <p className="mt-0.5 text-xs text-muted-foreground">
+                    <p className="mt-0.5 text-sm text-muted-foreground">
                       {p.counterpartyName}
                     </p>
                   )}

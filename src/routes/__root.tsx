@@ -61,7 +61,9 @@ function RootError({ error }: { error: unknown }) {
           strokeWidth={1.5}
         />
         <p className="text-6xl font-bold text-muted-foreground">403</p>
-        <h1 className="text-2xl font-semibold">Доступ запрещён</h1>
+        <h1 className="text-xl font-semibold tracking-tight">
+          Доступ запрещён
+        </h1>
         <p className="text-sm text-muted-foreground">
           У вас нет прав для просмотра этой страницы.
         </p>
@@ -75,7 +77,9 @@ function RootError({ error }: { error: unknown }) {
   return (
     <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
       <p className="text-6xl font-bold text-muted-foreground">500</p>
-      <h1 className="text-2xl font-semibold">Что-то пошло не так</h1>
+      <h1 className="text-xl font-semibold tracking-tight">
+        Что-то пошло не так
+      </h1>
       <p className="text-sm text-muted-foreground">
         {error instanceof Error ? error.message : 'Неизвестная ошибка'}
       </p>
@@ -90,7 +94,9 @@ function NotFound() {
   return (
     <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
       <p className="text-6xl font-bold text-muted-foreground">404</p>
-      <h1 className="text-2xl font-semibold">Страница не найдена</h1>
+      <h1 className="text-xl font-semibold tracking-tight">
+        Страница не найдена
+      </h1>
       <p className="text-sm text-muted-foreground">
         Запрашиваемая страница не существует.
       </p>

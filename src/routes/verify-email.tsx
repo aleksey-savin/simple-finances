@@ -83,7 +83,9 @@ function VerifyEmailPage() {
       <div className="flex w-full max-w-sm flex-col gap-4">
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-xl">Подтверждение входа</CardTitle>
+            <CardTitle className="text-xl font-semibold tracking-tight">
+              Подтверждение входа
+            </CardTitle>
             <CardDescription>
               Мы отправили 6-значный код на {email}.
             </CardDescription>

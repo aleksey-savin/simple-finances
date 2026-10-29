@@ -92,7 +92,7 @@ export const AddCategoryForm = () => {
                 emptyText="Нет компаний"
                 allowClear
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 Необязательно — категория будет видна в рамках выбранной
                 компании
               </p>
@@ -162,7 +162,7 @@ export const AddCategoryForm = () => {
                   Общая категория
                 </FieldLabel>
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 Общие категории видны всем пользователям
               </p>
             </Field>

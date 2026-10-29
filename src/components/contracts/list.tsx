@@ -85,14 +85,14 @@ function ContractRow({
           <ItemTitle>
             {`Договор №${contract.number} от ${formatSignedAt(contract.signedAt)}`}
           </ItemTitle>
-          <p className="mt-0.5 text-xs text-muted-foreground">
+          <p className="mt-0.5 text-sm text-muted-foreground">
             {contractTypeLabel[contract.contractType]}
             {' · '}
             {contract.counterparty.name}
             {' · '}
             {contract.businessLine?.name ?? 'Без направления'}
           </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
+          <p className="mt-0.5 text-sm text-muted-foreground">
             {contract.name}
             {' · '}
             {contract.amount

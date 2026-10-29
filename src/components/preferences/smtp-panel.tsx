@@ -416,7 +416,7 @@ function ClientNotificationsSwitch({ enabled }: { enabled: boolean }) {
           <FieldLabel htmlFor="client-notifications" className="cursor-pointer">
             Уведомления клиентам
           </FieldLabel>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Напоминания о счетах и письма о приостановке/возобновлении серверов.
             Системные письма (коды входа, сброс пароля) отправляются всегда. При
             включении накопившиеся напоминания не рассылаются.

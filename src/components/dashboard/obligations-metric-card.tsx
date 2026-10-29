@@ -42,7 +42,7 @@ export function ObligationsMetricCard({
         </p>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-4">
-        <p className="text-warning text-3xl font-semibold tabular-nums">
+        <p className="text-warning text-3xl font-bold tabular-nums">
           {formatMoney(total)} ₽
         </p>
 

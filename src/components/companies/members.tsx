@@ -124,7 +124,7 @@ export function CompanyMembers({ companyId }: { companyId: string }) {
             >
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">{member.name}</p>
-                <p className="truncate text-xs text-muted-foreground">
+                <p className="truncate text-sm text-muted-foreground">
                   {member.email}
                 </p>
               </div>

@@ -92,7 +92,9 @@ function ProfitabilityPage() {
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">Динамика</h1>
+        <h1 className="text-3xl leading-none font-semibold tracking-tight">
+          Динамика
+        </h1>
         <p className="text-sm text-muted-foreground">
           Ретроспектива доходов, расходов и сальдо по месяцам. «Факт» — по дате
           оплаты, «Начисления» — по дате создания документа. Текущий месяц —

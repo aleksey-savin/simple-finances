@@ -122,7 +122,7 @@ export function ClientInfoCard({ client }: { client: ClientDetail }) {
       <Card className="flex flex-col gap-4 p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <p className="text-xs text-muted-foreground">Клиент</p>
+            <p className="text-sm text-muted-foreground">Клиент</p>
             <h2 className="mt-0.5 text-xl font-semibold">{client.name}</h2>
             {(totals.income > 0 || totals.expense > 0) && (
               <div className="mt-1 flex flex-wrap items-center gap-3 text-sm font-mono tabular-nums">
@@ -195,7 +195,7 @@ export function ClientInfoCard({ client }: { client: ClientDetail }) {
                   <div className="min-w-0 text-sm">
                     <p className="font-medium">{c.name}</p>
                     {c.position && (
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-sm text-muted-foreground">
                         {c.position}
                       </p>
                     )}

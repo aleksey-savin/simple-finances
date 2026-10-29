@@ -41,7 +41,7 @@ function SkippedContractsNotice({
   if (!businessLineId || !active || !data) return null
 
   return (
-    <p className="text-xs text-muted-foreground">
+    <p className="text-sm text-muted-foreground">
       Будет пропущено договоров: {data.skipped} из {data.total}
     </p>
   )
@@ -137,7 +137,7 @@ export function PriceRevisionForm({ onDone }: { onDone?: () => void }) {
                   Пропустить договоры с изменёнными менее 12 месяцев назад
                   ценами
                 </FieldLabel>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                   Договоры, цена которых менялась в последние 12 месяцев, не
                   будут добавлены в ревизию.
                 </p>

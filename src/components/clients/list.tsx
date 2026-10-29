@@ -38,12 +38,12 @@ function ClientRow({
           <div className="flex flex-wrap items-center gap-1.5">
             <ItemTitle>{client.name}</ItemTitle>
             {client.blockedServicesCount > 0 && (
-              <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">
+              <Badge variant="destructive" className="h-5 px-1.5 text-xs">
                 Блок: {client.blockedServicesCount}
               </Badge>
             )}
           </div>
-          <p className="mt-0.5 text-xs text-muted-foreground">
+          <p className="mt-0.5 text-sm text-muted-foreground">
             {client.counterparties.length > 0
               ? client.counterparties.map((item) => item.name).join(', ')
               : 'Контрагенты не выбраны'}

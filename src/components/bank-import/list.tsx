@@ -181,7 +181,7 @@ export function BankImportList({
               <TableRow className="hover:bg-transparent">
                 <TableCell
                   colSpan={5}
-                  className="bg-muted/30 py-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase text-center"
+                  className="bg-muted/30 py-2 text-xs font-bold tracking-wider text-faint uppercase text-center"
                 >
                   {group.label}
                 </TableCell>

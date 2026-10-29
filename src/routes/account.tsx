@@ -267,7 +267,9 @@ function AccountPage() {
 
   return (
     <div className="flex flex-col gap-6 p-4 max-w-2xl">
-      <h1 className="text-2xl font-semibold">Аккаунт</h1>
+      <h1 className="text-3xl leading-none font-semibold tracking-tight">
+        Аккаунт
+      </h1>
 
       <Card>
         <CardHeader>

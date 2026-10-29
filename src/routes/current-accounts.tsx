@@ -246,7 +246,7 @@ function CurrentAccountsPage() {
                             {account.name}
                           </div>
                           {account.accountNumber ? (
-                            <p className="mt-1 text-xs text-muted-foreground">
+                            <p className="mt-1 text-sm text-muted-foreground">
                               {account.accountNumber}
                             </p>
                           ) : null}

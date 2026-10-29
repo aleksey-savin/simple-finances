@@ -22,6 +22,7 @@ import { authClient } from 'utils/auth-client'
 
 export const Route = createFileRoute('/reset-password')({
   validateSearch: (search) => ({
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     token: (search.token as string) ?? '',
     error: search.error as string | undefined,
   }),
@@ -67,7 +68,9 @@ function ResetPasswordPage() {
         <div className="flex w-full max-w-sm flex-col gap-4">
           <Card>
             <CardHeader className="text-center">
-              <CardTitle className="text-xl">Ссылка недействительна</CardTitle>
+              <CardTitle className="text-xl font-semibold tracking-tight">
+                Ссылка недействительна
+              </CardTitle>
               <CardDescription>
                 Ссылка для сброса пароля истекла или уже использовалась.
               </CardDescription>
@@ -91,7 +94,9 @@ function ResetPasswordPage() {
       <div className="flex w-full max-w-sm flex-col gap-4">
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-xl">Новый пароль</CardTitle>
+            <CardTitle className="text-xl font-semibold tracking-tight">
+              Новый пароль
+            </CardTitle>
             <CardDescription>
               Введите новый пароль для аккаунта.
             </CardDescription>

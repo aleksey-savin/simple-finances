@@ -181,7 +181,7 @@ export const BusinessLineForm = ({
                   <FieldLabel htmlFor={field.name} className="cursor-pointer">
                     Разрешить привязку серверов
                   </FieldLabel>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     В договорах этого направления можно привязывать ВМ Proxmox
                   </p>
                 </div>
@@ -204,7 +204,7 @@ export const BusinessLineForm = ({
                   <FieldLabel htmlFor={field.name} className="cursor-pointer">
                     Отправлять уведомления об оплате
                   </FieldLabel>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     Email-напоминания по счетам договоров этого направления
                   </p>
                 </div>
@@ -262,7 +262,7 @@ export const BusinessLineForm = ({
                         placeholder="Выберите тон"
                         onBlur={field.handleBlur}
                       />
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-sm text-muted-foreground">
                         Мягкий тон убирает упоминания о блокировке услуги.
                       </p>
                     </Field>

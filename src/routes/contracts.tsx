@@ -210,7 +210,7 @@ function ContractsPage() {
                           {isBlocked && (
                             <Badge
                               variant="destructive"
-                              className="h-5 px-1.5 text-[10px]"
+                              className="h-5 px-1.5 text-xs"
                             >
                               Блок
                             </Badge>

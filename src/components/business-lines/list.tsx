@@ -35,13 +35,13 @@ function BusinessLineRow({
 
         <ItemContent>
           <ItemTitle>{businessLine.name}</ItemTitle>
-          <p className="mt-0.5 text-xs text-muted-foreground">
+          <p className="mt-0.5 text-sm text-muted-foreground">
             {`Договоров: ${businessLine.contracts.length} · Серверы: ${
               businessLine.allowServerBindings ? 'разрешены' : 'запрещены'
             } · Уведомления: ${businessLine.allowNotifications ? 'вкл' : 'выкл'}`}
           </p>
           {businessLine.allowNotifications && (
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <p className="mt-0.5 text-sm text-muted-foreground">
               {`Напоминания: за ${businessLine.reminderDaysBefore} дн., каждые ${
                 businessLine.reminderFrequencyDays
               } дн., тон: ${

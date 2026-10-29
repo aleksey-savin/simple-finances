@@ -40,7 +40,9 @@ function ScoringMetricsPage() {
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">Скоринг банковских выписок</h1>
+        <h1 className="text-3xl leading-none font-semibold tracking-tight">
+          Скоринг банковских выписок
+        </h1>
         <p className="text-sm text-muted-foreground">
           Насколько часто при разнесении выписки выбирался кандидат с наивысшей
           оценкой. Чем выше доля, тем безопаснее автоматизировать выбор.

@@ -472,7 +472,7 @@ export function ContractIntegrationsSection({
       )}
 
       {!isLoading && vms.length === 0 && (
-        <p className="text-xs text-muted-foreground">Нет привязанных ВМ</p>
+        <p className="text-sm text-muted-foreground">Нет привязанных ВМ</p>
       )}
 
       {vms.map((vm) => (

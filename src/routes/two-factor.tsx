@@ -76,7 +76,7 @@ function TwoFactorPage() {
       <div className="flex w-full max-w-sm flex-col gap-4">
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-xl">
+            <CardTitle className="text-xl font-semibold tracking-tight">
               Двухфакторная аутентификация
             </CardTitle>
             <CardDescription>

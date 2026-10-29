@@ -555,7 +555,7 @@ export const RecurringForm = ({
                       autoComplete="off"
                       className="font-mono"
                     />
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm text-muted-foreground">
                       Шаг: <code className="font-mono">*/3</code> или диапазон{' '}
                       <code className="font-mono">6-12/3</code>; список:{' '}
                       <code className="font-mono">6,9,12</code>. Синтаксис{' '}
@@ -592,7 +592,7 @@ export const RecurringForm = ({
               onChange={(e) => field.handleChange(e.target.value)}
               autoComplete="off"
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Оставьте пустым, если срок оплаты не нужен.
             </p>
           </Field>

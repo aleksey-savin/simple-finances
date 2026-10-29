@@ -118,7 +118,7 @@ export function BankTransactionSettlementsDetails({
                   <p className="text-sm text-muted-foreground">
                     {settlement.counterpartyName ?? 'Без контрагента'}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     Привязано {formatMoney(settlement.amount)} ₽ от{' '}
                     {formatDate(settlement.settledAt)}
                   </p>

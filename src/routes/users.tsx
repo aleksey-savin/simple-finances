@@ -42,6 +42,7 @@ function UsersPage() {
   const data = Route.useLoaderData()
   const navigate = useNavigate()
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   const allUsers = data.users ?? []
 
   const [search, setSearch] = useState('')
@@ -56,7 +57,9 @@ function UsersPage() {
     if (query) {
       const role = user.role ?? 'user'
       const haystack = [
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         user.name ?? '',
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         user.email ?? '',
         roleLabels[role] ?? role,
       ]
@@ -186,7 +189,7 @@ function UsersPage() {
                             <Badge variant="outline">Активен</Badge>
                           )}
                         </div>
-                        <p className="mt-2 text-xs text-muted-foreground">
+                        <p className="mt-2 text-sm text-muted-foreground">
                           {formatDate(user.createdAt)}
                         </p>
                       </div>

@@ -30,7 +30,7 @@ export function PriceRevisionSummaryCards({
           <p className="text-xl font-semibold tabular-nums">
             {formatCurrency(summary.current)}
           </p>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-sm text-muted-foreground mt-0.5">
             {summary.includedCount} из{' '}
             {summary.includedCount + summary.excludedCount} договоров
           </p>
@@ -47,7 +47,7 @@ export function PriceRevisionSummaryCards({
           <p className="text-xl font-semibold tabular-nums">
             {formatCurrency(summary.proposed)}
           </p>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-sm text-muted-foreground mt-0.5">
             при успешном согласовании всех
           </p>
         </CardContent>

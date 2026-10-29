@@ -52,7 +52,7 @@ export function AccountSelection({
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-1">
                     <p className="font-semibold leading-5">{account.name}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm text-muted-foreground">
                       {decodeHtmlEntities(account.bankNameInitials) ?? '-'}
                     </p>
                   </div>

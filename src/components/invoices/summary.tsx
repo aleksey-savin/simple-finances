@@ -81,13 +81,13 @@ export function InvoiceSummary({ feed }: Props) {
         </CardHeader>
         <CardContent className="flex flex-col gap-2 p-0 sm:flex-row sm:gap-12">
           <div>
-            <p className="mb-1 text-[10px] leading-none text-muted-foreground">
+            <p className="mb-1 text-xs leading-none text-muted-foreground">
               Не оплачено
             </p>
             <p className="text-sm font-semibold">{fmt(stats.unpaidPayables)}</p>
           </div>
           <div>
-            <p className="mb-1 text-[10px] leading-none text-muted-foreground">
+            <p className="mb-1 text-xs leading-none text-muted-foreground">
               Оплачено
             </p>
             <p className="text-sm font-semibold text-destructive">
@@ -102,7 +102,7 @@ export function InvoiceSummary({ feed }: Props) {
         </CardHeader>
         <CardContent className="flex flex-col gap-2 p-0 sm:flex-row sm:gap-12">
           <div>
-            <p className="mb-1 text-[10px] leading-none text-muted-foreground">
+            <p className="mb-1 text-xs leading-none text-muted-foreground">
               Не оплачено
             </p>
             <p className="text-sm font-semibold">
@@ -110,7 +110,7 @@ export function InvoiceSummary({ feed }: Props) {
             </p>
           </div>
           <div>
-            <p className="mb-1 text-[10px] leading-none text-muted-foreground">
+            <p className="mb-1 text-xs leading-none text-muted-foreground">
               Оплачено
             </p>
             <p className="text-sm font-semibold text-success">

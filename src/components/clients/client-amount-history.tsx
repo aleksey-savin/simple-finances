@@ -38,7 +38,7 @@ export function ClientAmountHistory({
               <div className="flex items-center justify-between gap-4">
                 <div className="min-w-0">
                   <p className="text-sm font-medium">{h.contractName}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
+                  <p className="mt-0.5 text-sm text-muted-foreground">
                     {h.changedByName} · {formatDate(h.changedAt)}
                   </p>
                 </div>

@@ -20,7 +20,7 @@ export function ListAppearanceFields({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-1.5">
-        <p className="text-xs text-muted-foreground">Иконка</p>
+        <p className="text-sm text-muted-foreground">Иконка</p>
         <div className="grid grid-cols-6 gap-1">
           {TASK_LIST_ICONS.map(({ name, Icon }) => {
             const selected = icon === name
@@ -44,7 +44,7 @@ export function ListAppearanceFields({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <p className="text-xs text-muted-foreground">Цвет</p>
+        <p className="text-sm text-muted-foreground">Цвет</p>
         <div className="flex flex-wrap gap-1">
           {TASK_LIST_COLORS.map((c) => (
             <button

@@ -46,7 +46,9 @@ export function ClientActions({ client }: { client: ClientDetail }) {
   return (
     <>
       <Card className="flex flex-col gap-2 p-4">
-        <p className="text-xs font-medium text-muted-foreground">Действия</p>
+        <p className="text-xs font-bold tracking-wider text-faint uppercase">
+          Действия
+        </p>
         <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"

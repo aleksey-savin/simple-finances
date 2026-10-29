@@ -35,11 +35,11 @@ export function PendingBlocksCard({
             <p className="text-sm font-medium">
               {service.clientName ?? 'Клиент не указан'}
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               {service.contractName}
             </p>
             {service.vmNames.length > 0 && (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 ВМ: {service.vmNames.join(', ')}
               </p>
             )}

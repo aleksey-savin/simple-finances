@@ -193,7 +193,7 @@ function ClientsPage() {
                         {client.blockedServicesCount > 0 && (
                           <Badge
                             variant="destructive"
-                            className="h-5 px-1.5 text-[10px]"
+                            className="h-5 px-1.5 text-xs"
                           >
                             Блок: {client.blockedServicesCount}
                           </Badge>
@@ -282,7 +282,7 @@ function ClientsPage() {
                           {client.blockedServicesCount > 0 && (
                             <Badge
                               variant="destructive"
-                              className="h-5 px-1.5 text-[10px]"
+                              className="h-5 px-1.5 text-xs"
                             >
                               Блок: {client.blockedServicesCount}
                             </Badge>

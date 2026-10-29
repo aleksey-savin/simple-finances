@@ -73,7 +73,7 @@ export function ClientProxmoxResources({
                 <TableRow key={r.id}>
                   <TableCell>
                     <p className="text-sm font-medium">{r.name}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
+                    <p className="mt-0.5 text-sm text-muted-foreground">
                       {r.vmType.toUpperCase()} · VMID {r.vmid}
                     </p>
                   </TableCell>
@@ -82,7 +82,7 @@ export function ClientProxmoxResources({
                   </TableCell>
                   <TableCell>
                     <p className="text-sm font-medium">{r.counterpartyName}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
+                    <p className="mt-0.5 text-sm text-muted-foreground">
                       {r.contractName}
                     </p>
                   </TableCell>

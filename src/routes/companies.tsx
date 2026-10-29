@@ -107,7 +107,7 @@ function CompaniesPage() {
                           : 'Счета не выбраны'}
                       </p>
                       {company.members.length > 0 && (
-                        <p className="mt-1 text-xs text-muted-foreground">
+                        <p className="mt-1 text-sm text-muted-foreground">
                           {company.members.map((m) => m.name).join(', ')}
                         </p>
                       )}

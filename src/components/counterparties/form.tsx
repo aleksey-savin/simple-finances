@@ -394,7 +394,7 @@ function CreateCounterpartyFields({
           )}
         </div>
         {isSearching && (
-          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Loader2 className="size-3 animate-spin" />
             Поиск…
           </p>
@@ -645,7 +645,7 @@ export function EditCounterpartyForm({
           )}
         </div>
         {isSearching && (
-          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Loader2 className="size-3 animate-spin" />
             Поиск…
           </p>

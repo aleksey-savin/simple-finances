@@ -101,7 +101,7 @@ export const AddAccountForm = () => {
                   type="text"
                   required
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                   Банк, коррсчёт и сокращение будут загружены автоматически по
                   БИК.
                 </p>
@@ -154,7 +154,7 @@ export const AddAccountForm = () => {
                   onBlur={field.handleBlur}
                 />
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 Другие пользователи смогут направлять расходы на этот счёт как
                 доход
               </p>

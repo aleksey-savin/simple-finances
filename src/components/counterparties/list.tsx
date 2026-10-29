@@ -39,7 +39,7 @@ function CounterpartyRow({
         <ItemContent>
           <ItemTitle>{counterparty.name}</ItemTitle>
           {counterparty.linkedUser && (
-            <p className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+            <p className="flex items-center gap-1 text-sm text-muted-foreground mt-0.5">
               <UserCheck className="size-3 shrink-0 text-primary" />
               <span className="truncate">
                 <span className="text-muted-foreground/60 ml-1">

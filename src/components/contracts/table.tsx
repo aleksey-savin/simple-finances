@@ -119,20 +119,17 @@ export function ContractsTable({
                     ? `№${contract.number} от ${formatSignedAt(contract.signedAt)}`
                     : contract.name}
                   {highlightBlocked && isBlocked && (
-                    <Badge
-                      variant="destructive"
-                      className="h-5 px-1.5 text-[10px]"
-                    >
+                    <Badge variant="destructive" className="h-5 px-1.5 text-xs">
                       Блок
                     </Badge>
                   )}
                 </div>
                 {contract.number && (
-                  <p className="mt-0.5 text-xs text-muted-foreground">
+                  <p className="mt-0.5 text-sm text-muted-foreground">
                     {contract.name}
                   </p>
                 )}
-                <p className="mt-0.5 text-xs text-muted-foreground">
+                <p className="mt-0.5 text-sm text-muted-foreground">
                   {contract.counterparty.name}
                 </p>
                 {highlightBlocked && isBlocked && (
