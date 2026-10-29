@@ -9,7 +9,7 @@ import Counterparties from '../counterparties'
 export const AppHeader = () => {
   return (
     <header
-      className={`flex h-16 shrink-0 items-center gap-2 border-b px-4 justify-between`}
+      className={`flex h-14 shrink-0 items-center justify-between gap-2 border-b bg-background px-6`}
     >
       <div className="flex gap-4 items-center">
         <SidebarTrigger className="-ml-1" />

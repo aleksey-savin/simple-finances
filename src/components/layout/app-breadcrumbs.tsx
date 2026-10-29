@@ -154,13 +154,13 @@ export function AppBreadCrumbs() {
 
             return (
               <React.Fragment key={href}>
-                <BreadcrumbItem className="text-lg">
+                <BreadcrumbItem className="text-sm">
                   {isLink ? (
                     <BreadcrumbLink asChild>
                       <Link to={href}>{label}</Link>
                     </BreadcrumbLink>
                   ) : (
-                    <BreadcrumbPage className="font-semibold">
+                    <BreadcrumbPage className="font-medium text-foreground">
                       {label}
                     </BreadcrumbPage>
                   )}
@@ -173,12 +173,7 @@ export function AppBreadCrumbs() {
           {/* Show Add button on root entity pages like /recurring or /users */}
           {showAddButton && (
             <BreadcrumbItem>
-              <Button
-                variant="success"
-                asChild
-                size="sm"
-                className="gap-2 ml-2"
-              >
+              <Button variant="success" asChild size="icon" className="ml-2">
                 <Link to={`/${lastSegment}/new` as any}>
                   <PlusIcon className="size-4" />
                 </Link>
@@ -188,8 +183,8 @@ export function AppBreadCrumbs() {
 
           {/* Show entity name on view pages and detail pages */}
           {(isViewPage || isDetailPage) && entityName && (
-            <BreadcrumbItem className="text-lg">
-              <BreadcrumbPage className="font-semibold">
+            <BreadcrumbItem className="text-sm">
+              <BreadcrumbPage className="font-medium text-foreground">
                 {entityName}
               </BreadcrumbPage>
             </BreadcrumbItem>

@@ -63,12 +63,12 @@ const navMain = [
     items: [
       {
         title: 'Dashboard',
-        icon: <LayoutDashboard className="size-5" />,
+        icon: <LayoutDashboard className="size-4.5" />,
         url: '/dashboard',
       },
       {
         title: 'Задачи',
-        icon: <ListTodo className="size-5" />,
+        icon: <ListTodo className="size-4.5" />,
         url: '/tasks',
       },
     ],
@@ -78,27 +78,27 @@ const navMain = [
     items: [
       {
         title: 'Все операции',
-        icon: <Wallet className="size-5" />,
+        icon: <Wallet className="size-4.5" />,
         url: '/transactions',
       },
       {
         title: 'Расписание платежей',
-        icon: <CalendarCheck className="size-5" />,
+        icon: <CalendarCheck className="size-4.5" />,
         url: '/recurring',
       },
       {
         title: 'Банковские выписки',
-        icon: <FileSpreadsheet className="size-5" />,
+        icon: <FileSpreadsheet className="size-4.5" />,
         url: '/bank-import',
       },
       {
         title: 'Дебиторка',
-        icon: <BanknoteArrowUp className="size-5" />,
+        icon: <BanknoteArrowUp className="size-4.5" />,
         url: '/receivables',
       },
       {
         title: 'Платежи и обязательства',
-        icon: <BanknoteArrowDown className="size-5" />,
+        icon: <BanknoteArrowDown className="size-4.5" />,
         url: '/payables',
       },
     ],
@@ -108,7 +108,7 @@ const navMain = [
     items: [
       {
         title: 'Динамика',
-        icon: <LineChart className="size-5" />,
+        icon: <LineChart className="size-4.5" />,
         url: '/reports/dynamics',
       },
     ],
@@ -118,7 +118,7 @@ const navMain = [
     items: [
       {
         title: 'Клиенты',
-        icon: <User className="size-5" />,
+        icon: <User className="size-4.5" />,
         url: '/clients',
       },
     ],
@@ -128,7 +128,7 @@ const navMain = [
     items: [
       {
         title: 'Ревизии цен',
-        icon: <TrendingUp className="size-5" />,
+        icon: <TrendingUp className="size-4.5" />,
         url: '/price-revisions',
         hideForPersonal: true,
       },
@@ -139,7 +139,7 @@ const navMain = [
     items: [
       {
         title: 'Скоринг',
-        icon: <Gauge className="size-5" />,
+        icon: <Gauge className="size-4.5" />,
         url: '/metrics/scoring',
       },
     ],
@@ -150,41 +150,41 @@ const navMain = [
     items: [
       {
         title: 'Бизнес-направления',
-        icon: <Folder className="size-5" />,
+        icon: <Folder className="size-4.5" />,
         url: '/business-lines',
         hideForPersonal: true,
       },
       {
         title: 'Договоры',
-        icon: <FileSpreadsheet className="size-5" />,
+        icon: <FileSpreadsheet className="size-4.5" />,
         url: '/contracts',
         hideForPersonal: true,
       },
 
       {
         title: 'Категории платежей',
-        icon: <List className="size-5" />,
+        icon: <List className="size-4.5" />,
         url: '/categories',
       },
 
       {
         title: 'Контрагенты',
-        icon: <ReceiptRussianRuble className="size-5" />,
+        icon: <ReceiptRussianRuble className="size-4.5" />,
         url: '/counterparties',
       },
       {
         title: 'Мои компании',
-        icon: <Building className="size-5" />,
+        icon: <Building className="size-4.5" />,
         url: '/companies',
       },
       {
         title: 'Пользователи',
-        icon: <User className="size-5" />,
+        icon: <User className="size-4.5" />,
         url: '/users',
       },
       {
         title: 'Расчётные счета',
-        icon: <Wallet className="size-5" />,
+        icon: <Wallet className="size-4.5" />,
         url: '/current-accounts',
       },
     ],
@@ -195,7 +195,7 @@ const navMain = [
     items: [
       {
         title: 'Настройки',
-        icon: <Settings className="size-5" />,
+        icon: <Settings className="size-4.5" />,
         url: '/preferences',
       },
     ],
@@ -245,12 +245,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   return (
     <Sidebar {...props}>
-      <SidebarHeader>
-        <SidebarMenu>
+      <SidebarHeader className="gap-0 p-0">
+        <div className="flex h-14 items-center gap-3 px-4">
+          <span className="flex size-7 shrink-0 items-center justify-center bg-primary text-sm font-bold text-primary-foreground">
+            П
+          </span>
+          <span className="truncate text-base font-semibold group-data-[collapsible=icon]:hidden">
+            Портал
+          </span>
+        </div>
+        <SidebarMenu className="px-3 pb-3">
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <SidebarMenuButton className="h-12 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
+                <SidebarMenuButton className="h-10 border border-border bg-background data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
                   <span className="flex min-w-0 items-center gap-2">
                     {selectedScope.kind === 'personal' ? (
                       <UserRound className="size-4 shrink-0" />
@@ -309,7 +317,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         <SidebarMenuItem key={item.title}>
                           <SidebarMenuButton
                             asChild
-                            className="flex items-center gap-2 text-base"
+                            className="flex items-center"
                           >
                             <Link to={item.url} onClick={handleNavClick}>
                               <span>{item.icon}</span>
@@ -332,10 +340,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <SidebarMenu>
                   {group.items.map((item) => (
                     <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton
-                        asChild
-                        className="flex items-center gap-2 text-base"
-                      >
+                      <SidebarMenuButton asChild className="flex items-center">
                         <Link to={item.url} onClick={handleNavClick}>
                           <span>{item.icon}</span>
                           {item.title}
