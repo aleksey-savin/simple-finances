@@ -188,6 +188,7 @@ export async function runProxmoxVmManager({
         })
 
         await sendEmail({
+          kind: 'notification',
           to: notificationContext.toEmail,
           subject: emailTemplate.subject,
           html: emailTemplate.html,
@@ -216,6 +217,7 @@ export async function runProxmoxVmManager({
         })
 
         await sendEmail({
+          kind: 'notification',
           to: notificationContext.toEmail,
           subject: emailTemplate.subject,
           html: emailTemplate.html,

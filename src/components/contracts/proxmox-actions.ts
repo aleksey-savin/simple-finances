@@ -219,6 +219,7 @@ export const setPausedUntil = createServerFn({ method: 'POST' })
           })
 
           await sendEmail({
+            kind: 'notification',
             to: notificationContext.toEmail,
             subject: emailTemplate.subject,
             html: emailTemplate.html,

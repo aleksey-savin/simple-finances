@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/dialog'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 import {
   Select,
   SelectContent,
@@ -29,7 +30,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { saveSmtpSettings, testSmtpConnection } from './actions'
+import {
+  saveSmtpSettings,
+  setClientNotificationsEnabled,
+  testSmtpConnection,
+} from './actions'
 
 const smtpFormSchema = z.object({
   host: z.string().min(1, 'Укажите адрес сервера'),
@@ -67,6 +72,7 @@ type SmtpSettings = {
   password: string
   fromName: string
   fromEmail: string
+  clientNotificationsEnabled: boolean
 } | null
 
 type SmtpFormProps = { settings: SmtpSettings }
@@ -382,18 +388,77 @@ function SmtpForm({ settings }: SmtpFormProps) {
   )
 }
 
+function ClientNotificationsSwitch({ enabled }: { enabled: boolean }) {
+  const router = useRouter()
+  const [isSaving, setIsSaving] = useState(false)
+
+  async function handleChange(next: boolean) {
+    setIsSaving(true)
+    try {
+      await setClientNotificationsEnabled({ data: { enabled: next } })
+      await router.invalidate()
+      toast.success(
+        next
+          ? 'Уведомления клиентам включены'
+          : 'Уведомления клиентам отключены',
+      )
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Произошла ошибка')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  return (
+    <Field>
+      <div className="flex items-center justify-between gap-4 bg-muted/50 px-4 py-3">
+        <div className="space-y-0.5">
+          <FieldLabel htmlFor="client-notifications" className="cursor-pointer">
+            Уведомления клиентам
+          </FieldLabel>
+          <p className="text-xs text-muted-foreground">
+            Напоминания о счетах и письма о приостановке/возобновлении серверов.
+            Системные письма (коды входа, сброс пароля) отправляются всегда. При
+            включении накопившиеся напоминания не рассылаются.
+          </p>
+        </div>
+        <Switch
+          id="client-notifications"
+          checked={enabled}
+          disabled={isSaving}
+          onCheckedChange={handleChange}
+        />
+      </div>
+    </Field>
+  )
+}
+
 export function SmtpPreferencesPanel({ settings }: SmtpFormProps) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Настройки SMTP</CardTitle>
-        <CardDescription>
-          Исходящий почтовый сервер для отправки писем из системы
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <SmtpForm settings={settings} />
-      </CardContent>
-    </Card>
+    <div className="flex flex-col gap-6">
+      {settings && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Email-уведомления</CardTitle>
+          </CardHeader>
+          <CardContent className="max-w-2xl">
+            <ClientNotificationsSwitch
+              enabled={settings.clientNotificationsEnabled}
+            />
+          </CardContent>
+        </Card>
+      )}
+      <Card>
+        <CardHeader>
+          <CardTitle>Настройки SMTP</CardTitle>
+          <CardDescription>
+            Исходящий почтовый сервер для отправки писем из системы
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <SmtpForm settings={settings} />
+        </CardContent>
+      </Card>
+    </div>
   )
 }

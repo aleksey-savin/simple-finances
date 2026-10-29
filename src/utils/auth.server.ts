@@ -37,6 +37,7 @@ export const auth = betterAuth({
     async sendResetPassword({ user: u, url }) {
       const template = buildPasswordResetEmail({ resetUrl: url })
       await sendEmail({
+        kind: 'system',
         to: u.email,
         subject: template.subject,
         html: template.html,
@@ -93,6 +94,7 @@ export const auth = betterAuth({
         async sendOTP({ user: u, otp }) {
           const template = buildTwoFactorOtpEmail({ otp })
           await sendEmail({
+            kind: 'system',
             to: u.email,
             subject: template.subject,
             html: template.html,
@@ -105,6 +107,7 @@ export const auth = betterAuth({
       async sendVerificationOTP({ email, otp }) {
         const template = buildTwoFactorOtpEmail({ otp })
         await sendEmail({
+          kind: 'system',
           to: email,
           subject: template.subject,
           html: template.html,

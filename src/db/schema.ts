@@ -1539,6 +1539,9 @@ export const smtpSettings = pgTable('smtp_settings', {
   password: text('password').notNull(),
   fromName: text('from_name').notNull(),
   fromEmail: text('from_email').notNull(),
+  clientNotificationsEnabled: boolean('client_notifications_enabled')
+    .notNull()
+    .default(true),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })

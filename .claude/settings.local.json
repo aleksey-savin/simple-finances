@@ -42,6 +42,6 @@
       "Bash(echo \"eslint exit: $?\")",
       "Bash(pnpm lint *)"
     ],
-    "deny": ["Bash(**/.env)", "Read(**/.env)", "Write(**/.env)"]
+    "deny": ["Bash(**/.env)", "Read(**/.env)", "Edit(**/.env)"]
   }
 }

@@ -8,7 +8,12 @@ import { smtpSettings } from '#/db/schema'
 
 const DEV_EMAIL_RECIPIENT = 'a.savin@f1lab.ru'
 
+// 'system' — auth codes, password reset, SMTP test: always sent.
+// 'notification' — client-facing mail, suppressed by the global switch.
+export type EmailKind = 'system' | 'notification'
+
 export type SendEmailInput = {
+  kind: EmailKind
   to: string | string[]
   subject: string
   html: string
@@ -19,9 +24,18 @@ export type SendEmailResult = {
   messageId: string
 }
 
+export async function areClientNotificationsEnabled(): Promise<boolean> {
+  const rows = await db
+    .select({ enabled: smtpSettings.clientNotificationsEnabled })
+    .from(smtpSettings)
+    .orderBy(asc(smtpSettings.createdAt))
+    .limit(1)
+  return rows.at(0)?.enabled ?? true
+}
+
 export async function sendEmail(
   input: SendEmailInput,
-): Promise<SendEmailResult> {
+): Promise<SendEmailResult | null> {
   const settingsRows = await db
     .select()
     .from(smtpSettings)
@@ -34,6 +48,13 @@ export async function sendEmail(
     )
   }
   const settings = settingsRows[0]
+
+  if (input.kind === 'notification' && !settings.clientNotificationsEnabled) {
+    console.log(
+      `[email] Client notifications disabled, skipped: "${input.subject}"`,
+    )
+    return null
+  }
 
   const transporter = nodemailer.createTransport({
     host: settings.host,

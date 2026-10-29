@@ -11,7 +11,7 @@ import {
   contact,
 } from '#/db/schema'
 import { buildInvoiceReminderEmail } from '#/lib/email-templates'
-import { sendEmail } from '#/lib/email.server'
+import { areClientNotificationsEnabled, sendEmail } from '#/lib/email.server'
 
 export default defineTask({
   meta: {
@@ -21,6 +21,11 @@ export default defineTask({
   },
 
   async run() {
+    if (!(await areClientNotificationsEnabled())) {
+      console.log('[invoice-reminders] Client notifications disabled, skipping')
+      return { result: { sent: 0 } }
+    }
+
     const now = new Date()
     const today = startOfDay(now)
     const formatDateRu = (value: Date | string) =>
@@ -204,12 +209,14 @@ export default defineTask({
             style: bl.notificationStyle,
           })
 
-          await sendEmail({
+          const delivery = await sendEmail({
+            kind: 'notification',
             to: toEmail,
             subject: emailTemplate.subject,
             html: emailTemplate.html,
             text: emailTemplate.text,
           })
+          if (!delivery) continue
 
           await db.insert(invoiceReminderLog).values({
             invoiceId: inv.id,
