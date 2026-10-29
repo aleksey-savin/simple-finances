@@ -116,7 +116,7 @@ export function TagSummaryPanel({ totals, className }: TagSummaryPanelProps) {
                     <span
                       className={cn(
                         'text-xs font-semibold tabular-nums',
-                        net >= 0 ? 'text-primary' : 'text-foreground',
+                        net >= 0 ? 'text-accent-text' : 'text-foreground',
                       )}
                     >
                       {net >= 0 ? '+' : ''}
@@ -157,7 +157,7 @@ export function TagSummaryPanel({ totals, className }: TagSummaryPanelProps) {
             className={cn(
               'font-semibold tabular-nums',
               totals.reduce((s, t) => s + t.net, 0) >= 0
-                ? 'text-primary'
+                ? 'text-accent-text'
                 : 'text-foreground',
             )}
           >

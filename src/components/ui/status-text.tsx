@@ -28,7 +28,7 @@ export function StatusText({
         className,
       )}
     >
-      <span className="size-2 rounded-full bg-current" />
+      <span className="size-2 shrink-0 rounded-full bg-current" />
       {children}
     </span>
   )

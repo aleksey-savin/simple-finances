@@ -18,11 +18,11 @@ const badgeVariants = cva(
         destructive:
           'bg-destructive text-white focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40 [a&]:hover:bg-destructive/90',
         warning:
-          'bg-warning text-white focus-visible:ring-warning/20 dark:bg-warning/60 dark:focus-visible:ring-warning/40 [a&]:hover:bg-warning/90',
+          'bg-warning text-warning-foreground focus-visible:ring-warning/20 dark:bg-warning/60 dark:focus-visible:ring-warning/40 [a&]:hover:bg-warning/90',
         outline:
           'border-border text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
         ghost: '[a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
-        link: 'text-primary underline-offset-4 [a&]:hover:underline',
+        link: 'text-accent-text underline-offset-4 [a&]:hover:underline',
       },
     },
     defaultVariants: {

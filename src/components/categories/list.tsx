@@ -48,7 +48,7 @@ function CategoryRow({
             {category.useForIncome && (
               <Badge
                 variant="secondary"
-                className="text-xs px-1.5 py-0 text-green-700 bg-green-50 dark:bg-green-950/30"
+                className="text-xs px-1.5 py-0 text-accent-text bg-primary/10"
               >
                 Доход
               </Badge>

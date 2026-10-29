@@ -158,7 +158,7 @@ function CategoriesPage() {
                         {category.useForIncome && (
                           <Badge
                             variant="secondary"
-                            className="text-green-700 bg-green-50 dark:bg-green-950/30"
+                            className="text-accent-text bg-primary/10"
                           >
                             Доходы
                           </Badge>
@@ -223,7 +223,7 @@ function CategoriesPage() {
                           {category.useForIncome && (
                             <Badge
                               variant="secondary"
-                              className="text-green-700 bg-green-50 dark:bg-green-950/30"
+                              className="text-accent-text bg-primary/10"
                             >
                               Доходы
                             </Badge>

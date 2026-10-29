@@ -19,7 +19,7 @@ export function PayablesDueDateCell({ row }: { row: ExpenseRow }) {
       </span>
 
       {!row.isProjected && isOverdue && (
-        <span className="text-xs text-red-400">
+        <span className="text-xs text-destructive">
           просрочен {Math.abs(daysLeft ?? 0)} дн.
         </span>
       )}

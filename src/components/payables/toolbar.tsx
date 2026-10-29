@@ -235,8 +235,7 @@ export function PayablesToolbar({
 
         <Button
           variant={payablePresetSelected ? 'secondary' : 'outline'}
-          size="sm"
-          className="h-8 gap-1.5"
+          className="gap-1.5"
           onClick={() =>
             table
               .getColumn('status')
@@ -270,7 +269,7 @@ export function PayablesToolbar({
               onGroupModeChange(value as PayablesGroupMode)
             }
           >
-            <SelectTrigger size="sm" className="h-8 w-48">
+            <SelectTrigger className="w-48">
               <Rows3 className="size-3.5" />
               <SelectValue />
             </SelectTrigger>
@@ -283,12 +282,7 @@ export function PayablesToolbar({
         )}
 
         {canToggleAll && onToggleAll && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 gap-1.5"
-            onClick={onToggleAll}
-          >
+          <Button variant="outline" className="gap-1.5" onClick={onToggleAll}>
             <ChevronsDown className="size-3.5" />
             {allExpanded ? 'Свернуть всё' : 'Показывать всё'}
           </Button>
@@ -296,8 +290,7 @@ export function PayablesToolbar({
 
         <Button
           variant={overdueOnly ? 'destructive' : 'outline'}
-          size="sm"
-          className="h-8 gap-1.5"
+          className="gap-1.5"
           onClick={() =>
             table
               .getColumn('dueDate')
@@ -311,8 +304,7 @@ export function PayablesToolbar({
         {hasFilters && (
           <Button
             variant="ghost"
-            size="sm"
-            className="h-8 gap-1"
+            className="gap-1"
             onClick={() => {
               table.resetColumnFilters()
               table.setGlobalFilter('')

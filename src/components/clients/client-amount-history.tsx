@@ -59,8 +59,7 @@ export function ClientAmountHistory({
                   {h.newAmounts.map((amt, i) => {
                     const diff =
                       Number(amt) - Number(h.previousAmounts[i] ?? '0')
-                    const colorClass =
-                      diff > 0 ? 'text-accent-text' : diff < 0 ? '' : ''
+                    const colorClass = diff > 0 ? 'text-accent-text' : ''
                     return (
                       <span
                         key={i}

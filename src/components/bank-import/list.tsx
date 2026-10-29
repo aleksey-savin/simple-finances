@@ -294,7 +294,11 @@ function StatusBadge({
   }
 
   if (status === 'partial') {
-    return <Badge className="bg-warning text-white">Частично разнесено</Badge>
+    return (
+      <Badge className="bg-warning text-warning-foreground">
+        Частично разнесено
+      </Badge>
+    )
   }
 
   return <Badge variant="outline">Без привязки</Badge>

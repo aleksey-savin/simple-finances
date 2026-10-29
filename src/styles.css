@@ -186,6 +186,12 @@ code {
   .dark body {
     background: var(--canvas);
   }
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
 }
 
 /* Horizontally/vertically scrollable areas without a visible scrollbar. */

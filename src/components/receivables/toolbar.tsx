@@ -196,8 +196,7 @@ export function ReceivablesToolbar({
         {onToggleGrouping && (
           <Button
             variant={groupingEnabled ? 'secondary' : 'outline'}
-            size="sm"
-            className="h-8 gap-1.5"
+            className="gap-1.5"
             onClick={onToggleGrouping}
           >
             <Rows3 className="size-3.5" />
@@ -206,12 +205,7 @@ export function ReceivablesToolbar({
         )}
 
         {canToggleAll && onToggleAll && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 gap-1.5"
-            onClick={onToggleAll}
-          >
+          <Button variant="outline" className="gap-1.5" onClick={onToggleAll}>
             <ChevronsDown className="size-3.5" />
             {allExpanded ? 'Свернуть всё' : 'Показывать всё'}
           </Button>
@@ -219,8 +213,7 @@ export function ReceivablesToolbar({
 
         <Button
           variant={overdueOnly ? 'destructive' : 'outline'}
-          size="sm"
-          className="h-8 gap-1.5"
+          className="gap-1.5"
           onClick={() =>
             table
               .getColumn('dueDate')
@@ -234,8 +227,7 @@ export function ReceivablesToolbar({
         {hasFilters && (
           <Button
             variant="ghost"
-            size="sm"
-            className="h-8 gap-1"
+            className="gap-1"
             onClick={() => {
               table.resetColumnFilters()
               table.setGlobalFilter('')

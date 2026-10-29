@@ -25,7 +25,7 @@ export function PayablesStatusBadge({ row }: { row: ExpenseRow }) {
 
   if (row.paymentStatus === 'partial') {
     return (
-      <Badge className="border-transparent bg-warning text-xs text-white whitespace-nowrap">
+      <Badge className="border-transparent bg-warning text-xs text-warning-foreground whitespace-nowrap">
         Частично оплачено
       </Badge>
     )

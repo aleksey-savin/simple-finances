@@ -107,7 +107,7 @@ export function buildReceivablesColumns({
           className={`block text-right font-semibold tabular-nums ${
             row.original.paymentStatus === 'partial'
               ? 'text-warning-text'
-              : 'text-primary'
+              : 'text-accent-text'
           }`}
         >
           +{formatCurrency(getValue() as number)} ₽

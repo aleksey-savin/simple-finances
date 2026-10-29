@@ -22,7 +22,7 @@ export function ReceivablesSummaryCards({
       </Card>
 
       {summary.overdueAll > 0 && (
-        <Card className="flex min-w-35 flex-col justify-center gap-2 border border-destructive bg-red-50 p-4">
+        <Card className="flex min-w-35 flex-col justify-center gap-2 border border-destructive bg-destructive/10 p-4">
           <p className="text-sm text-muted-foreground">Просрочено</p>
           <p className="text-destructive text-lg font-semibold">
             {summary.overdueAll}{' '}

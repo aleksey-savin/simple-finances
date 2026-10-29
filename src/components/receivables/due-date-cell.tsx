@@ -16,7 +16,7 @@ export function ReceivablesDueDateCell({ row }: { row: IncomeRow }) {
         {formatDate(row.dueDate)}
       </span>
       {isOverdue && (
-        <span className="text-xs text-red-400">
+        <span className="text-xs text-destructive">
           просрочен {Math.abs(daysLeft ?? 0)} дн.
         </span>
       )}

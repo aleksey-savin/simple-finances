@@ -256,7 +256,7 @@ export function ReportBreakdownSheet({
               <Loader2 className="size-4 animate-spin" /> Загрузка…
             </div>
           ) : isError ? (
-            <p className="py-16 text-center text-sm text-warning-text">
+            <p className="py-16 text-center text-sm text-destructive">
               Не удалось загрузить операции.
             </p>
           ) : filteredRows.length === 0 ? (

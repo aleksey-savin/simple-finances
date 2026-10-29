@@ -199,7 +199,7 @@ export function TagPicker({
             {!creating ? (
               <button
                 type="button"
-                className="flex items-center gap-2 text-sm text-primary hover:underline"
+                className="flex items-center gap-2 text-sm text-accent-text hover:underline"
                 onClick={() => setCreating(true)}
               >
                 <Plus className="size-3.5" />

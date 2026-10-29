@@ -29,9 +29,7 @@ export function PayablesSummaryCards({
                 className="flex min-w-35 flex-col justify-center gap-2 p-4"
               >
                 <p className="text-muted-foreground text-sm">{account.name}</p>
-                <p
-                  className={`text-lg font-semibold tabular-nums ${'text-foreground'}`}
-                >
+                <p className="text-lg font-semibold tabular-nums text-foreground">
                   {formatCurrency(balance)} ₽
                 </p>
               </Card>

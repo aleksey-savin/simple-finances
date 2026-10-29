@@ -70,7 +70,7 @@ export function RevisionItemNotesCell({
       className={`block max-w-56 text-left text-sm whitespace-pre-wrap break-words ${
         readOnly
           ? 'cursor-default'
-          : 'cursor-pointer hover:text-primary hover:underline'
+          : 'cursor-pointer hover:text-accent-text hover:underline'
       } ${isPending ? 'opacity-50' : ''}`}
       onClick={startEditing}
       title={readOnly ? undefined : 'Нажмите, чтобы изменить'}

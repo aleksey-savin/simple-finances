@@ -70,7 +70,7 @@ export function ClientActiveRevisions({
                   <Link
                     to="/price-revisions/$id"
                     params={{ id: r.revisionId }}
-                    className="text-sm font-medium text-primary hover:underline"
+                    className="text-sm font-medium text-accent-text hover:underline"
                   >
                     {r.revisionName}
                   </Link>
@@ -95,8 +95,7 @@ export function ClientActiveRevisions({
                     {r.proposedAmounts.map((amt, i) => {
                       const diff =
                         Number(amt) - Number(r.currentAmounts[i] ?? '0')
-                      const colorClass =
-                        diff > 0 ? 'text-accent-text' : diff < 0 ? '' : ''
+                      const colorClass = diff > 0 ? 'text-accent-text' : ''
                       return (
                         <span
                           key={i}

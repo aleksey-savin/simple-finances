@@ -100,7 +100,7 @@ export function RuleTableRow({
             {rule.contract ? (
               <Badge
                 variant="outline"
-                className="gap-1 text-xs font-normal text-green-600 border-green-300"
+                className="gap-1 text-xs font-normal text-accent-text border-primary/45"
               >
                 <FileText className="size-3 shrink-0" />
                 Договор

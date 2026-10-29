@@ -20,7 +20,7 @@ export type ComboboxOption = {
 const BADGE_VARIANT_CLASSES: Record<ComboboxBadgeVariant, string> = {
   default: 'bg-muted text-muted-foreground',
   success: 'bg-success text-success-foreground',
-  warning: 'bg-warning text-white',
+  warning: 'bg-warning text-warning-foreground',
 }
 
 type ComboboxProps = {

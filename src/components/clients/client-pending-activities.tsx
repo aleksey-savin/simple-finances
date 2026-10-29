@@ -53,7 +53,7 @@ export function ClientPendingActivities({
                     <Link
                       to={a.link.to}
                       params={a.link.params}
-                      className="text-sm font-medium text-primary hover:underline"
+                      className="text-sm font-medium text-accent-text hover:underline"
                     >
                       {a.title}
                     </Link>

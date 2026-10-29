@@ -46,7 +46,7 @@ function ContractDocumentLinks({ documents }: { documents: DocumentLink[] }) {
         <button
           key={doc.id}
           type="button"
-          className="flex items-center gap-1 text-xs text-primary hover:underline disabled:opacity-50"
+          className="flex items-center gap-1 text-xs text-accent-text hover:underline disabled:opacity-50"
           disabled={openingId === doc.id}
           onClick={() => void handleOpen(doc.id)}
         >

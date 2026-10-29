@@ -49,7 +49,7 @@ function VmStatusBadge({
 }) {
   if (isPausedBySystem) {
     return (
-      <span className="flex items-center gap-1 text-xs text-orange-600">
+      <span className="flex items-center gap-1 text-xs text-warning-text">
         <PauseCircle className="size-3" />
         Приостановлена системой
       </span>
@@ -393,7 +393,7 @@ export function ContractIntegrationsSection({
       <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
         <Server className="size-3.5" />
         Добавьте ноды Proxmox в разделе{' '}
-        <a href="/preferences" className="text-primary underline">
+        <a href="/preferences" className="text-accent-text underline">
           Настройки → Proxmox
         </a>
       </div>
@@ -434,12 +434,12 @@ export function ContractIntegrationsSection({
       {vms.length > 0 && (
         <>
           {isEffectiveActive && (
-            <span className="text-xs text-green-600">
+            <span className="text-xs text-accent-text">
               Срок действия до: {effectiveLabel}
             </span>
           )}
           {isEffectiveExpired && (
-            <span className="text-xs text-red-600">
+            <span className="text-xs text-destructive">
               Срок действия истёк: {effectiveLabel}
             </span>
           )}

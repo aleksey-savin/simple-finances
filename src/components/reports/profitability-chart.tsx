@@ -12,7 +12,7 @@ export type { ProfitabilityBasis } from '#/components/reports/utils'
 const chartConfig = {
   income: { label: 'Доход', color: 'var(--chart-1)' },
   expense: { label: 'Расход', color: 'var(--chart-3)' },
-  net: { label: 'Сальдо за месяц', color: 'var(--primary)' },
+  net: { label: 'Сальдо за месяц', color: 'var(--chart-4)' },
   debt: { label: 'Долг на 1-е', color: 'var(--destructive)' },
   balance: { label: 'Баланс на 1-е', color: 'var(--chart-2)' },
 } satisfies ChartConfig
