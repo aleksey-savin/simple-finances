@@ -106,7 +106,8 @@ export function TagPicker({
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    // modal: keeps the list scrollable when rendered inside a Dialog/Sheet
+    <Popover modal open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="ghost"

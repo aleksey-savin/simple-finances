@@ -76,7 +76,9 @@ export function MultiSelectCombobox({
   }
 
   return (
+    // modal: keeps the list scrollable when rendered inside a Dialog/Sheet
     <Popover
+      modal
       open={open}
       onOpenChange={(nextOpen) => {
         setOpen(nextOpen)

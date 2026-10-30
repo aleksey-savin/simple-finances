@@ -90,7 +90,11 @@ export function Combobox({
   }, [open, autoFocusSearch])
 
   return (
+    // modal: inside a Dialog/Sheet the portalled list is outside the dialog's
+    // scroll lock, so wheel/touch scrolling is blocked unless the popover
+    // installs its own lock.
     <Popover
+      modal
       open={open}
       onOpenChange={(nextOpen) => {
         setOpen(nextOpen)
