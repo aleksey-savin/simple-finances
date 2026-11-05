@@ -15,6 +15,7 @@ const chartConfig = {
   net: { label: 'Сальдо за месяц', color: 'var(--chart-4)' },
   debt: { label: 'Долг на 1-е', color: 'var(--destructive)' },
   balance: { label: 'Баланс на 1-е', color: 'var(--chart-2)' },
+  netStart: { label: 'Сальдо на 1-е', color: 'var(--chart-5)' },
 } satisfies ChartConfig
 
 type ChartDatum = {
@@ -26,6 +27,7 @@ type ChartDatum = {
   net: number
   debt: number
   balanceStart: number
+  netStart: number
   isForecast: boolean
 }
 
@@ -148,6 +150,12 @@ function ReportTooltip({
         color={chartConfig.debt.color}
         className="text-destructive"
       />
+      <TooltipRow
+        label="Сальдо на 1-е"
+        value={d.netStart}
+        mark="line"
+        color={chartConfig.netStart.color}
+      />
     </div>
   )
 }
@@ -157,7 +165,6 @@ function ChartLegend({ hasPlanned }: { hasPlanned: boolean }) {
     mark: SeriesMark
     color: string
     label: string
-    hint?: string
   }[] = [
     {
       mark: 'bar',
@@ -175,7 +182,6 @@ function ChartLegend({ hasPlanned }: { hasPlanned: boolean }) {
             mark: 'bar-planned' as const,
             color: 'var(--muted-foreground)',
             label: 'План',
-            hint: 'ожидается до конца текущего месяца',
           },
         ]
       : []),
@@ -183,19 +189,21 @@ function ChartLegend({ hasPlanned }: { hasPlanned: boolean }) {
       mark: 'line',
       color: chartConfig.net.color,
       label: 'Сальдо за месяц',
-      hint: 'доход минус расход',
     },
     {
       mark: 'line',
       color: chartConfig.balance.color,
       label: 'Баланс на 1-е',
-      hint: 'остаток на счетах на начало месяца',
     },
     {
       mark: 'line-dashed',
       color: chartConfig.debt.color,
       label: 'Долг на 1-е',
-      hint: 'неоплаченные расходы на начало месяца',
+    },
+    {
+      mark: 'line',
+      color: chartConfig.netStart.color,
+      label: 'Сальдо на 1-е',
     },
   ]
 
@@ -205,9 +213,6 @@ function ChartLegend({ hasPlanned }: { hasPlanned: boolean }) {
         <li key={item.label} className="flex items-center gap-2">
           <SeriesSwatch mark={item.mark} color={item.color} />
           <span>{item.label}</span>
-          {item.hint ? (
-            <span className="text-muted-foreground">· {item.hint}</span>
-          ) : null}
         </li>
       ))}
     </ul>
@@ -232,6 +237,7 @@ export function ProfitabilityChart({
       net: v.net,
       debt: point.debt,
       balanceStart: point.balanceStart,
+      netStart: point.balanceStart - point.debt,
       isForecast: point.isForecast,
     }
   })
@@ -309,6 +315,13 @@ export function ProfitabilityChart({
             dataKey="balanceStart"
             type="monotone"
             stroke="var(--color-balance)"
+            strokeWidth={2}
+            dot={false}
+          />
+          <Line
+            dataKey="netStart"
+            type="monotone"
+            stroke="var(--color-netStart)"
             strokeWidth={2}
             dot={false}
           />
