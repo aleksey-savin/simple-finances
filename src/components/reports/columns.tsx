@@ -152,5 +152,11 @@ export function buildProfitabilityColumns({
     }),
     moneyColumn('debt', 'Долг на 1-е', (p) => p.debt, 'debt'),
     moneyColumn('balanceStart', 'Баланс на 1-е', (p) => p.balanceStart, 'net'),
+    moneyColumn(
+      'netStart',
+      'Сальдо на 1-е',
+      (p) => p.balanceStart - p.debt,
+      'net',
+    ),
   ]
 }
