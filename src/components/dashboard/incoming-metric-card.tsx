@@ -35,7 +35,7 @@ export function IncomingMetricCard({
   onToggleAccount: (accountId: string) => void
 }) {
   return (
-    <Card className="flex h-full flex-col">
+    <Card className="flex min-w-0 h-full flex-col">
       <CardHeader className="space-y-1">
         <CardTitle className="text-base">Ожидаемые поступления</CardTitle>
         <p className="text-sm text-muted-foreground">
@@ -43,14 +43,16 @@ export function IncomingMetricCard({
         </p>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-4">
-        <p className="text-accent-text text-3xl font-bold tabular-nums">
+        <p className="text-accent-text text-3xl font-bold tabular-nums [overflow-wrap:anywhere]">
           {formatMoney(total)} ₽
         </p>
 
         <div className="flex flex-wrap gap-2">
           <Button
+            aria-pressed={includeOverdueReceivables}
             variant={includeOverdueReceivables ? 'default' : 'outline'}
             size="sm"
+            className="h-auto min-h-10 max-w-full justify-start whitespace-normal text-left tabular-nums [overflow-wrap:anywhere]"
             onClick={onToggleOverdueReceivables}
           >
             {includeOverdueReceivables ? '+' : ''} Просроченная дебиторка:{' '}
@@ -58,8 +60,10 @@ export function IncomingMetricCard({
           </Button>
 
           <Button
+            aria-pressed={includeCurrentReceivables}
             variant={includeCurrentReceivables ? 'default' : 'outline'}
             size="sm"
+            className="h-auto min-h-10 max-w-full justify-start whitespace-normal text-left tabular-nums [overflow-wrap:anywhere]"
             onClick={onToggleCurrentReceivables}
           >
             {includeCurrentReceivables ? '+' : ''} Дебиторка в срок:{' '}
@@ -67,8 +71,10 @@ export function IncomingMetricCard({
           </Button>
 
           <Button
+            aria-pressed={includeUnissuedInvoices}
             variant={includeUnissuedInvoices ? 'default' : 'outline'}
             size="sm"
+            className="h-auto min-h-10 max-w-full justify-start whitespace-normal text-left tabular-nums [overflow-wrap:anywhere]"
             onClick={onToggleUnissuedInvoices}
           >
             {includeUnissuedInvoices ? '+' : ''} Ещё не выставлено:{' '}
@@ -85,6 +91,8 @@ export function IncomingMetricCard({
                 key={account.id}
                 variant={isIncluded ? 'default' : 'outline'}
                 size="sm"
+                className="h-auto min-h-10 max-w-full justify-start whitespace-normal text-left tabular-nums [overflow-wrap:anywhere]"
+                aria-pressed={isIncluded}
                 onClick={() => onToggleAccount(account.id)}
               >
                 {isIncluded ? '+' : ''} {account.name}:{' '}

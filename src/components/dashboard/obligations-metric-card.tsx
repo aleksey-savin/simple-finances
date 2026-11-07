@@ -34,7 +34,7 @@ export function ObligationsMetricCard({
   onTogglePlannedRepayment: () => void
 }) {
   return (
-    <Card className="flex h-full flex-col">
+    <Card className="flex min-w-0 h-full flex-col">
       <CardHeader className="space-y-1">
         <CardTitle className="text-base">Обязательства</CardTitle>
         <p className="text-sm text-muted-foreground">
@@ -42,14 +42,16 @@ export function ObligationsMetricCard({
         </p>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-4">
-        <p className="text-3xl font-bold tabular-nums">
+        <p className="text-3xl font-bold tabular-nums [overflow-wrap:anywhere]">
           {formatMoney(total)} ₽
         </p>
 
         <div className="flex flex-wrap gap-2">
           <Button
+            aria-pressed={includePlannedExpenses}
             variant={includePlannedExpenses ? 'default' : 'outline'}
             size="sm"
+            className="h-auto min-h-10 max-w-full justify-start whitespace-normal text-left tabular-nums [overflow-wrap:anywhere]"
             onClick={onTogglePlannedExpenses}
           >
             {includePlannedExpenses ? '+' : ''} Плановые расходы:{' '}
@@ -57,8 +59,10 @@ export function ObligationsMetricCard({
           </Button>
 
           <Button
+            aria-pressed={includeProjectedPayables}
             variant={includeProjectedPayables ? 'default' : 'outline'}
             size="sm"
+            className="h-auto min-h-10 max-w-full justify-start whitespace-normal text-left tabular-nums [overflow-wrap:anywhere]"
             onClick={onToggleProjectedPayables}
           >
             {includeProjectedPayables ? '+' : ''} Платежи текущего месяца:{' '}
@@ -66,8 +70,10 @@ export function ObligationsMetricCard({
           </Button>
 
           <Button
+            aria-pressed={includeOverdueDebt}
             variant={includeOverdueDebt ? 'default' : 'outline'}
             size="sm"
+            className="h-auto min-h-10 max-w-full justify-start whitespace-normal text-left tabular-nums [overflow-wrap:anywhere]"
             onClick={onToggleOverdueDebt}
           >
             {includeOverdueDebt ? '+' : ''} Просроченная задолженность:{' '}
@@ -75,8 +81,10 @@ export function ObligationsMetricCard({
           </Button>
 
           <Button
+            aria-pressed={includePlannedRepayment}
             variant={includePlannedRepayment ? 'default' : 'outline'}
             size="sm"
+            className="h-auto min-h-10 max-w-full justify-start whitespace-normal text-left tabular-nums [overflow-wrap:anywhere]"
             onClick={onTogglePlannedRepayment}
           >
             {includePlannedRepayment ? '+' : ''} Задолженность:{' '}

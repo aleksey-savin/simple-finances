@@ -5,7 +5,7 @@ import { fetchDashboardData } from '#/components/dashboard/actions'
 import { Skeleton } from '#/components/ui/skeleton'
 import { IncomingMetricCard } from '#/components/dashboard/incoming-metric-card'
 import { ObligationsMetricCard } from '#/components/dashboard/obligations-metric-card'
-import { SaldoMetricCard } from '#/components/dashboard/saldo-metric-card'
+import { DashboardSummary } from '#/components/dashboard/summary'
 import { TasksSection } from '#/components/dashboard/tasks-section'
 import { PendingBlocksCard } from '#/components/dashboard/pending-blocks-card'
 import { BlockedServicesCard } from '#/components/contracts/blocked-services-card'
@@ -13,18 +13,22 @@ import { BlockedServicesCard } from '#/components/contracts/blocked-services-car
 function DashboardSkeleton() {
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {[...Array(3)].map((_, i) => (
-          <div key={i} className="border p-4 flex flex-col gap-3">
-            <Skeleton className="h-5 w-40" />
-            <Skeleton className="h-9 w-36" />
-            <div className="flex flex-wrap gap-2">
-              {[...Array(3)].map((_item, j) => (
-                <Skeleton key={j} className="h-8 w-40" />
-              ))}
+      <div className="border bg-card">
+        <div className="grid divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0 short-landscape:grid-cols-3 short-landscape:divide-x short-landscape:divide-y-0">
+          {[...Array(3)].map((_, i) => (
+            <div
+              key={i}
+              className="min-w-0 px-4 py-3 sm:py-4 flex flex-col gap-2"
+            >
+              <Skeleton className="h-5 w-32 max-w-full" />
+              <Skeleton className="h-9 w-40 max-w-full" />
+              <Skeleton className="h-5 w-44 max-w-full short-landscape:hidden" />
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
+        <div className="border-t px-4 py-3">
+          <Skeleton className="h-5 w-64 max-w-full" />
+        </div>
       </div>
       <div className="border p-4 flex flex-col gap-3">
         <Skeleton className="h-6 w-48" />
@@ -75,6 +79,16 @@ function RouteComponent() {
     [accounts, includedAccountIds],
   )
 
+  const lastStatementDate = accounts.reduce<string | null>(
+    (latest, account) => {
+      const date = account.lastImportedAt
+      return date && (!latest || new Date(date) > new Date(latest))
+        ? date
+        : latest
+    },
+    null,
+  )
+
   const selectedIncoming =
     (includeOverdueReceivables ? monthlyOutlook.overdueReceivablesAmount : 0) +
     (includeCurrentReceivables ? monthlyOutlook.currentReceivablesAmount : 0) +
@@ -105,20 +119,14 @@ function RouteComponent() {
 
   return (
     <div className="flex flex-col gap-4">
-      {blockedServices.length > 0 && (
-        <BlockedServicesCard
-          services={blockedServices}
-          showClientName
-          showVmList
-          onUpdated={async () => {
-            await router.invalidate()
-          }}
-        />
-      )}
-
-      <PendingBlocksCard services={pendingBlockedServices} />
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <DashboardSummary
+        incomingValue={selectedIncoming}
+        obligationsValue={selectedObligations}
+        expensesAmount={monthlyOutlook.expensesWithDebt}
+        receivablesAmount={monthlyOutlook.receivablesAmount}
+        overdueReceivablesAmount={monthlyOutlook.overdueReceivablesAmount}
+        lastStatementDate={lastStatementDate}
+      >
         <IncomingMetricCard
           total={selectedIncoming}
           overdueReceivablesAmount={monthlyOutlook.overdueReceivablesAmount}
@@ -163,11 +171,20 @@ function RouteComponent() {
             setIncludePlannedRepayment((current) => !current)
           }
         />
-        <SaldoMetricCard
-          incomingValue={selectedIncoming}
-          obligationsValue={selectedObligations}
+      </DashboardSummary>
+
+      {blockedServices.length > 0 && (
+        <BlockedServicesCard
+          services={blockedServices}
+          showClientName
+          showVmList
+          onUpdated={async () => {
+            await router.invalidate()
+          }}
         />
-      </div>
+      )}
+
+      <PendingBlocksCard services={pendingBlockedServices} />
 
       <TasksSection tasks={tasks} />
     </div>
